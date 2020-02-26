@@ -205,7 +205,6 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
     result
       .map { status =>
-        Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
         if (status.n == 0) {
           val updatedReminder = htsReminder.copy(nextSendDate = getNextSendDate(htsReminder.daysToReceive))
           createReminder(updatedReminder)
