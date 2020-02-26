@@ -61,18 +61,14 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   lazy val proxyCollection: GenericCollection[JSONSerializationPack.type] = collection
 
-  override def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]] = {
-
-    val updatedReminder = reminder.copy(nextSendDate = getNextSendDate(reminder.daysToReceive))
-    insert(updatedReminder)
+  override def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]] =
+    insert(reminder)
       .map(result =>
         if (result.ok) {
           Right(reminder)
         } else {
           Left("Unexpected error while creating Reminder ")
-        })
-
-  }
+      })
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUser]]] = {
 
@@ -211,7 +207,8 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       .map { status =>
         Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
         if (status.n == 0) {
-          createReminder(htsReminder)
+          val updatedReminder = htsReminder.copy(nextSendDate = getNextSendDate(htsReminder.daysToReceive))
+          createReminder(updatedReminder)
           Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] new user created: $status ")
         } else {
           Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
