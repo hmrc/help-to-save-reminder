@@ -58,16 +58,15 @@ class EmailSenderActor @Inject()(
 
     case successReminder: UpdateCallBackSuccess => {
 
+      val reminder = successReminder.reminder
+
       val template =
-        HtsReminderTemplate(
-          successReminder.reminder.email,
-          successReminder.reminder.name,
-          successReminder.reminder.callBackUrlRef)
+        HtsReminderTemplate(reminder.email, reminder.firstName + " " + reminder.lastName, reminder.callBackUrlRef)
 
       sendReceivedTemplatedEmail(template).map({
         case true => {
-          val nextSendDate = DateTimeFunctions.getNextSendDate(successReminder.reminder.daysToReceive)
-          val updatedReminder = successReminder.reminder.copy(nextSendDate = nextSendDate)
+          val nextSendDate = DateTimeFunctions.getNextSendDate(reminder.daysToReceive)
+          val updatedReminder = reminder.copy(nextSendDate = nextSendDate)
           htsUserUpdateActor ! updatedReminder
         }
         case false =>

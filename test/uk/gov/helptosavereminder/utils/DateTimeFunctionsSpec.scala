@@ -32,7 +32,6 @@ package uk.gov.helptosavereminder.utils
  * limitations under the License.
  */
 
-
 import java.util.Calendar
 
 import org.scalatest.{Matchers, WordSpec}
@@ -42,7 +41,6 @@ import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
 
   val lastDayOftheMonth = Calendar.getInstance.getActualMaximum(Calendar.DAY_OF_MONTH);
-
 
   "DateTimeFunctions object " should {
     "return appropriate day " in {

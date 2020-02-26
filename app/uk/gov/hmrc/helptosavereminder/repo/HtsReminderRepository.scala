@@ -32,6 +32,7 @@ import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import reactivemongo.play.json.JSONSerializationPack
+import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,7 +48,7 @@ trait HtsReminderRepository {
   def updateReminderUser(htsReminder: HtsUser): Future[Boolean]
   def findByNino(nino: String): Future[Option[HtsUser]]
   def deleteHtsUser(nino: String): Future[Either[String, Unit]]
-  def updateEmail(nino: String, name: String, email: String): Future[Boolean]
+  def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean]
 }
 
 class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
@@ -122,11 +123,11 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   }
 
-  override def updateEmail(nino: String, name: String, email: String): Future[Boolean] = {
+  override def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean] = {
 
     val startTime = System.currentTimeMillis()
     val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("email" -> email, "name" -> name))
+    val modifier = Json.obj("$set" -> Json.obj("email" -> email, "firstName" -> firstName, "lastName" -> lastName))
     val result = proxyCollection.update(ordered = false).one(selector, modifier)
 
     result
@@ -194,8 +195,11 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       "$set" -> Json.obj(
         "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
         "email"         -> htsReminder.email,
-        "name"          -> htsReminder.name,
-        "daysToReceive" -> htsReminder.daysToReceive))
+        "firstName"     -> htsReminder.firstName,
+        "lastName"      -> htsReminder.lastName,
+        "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive),
+        "daysToReceive" -> htsReminder.daysToReceive
+      ))
 
     val result = proxyCollection.update(ordered = false).one(selector, modifier)
 

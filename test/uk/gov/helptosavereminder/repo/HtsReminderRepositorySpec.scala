@@ -188,8 +188,7 @@ class HtsReminderRepositorySpec
     "should successfully update the users email " in {
 
       val updateStatus: Future[Boolean] =
-
-        htsReminderMongoRepository.updateEmail("SK798383D", "James Tinder", "modifiedReminder@test.com")
+        htsReminderMongoRepository.updateEmail("SK798383D", "James", "Tinder", "modifiedReminder@test.com")
 
       await(updateStatus) shouldBe true
 

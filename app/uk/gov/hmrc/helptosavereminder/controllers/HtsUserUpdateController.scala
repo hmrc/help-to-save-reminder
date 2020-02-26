@@ -92,14 +92,16 @@ class HtsUserUpdateController @Inject()(
           Future.successful(BadRequest)
         },
         (userRequest: UpdateEmail) => {
-          repository.updateEmail(userRequest.nino.nino, userRequest.name, userRequest.email).map {
-            case true => {
-              Ok
+          repository
+            .updateEmail(userRequest.nino.nino, userRequest.firstName, userRequest.lastName, userRequest.email)
+            .map {
+              case true => {
+                Ok
+              }
+              case false => {
+                NotFound
+              }
             }
-            case false => {
-              NotFound
-            }
-          }
         }
       )
   }

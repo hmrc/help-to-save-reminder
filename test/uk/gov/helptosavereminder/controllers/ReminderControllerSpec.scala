@@ -84,10 +84,11 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       .expects(nino)
       .returning(result)
 
-  def mockUpdateEmailRepository(nino: String, name: String, email: String)(result: Boolean): Unit =
+  def mockUpdateEmailRepository(nino: String, firstName: String, lastName: String, email: String)(
+    result: Boolean): Unit =
     (mockRepository
-      .updateEmail(_: String, _: String, _: String))
-      .expects(nino, name, email)
+      .updateEmail(_: String, _: String, _: String, _: String))
+      .expects(nino, firstName, lastName, email)
       .returning(result)
 
   val fakeRequest = FakeRequest()
@@ -256,7 +257,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456D"))
 
-      val updateEmailInput = UpdateEmail(htsReminderUser.nino, htsReminderUser.name, htsReminderUser.email)
+      val updateEmailInput =
+        UpdateEmail(htsReminderUser.nino, htsReminderUser.firstName, htsReminderUser.lastName, htsReminderUser.email)
 
       val fakeRequest = FakeRequest("POST", "/")
 
@@ -268,8 +270,11 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
 
-        mockUpdateEmailRepository(updateEmailInput.nino.nino, updateEmailInput.name, updateEmailInput.email)(true)
-
+        mockUpdateEmailRepository(
+          updateEmailInput.nino.nino,
+          updateEmailInput.firstName,
+          updateEmailInput.lastName,
+          updateEmailInput.email)(true)
 
       }
 
@@ -282,7 +287,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456D"))
 
-      val updateEmailInput = UpdateEmail(htsReminderUser.nino, htsReminderUser.name, htsReminderUser.email)
+      val updateEmailInput =
+        UpdateEmail(htsReminderUser.nino, htsReminderUser.firstName, htsReminderUser.lastName, htsReminderUser.email)
 
       val fakeRequest = FakeRequest("POST", "/")
 
@@ -294,8 +300,11 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
 
-        mockUpdateEmailRepository(updateEmailInput.nino.nino, updateEmailInput.name, updateEmailInput.email)(false)
-
+        mockUpdateEmailRepository(
+          updateEmailInput.nino.nino,
+          updateEmailInput.firstName,
+          updateEmailInput.lastName,
+          updateEmailInput.email)(false)
 
       }
 

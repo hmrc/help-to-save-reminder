@@ -26,7 +26,8 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 case class HtsUser(
   nino: Nino,
   email: String,
-  name: String = "",
+  firstName: String = "",
+  lastName: String = "",
   optInStatus: Boolean = false,
   daysToReceive: Seq[Int] = Seq(),
   nextSendDate: LocalDate = LocalDate.now(),
@@ -39,7 +40,7 @@ case class UpdateCallBackSuccess(reminder: HtsUser)
 
 case class CancelHtsUserReminder(nino: String)
 
-case class UpdateEmail(nino: Nino, name: String, email: String)
+case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
 
 object HtsUser {
   implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
@@ -50,13 +51,14 @@ object HtsUser {
   implicit val reads: Reads[HtsUser] = (
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(Nino.apply(_)) and
       (JsPath \ "email").read[String] and
-      (JsPath \ "name").read[String] and
+      (JsPath \ "firstName").read[String] and
+      (JsPath \ "lastName").read[String] and
       (JsPath \ "optInStatus").read[Boolean] and
       (JsPath \ "daysToReceive").read[List[Int]] and
       (JsPath \ "nextSendDate").read[LocalDate] and
       (JsPath \ "bounceCount").read[Int] and
       (JsPath \ "callBackUrlRef").read[String]
-  )(HtsUser.apply(_, _, _, _, _, _, _, _))
+  )(HtsUser.apply(_, _, _, _, _, _, _, _, _))
 
 }
 
@@ -87,8 +89,9 @@ object UpdateEmail {
 
   implicit val reads: Reads[UpdateEmail] = (
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(Nino.apply(_)) and
-      (JsPath \ "name").read[String] and
+      (JsPath \ "firstName").read[String] and
+      (JsPath \ "lastName").read[String] and
       (JsPath \ "email").read[String]
-  )(UpdateEmail.apply(_, _, _))
+  )(UpdateEmail.apply(_, _, _, _))
 
 }
