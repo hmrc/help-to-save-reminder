@@ -33,7 +33,9 @@ import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import play.api.test._
 import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
@@ -60,17 +62,18 @@ class EmailCallbackControllerSpec
   private val configuration = Configuration.load(env)
   val fakeRequest = FakeRequest()
   private val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
+  val mockHttp: HttpClient = mock[HttpClient]
   var runMode = mock[RunMode]
   lazy val mockRepository = mock[HtsReminderMongoRepository]
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-  lazy val controller = new EmailCallbackController(mcc, mockRepository)
+  lazy val controller = new EmailCallbackController(mockHttp, serviceConfig, mcc, mockRepository)
 
   "The EmailCallbackController" should {
     "be able to increment a bounce count and" should {
       "respond with a 200 when all is good" in {
-        val callBackRefrenece = "1580214107339YT176603C"
-        when(mockRepository.updateEmailBounceCount(any())).thenReturn(Future.successful(true))
-        val result = controller.findBounces(callBackRefrenece).apply(fakeRequest)
+        val callBackReferences = "1580214107339YT176603C"
+        when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Right()))
+        val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
         result.onComplete({
           case Success(success) => contentAsString(success) shouldBe SUCCESS
           case _                =>
@@ -80,9 +83,9 @@ class EmailCallbackControllerSpec
   }
 
   "respond with a 200 containing FAILURE string if Nino does not exists or update fails" in {
-    val callBackRefrenece = "1580214107339YT176603C"
-    when(mockRepository.updateEmailBounceCount(any())).thenReturn(Future.successful(false))
-    val result = controller.findBounces(callBackRefrenece).apply(fakeRequest)
+    val callBackReferences = "1580214107339YT176603C"
+    when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Left("Not found")))
+    val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
     result.onComplete({
       case Success(success) => contentAsString(success) shouldBe FAILURE
       case _                =>

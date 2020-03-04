@@ -17,32 +17,41 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import com.google.inject.Inject
-import play.api.{Logger}
+import play.api.Logger
 import play.api.mvc.MessagesControllerComponents
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext
 
-class EmailCallbackController @Inject()(val cc: MessagesControllerComponents, repository: HtsReminderMongoRepository)(
-  implicit ec: ExecutionContext)
+class EmailCallbackController @Inject()(
+  http: HttpClient,
+  servicesConfig: ServicesConfig,
+  val cc: MessagesControllerComponents,
+  repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends BackendController(cc) {
 
-  def findBounces(callBackRefrenec: String) = Action.async { implicit request =>
-    val nino = callBackRefrenec.takeRight(9)
-    repository.updateEmailBounceCount(nino).map {
-      case true => {
-        Logger.info("Updated the User email bounce count for " + nino)
-        Ok(SUCCESS)
-      }
+  def handleCallBack(callBackReference: String) = Action.async { implicit request =>
+    val nino = callBackReference.takeRight(9)
+    repository.findByNino(nino).flatMap { htsUser =>
+      repository.deleteHtsUser(nino).map {
+        case Left(error) => NotModified
+        case Right(()) =>
+          val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
+          http.DELETE(url, Seq(("Content-Type", "application/json"))) map { response =>
+            response.status match {
 
-      case _ => {
-        Ok(FAILURE)
+              case 202 => Logger.debug(s"[EmailCallbackController] Email deleted: ${response.body}");
+              case _   => Logger.error(s"[EmailCallbackController] Email not deleted: ${response.body}");
+
+            }
+          }
+          Ok
       }
     }
-
   }
 
 }

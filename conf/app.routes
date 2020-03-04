@@ -6,7 +6,7 @@ GET        /hello-world                             uk.gov.hmrc.helptosaveremind
 
 #GET        /bootstrap-batchprocess                  uk.gov.hmrc.helptosavereminder.controllers.ReminderGeneratorController.bootStrapBatchProcess
 
-GET        /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.findBounces(callbackreference)
+GET        /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.handleCallBack(callbackreference)
 
 GET        /getifhtsuserexists/:nino                uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getIfHtsUserExists(nino : String)
 

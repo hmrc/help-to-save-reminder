@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.models
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, JsString, Json, Reads, Writes}
@@ -41,6 +41,8 @@ case class UpdateCallBackSuccess(reminder: HtsUser)
 case class CancelHtsUserReminder(nino: String)
 
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
+
+case class Schedule(lastExecutedAt: LocalDateTime, nextExecutionAt: LocalDateTime)
 
 object HtsUser {
   implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
@@ -93,5 +95,18 @@ object UpdateEmail {
       (JsPath \ "lastName").read[String] and
       (JsPath \ "email").read[String]
   )(UpdateEmail.apply(_, _, _, _))
+
+}
+
+object Schedule {
+
+  implicit val scheduleFormat: Format[Schedule] = Json.format[Schedule]
+
+  implicit val writes: Writes[Schedule] = Writes[Schedule](s ⇒ JsString(s.toString))
+
+  implicit val reads: Reads[Schedule] = (
+    (JsPath \ "lastExecutedAt").read[LocalDateTime] and
+      (JsPath \ "nextExecutionAt").read[LocalDateTime]
+  )(Schedule.apply(_, _))
 
 }

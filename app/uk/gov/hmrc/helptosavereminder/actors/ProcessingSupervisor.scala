@@ -19,11 +19,13 @@ package uk.gov.hmrc.helptosavereminder.actors
 import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneOffset}
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+import uk.gov.hmrc.helptosavereminder.models.Schedule
+import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository, SchedulerRepository}
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -42,6 +44,8 @@ class ProcessingSupervisor @Inject()(
     extends Actor {
 
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
+
+  lazy val schedulerRepository = new SchedulerMongoRepository(mongoApi)
 
   lazy val emailSenderActor: ActorRef =
     context.actorOf(
@@ -97,6 +101,8 @@ class ProcessingSupervisor @Inject()(
 
     case START => {
 
+      val scheduleKickOffTime = LocalDateTime.now()
+
       lockKeeper
         .tryLock {
 
@@ -132,11 +138,17 @@ class ProcessingSupervisor @Inject()(
           }
 
         }
-      Logger.info(
-        "[ProcessingSupervisor] emailProcessing finished and next schedule is at : " + LocalDateTime
-          .now()
-          .plusNanos(getNextDelayInNanos()))
-      context.system.scheduler.scheduleOnce(getNextDelayInNanos() nanos, self, START)
+
+      val nextInNanos = getNextDelayInNanos()
+      val nextScheduledAt = LocalDateTime.now().plusNanos(nextInNanos)
+      val scheduleToSave = Schedule(scheduleKickOffTime, nextScheduledAt)
+
+      schedulerRepository.createSchedule(scheduleToSave).map {
+        case Left(error) => Logger.info("Error occurred while writing the schedule details : " + scheduleToSave)
+        case Right(x)    => Logger.info("Scheduled saved to DB = " + x)
+      }
+
+      context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
 
     }
   }
