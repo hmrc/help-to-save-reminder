@@ -42,7 +42,7 @@ case class CancelHtsUserReminder(nino: String)
 
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
 
-case class Schedule(lastExecutedAt: LocalDateTime, nextExecutionAt: LocalDateTime)
+case class Schedule(lastExecutedAt: Option[LocalDateTime], nextExecutionAt: LocalDateTime)
 
 object HtsUser {
   implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
@@ -105,7 +105,7 @@ object Schedule {
   implicit val writes: Writes[Schedule] = Writes[Schedule](s ⇒ JsString(s.toString))
 
   implicit val reads: Reads[Schedule] = (
-    (JsPath \ "lastExecutedAt").read[LocalDateTime] and
+    (JsPath \ "lastExecutedAt").readNullable[LocalDateTime] and
       (JsPath \ "nextExecutionAt").read[LocalDateTime]
   )(Schedule.apply(_, _))
 

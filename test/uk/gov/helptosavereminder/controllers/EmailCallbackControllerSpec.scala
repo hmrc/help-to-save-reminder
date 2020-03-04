@@ -15,6 +15,8 @@
  */
 
 package uk.gov.helptosavereminder.controllers
+import java.time.LocalDateTime
+
 import com.kenshoo.play.metrics.PlayModule
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
@@ -32,6 +34,12 @@ import uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import play.api.test._
+import play.modules.reactivemongo.ReactiveMongoComponent
+import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.helptosavereminder.models.HtsUser
+import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
@@ -41,7 +49,7 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
 class EmailCallbackControllerSpec
-    extends UnitSpec with Matchers with ScalaFutures with GuiceOneAppPerSuite with MockitoSugar {
+    extends UnitSpec with Matchers with MongoSpecSupport with ScalaFutures with GuiceOneAppPerSuite with MockitoSugar {
   def additionalConfiguration: Map[String, String] =
     Map(
       "logger.application" -> "ERROR",
@@ -52,11 +60,16 @@ class EmailCallbackControllerSpec
 
   private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
+  implicit val reactiveMongoComponent = new ReactiveMongoComponent {
+    override def mongoConnector = mongoConnectorForTest
+  }
+
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
     .bindings(bindModules: _*)
     .in(Mode.Test)
     .build()
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
 
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
@@ -71,7 +84,19 @@ class EmailCallbackControllerSpec
   "The EmailCallbackController" should {
     "be able to increment a bounce count and" should {
       "respond with a 200 when all is good" in {
-        val callBackReferences = "1580214107339YT176603C"
+        val htsReminderUser = (ReminderGenerator.nextReminder)
+          .copy(nino = Nino("AE345678D"), callBackUrlRef = LocalDateTime.now().toString() + "AE345678D")
+        val result1: Future[Either[String, HtsUser]] = htsReminderMongoRepository.createReminder(htsReminderUser)
+
+        await(result1) match {
+          case (Right(x)) => {
+            x.nino shouldBe htsReminderUser.nino
+          }
+        }
+        val callBackReferences = "1580214107339AE345678D"
+        when(mockRepository.findByNino(any())).thenReturn(Some(htsReminderUser))
+        when(mockHttp.DELETE[HttpResponse](any(), any())(any(), any(), any()))
+          .thenReturn(Future.successful(HttpResponse(200)))
         when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Right()))
         val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
         result.onComplete({
@@ -83,7 +108,19 @@ class EmailCallbackControllerSpec
   }
 
   "respond with a 200 containing FAILURE string if Nino does not exists or update fails" in {
-    val callBackReferences = "1580214107339YT176603C"
+
+    val htsReminderUser = (ReminderGenerator.nextReminder)
+      .copy(nino = Nino("AE456789D"), callBackUrlRef = LocalDateTime.now().toString() + "AE456789D")
+
+    val result1: Future[Either[String, HtsUser]] = htsReminderMongoRepository.createReminder(htsReminderUser)
+
+    await(result1) match {
+      case (Right(x)) => {
+        x.nino shouldBe htsReminderUser.nino
+      }
+    }
+    val callBackReferences = "1580214107339AE456789D"
+    when(mockRepository.findByNino(any())).thenReturn(Some(htsReminderUser))
     when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Left("Not found")))
     val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
     result.onComplete({

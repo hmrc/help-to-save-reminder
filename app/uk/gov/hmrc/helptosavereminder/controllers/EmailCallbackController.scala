@@ -21,7 +21,6 @@ import play.api.Logger
 import play.api.mvc.MessagesControllerComponents
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
@@ -44,7 +43,7 @@ class EmailCallbackController @Inject()(
           http.DELETE(url, Seq(("Content-Type", "application/json"))) map { response =>
             response.status match {
 
-              case 202 => Logger.debug(s"[EmailCallbackController] Email deleted: ${response.body}");
+              case 200 => Logger.debug(s"[EmailCallbackController] Email deleted: ${response.body}");
               case _   => Logger.error(s"[EmailCallbackController] Email not deleted: ${response.body}");
 
             }

@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.helptosavereminder.models.test
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 import uk.gov.hmrc.domain.{Generator, Nino}
-import uk.gov.hmrc.helptosavereminder.models.{HtsUser}
+import uk.gov.hmrc.helptosavereminder.models.HtsUser
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 
 import scala.util.Random
@@ -36,7 +36,7 @@ object ReminderGenerator {
   private def daysToReceive = Seq(1, 25)
   private def nextSendDate: LocalDate = getNextSendDate(Seq(1, 25))
   private def bounceCount: Int = 0
-  private def callBackUrlRef: String = "startTimeStampNINO"
+  private def callBackUrlRef: String = LocalDateTime.now().toString + nino.nino
 
   def nextReminder: HtsUser =
     HtsUser(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, bounceCount, callBackUrlRef)

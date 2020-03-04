@@ -95,7 +95,9 @@ class ProcessingSupervisor @Inject()(
           .now()
           .plusNanos(getNextDelayInNanos()))
 
-      context.system.scheduler.scheduleOnce(getNextDelayInNanos() nanos, self, START)
+      val nextInNanos = storeNextSchedule(None)
+
+      context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
 
     }
 
@@ -139,18 +141,30 @@ class ProcessingSupervisor @Inject()(
 
         }
 
-      val nextInNanos = getNextDelayInNanos()
-      val nextScheduledAt = LocalDateTime.now().plusNanos(nextInNanos)
-      val scheduleToSave = Schedule(scheduleKickOffTime, nextScheduledAt)
-
-      schedulerRepository.createSchedule(scheduleToSave).map {
-        case Left(error) => Logger.info("Error occurred while writing the schedule details : " + scheduleToSave)
-        case Right(x)    => Logger.info("Scheduled saved to DB = " + x)
-      }
+      val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
 
       context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
 
     }
+  }
+
+  private def storeNextSchedule(scheduleKickOffTime: Option[LocalDateTime]): Long = {
+
+    val nextInNanos = getNextDelayInNanos()
+    val nextScheduledAt = LocalDateTime.now().plusNanos(nextInNanos)
+
+    val scheduleToSave = scheduleKickOffTime match {
+      case Some(t) => Schedule(Some(t), nextScheduledAt)
+      case None    => Schedule(None, nextScheduledAt)
+    }
+
+    schedulerRepository.createSchedule(scheduleToSave).map {
+      case Left(error) => Logger.info("Error occurred while writing the schedule details : " + scheduleToSave)
+      case Right(x)    => Logger.info("Scheduled saved to DB = " + x)
+    }
+
+    nextInNanos
+
   }
 
 }
