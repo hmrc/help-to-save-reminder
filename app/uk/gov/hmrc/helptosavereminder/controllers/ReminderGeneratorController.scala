@@ -14,32 +14,19 @@
  * limitations under the License.
  */
 
-/*package uk.gov.hmrc.helptosavereminder.controllers
+package uk.gov.hmrc.helptosavereminder.controllers
 
-import akka.actor.{ActorSystem, Props}
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.helptosavereminder.actors.ProcessingSupervisor
 import uk.gov.hmrc.helptosavereminder.services.test.ReminderService
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class ReminderGeneratorController @Inject()(
-  reminderService: ReminderService,
-  httpClient: HttpClient,
-  actorSystem: ActorSystem,
-  env: Environment,
-  mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,
-  config: Configuration,
-  servicesConfig: ServicesConfig,
-  cc: ControllerComponents)(implicit val ec: ExecutionContext)
+class ReminderGeneratorController @Inject()(reminderService: ReminderService, cc: ControllerComponents)(
+  implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 
   def populateReminders(n: Int): Action[AnyContent] = Action.async {
@@ -48,17 +35,4 @@ class ReminderGeneratorController @Inject()(
       .map(_ => Ok("Total no of records created = " + n))
   }
 
-  def bootStrapBatchProcess(): Action[AnyContent] = Action.async { implicit request =>
-    lazy val reminderSupervisor = actorSystem.actorOf(
-      Props(classOf[ProcessingSupervisor], mongoApi, config, httpClient, env, servicesConfig, ec),
-      "reminder-supervisor-batchprocess"
-    )
-
-    reminderSupervisor ! START
-
-    Future.successful(Ok("BootStrapping Done "))
-
-  }
-
 }
- */
