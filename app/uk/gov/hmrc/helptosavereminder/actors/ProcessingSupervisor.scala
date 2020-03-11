@@ -16,16 +16,15 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneOffset}
+import java.time.{Instant, LocalDateTime, ZoneId}
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
-import akka.http.scaladsl.model.HttpHeader.ParsingResult.Ok
+import akka.actor.{Actor, ActorRef, Props}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.models.Schedule
-import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository, SchedulerRepository}
+import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository}
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
@@ -118,6 +117,10 @@ class ProcessingSupervisor @Inject()(
 
               }
 
+              val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
+
+              context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
+
             }
             case _ => {
               Logger.info(s"[ProcessingSupervisor][receive] no requests pending")
@@ -132,26 +135,24 @@ class ProcessingSupervisor @Inject()(
 
           }
           case _ => {
+            val delayInNanos = getNextDelayInNanos()
             Logger.info(
               s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock. Scheduling for next available slot at " + LocalDateTime
                 .now()
                 .plusNanos(getNextDelayInNanos()))
-            context.system.scheduler.scheduleOnce(getNextDelayInNanos() nanos, self, START)
+            context.system.scheduler.scheduleOnce(delayInNanos nanos, self, START)
           }
-
         }
-
-      val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
-
-      context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
 
     }
   }
 
   private def storeNextSchedule(scheduleKickOffTime: Option[LocalDateTime]): Long = {
 
+    val millis = System.currentTimeMillis()
+    val instant = Instant.ofEpochMilli(millis)
     val nextInNanos = getNextDelayInNanos()
-    val nextScheduledAt = LocalDateTime.now().plusNanos(nextInNanos)
+    val nextScheduledAt = instant.atZone(ZoneId.systemDefault).toLocalDateTime.plusNanos(nextInNanos)
 
     val scheduleToSave = scheduleKickOffTime match {
       case Some(t) => Schedule(Some(t), nextScheduledAt)
