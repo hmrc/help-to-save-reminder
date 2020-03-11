@@ -41,20 +41,17 @@ object DateTimeFunctions {
     val scheduledDaysList = scheduledDays.split(",").toList
     val scheduledTimesList = scheduledTimes.split(",").toList
 
-    val mapOfScheduledTimes = scheduledDaysList.flatMap( day =>
-        scheduledTimesList.map( timePoint =>
-          (day.toInt, timePoint.split(':').toList(0), timePoint.split(':').toList(1))
-        )
-    )
+    val mapOfScheduledTimes = scheduledDaysList.flatMap(day =>
+      scheduledTimesList.map(timePoint => (day.toInt, timePoint.split(':').toList(0), timePoint.split(':').toList(1))))
 
     val scheduledTimesFinalized = mapOfScheduledTimes.map(
-       x =>
-         (LocalDate.now)
-            .plusMonths(0)
-            .withDayOfMonth(x._1.toInt)
-            .atStartOfDay()
-            .plusHours(x._2.toInt)
-            .plusMinutes(x._3.toInt)
+      x =>
+        (LocalDate.now)
+          .plusMonths(0)
+          .withDayOfMonth(x._1.toInt)
+          .atStartOfDay()
+          .plusHours(x._2.toInt)
+          .plusMinutes(x._3.toInt)
     )
 
     val nextTimeSlot = scheduledTimesFinalized.find(x => x.isAfter(LocalDateTime.now()))
