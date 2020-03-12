@@ -40,18 +40,21 @@ import play.api.mvc.{ControllerComponents, Request}
 import uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import play.api.test._
+import uk.gov.helptosavereminder.utils.TestSupport
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HtsUser, UpdateEmail}
+import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUser, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.play.bootstrap.config.RunMode
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
+import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}
 
-class HtsUserUpdateControllerSpec extends AuthSupport {
+class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
   def additionalConfiguration: Map[String, String] =
     Map(
       "logger.application" -> "ERROR",
@@ -65,6 +68,12 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
   val mockRepository = mock[HtsReminderRepository]
 
   val mcc: ControllerComponents = fakeApplication.injector.instanceOf[ControllerComponents]
+
+  def mockSendAuditEvent(event: HTSEvent, nino: String) =
+    (auditor
+      .sendEvent(_: HTSEvent, _: String)(_: ExecutionContext))
+      .expects(event, nino, *)
+      .returning(())
 
   def mockUpdateRepository(htsUser: HtsUser)(result: Boolean): Unit =
     (mockRepository
@@ -97,6 +106,10 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
   override val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
+  implicit val auditor: HTSAuditor = mock[HTSAuditor]
+
+  val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
+
   "The ReminderController " should {
     "be able to return a success if Hts user is correct" in {
 
@@ -107,11 +120,16 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       implicit val request: Request[JsValue] =
         FakeRequest("POST", "/update-htsuser-entity").withBody(Json.toJson(htsReminderUser))
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
+
+      val auditEventObject = HtsReminderUserUpdatedEvent(
+        HtsReminderUserUpdated(htsReminderUser.nino.nino, Json.toJson(htsReminderUser)),
+        "/help-to-save-reminder/update-htsuser-entity")
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         mockUpdateRepository(htsReminderUser)(true)
+        mockSendAuditEvent(auditEventObject, htsReminderUser.nino.nino)
 
       }
 
@@ -127,7 +145,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       val inValidFormData = "Not able to Stringify to HtsUser"
       val fakeRequest = FakeRequest("POST", "/")
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
@@ -144,7 +162,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       val submitNino = htsReminderUser.nino
       val fakeRequest = FakeRequest("POST", "/")
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
@@ -163,7 +181,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       val fakeRequest = FakeRequest("POST", "/") //.withBody(Json.toJson(htsReminderUser))
       val invalidFormData = "Not able to cast to HtsUser object"
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
+      //val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
@@ -179,8 +197,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       val cancelHtsUser = CancelHtsUserReminder.apply("AE123456C")
 
       val jsonRequest = Json.toJson(cancelHtsUser)
-      //val convertedObject: CancelHtsUserReminder = Json.fromJson(jsonRequest).get
-      //val convertedNino = convertedObject.nino
       val tumri = Json.parse(Json.stringify(jsonRequest)).validate[CancelHtsUserReminder] onComplete ({
         case Success(value) => value.get.nino
         case Failure(value) =>
@@ -191,12 +207,14 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       val fakeRequest = FakeRequest("POST", "/")
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
+      val auditEventObject = HtsReminderUserDeletedEvent(
+        HtsReminderUserDeleted(cancelHtsUser.nino, Json.toJson(cancelHtsUser)),
+        "/help-to-save-reminder/delete-htsuser-entity")
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         mockCancelRepository("AE123456C")(Right())
-
+        mockSendAuditEvent(auditEventObject, cancelHtsUser.nino)
       }
 
       val result = controller.deleteHtsUser()(fakeRequest.withJsonBody(Json.toJson(cancelHtsUser)))
@@ -208,8 +226,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       val cancelHtsUser = CancelHtsUserReminder("AE123456C")
       val fakeRequest = FakeRequest("POST", "/")
-
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
@@ -227,8 +243,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       val fakeRequest = FakeRequest("GET", "/")
       val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
-
       inSequence {
         mockGetRepository("AE123456C")(Some(htsReminderUser))
       }
@@ -241,8 +255,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
     "return NotFound status if user with Nino does not exist in DB" in {
 
       val fakeRequest = FakeRequest("GET", "/")
-
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
 
       inSequence {
         mockGetRepository("AE123456C")(None)
@@ -264,8 +276,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       implicit val request: Request[JsValue] =
         FakeRequest("POST", "/update-htsuser-email").withBody(Json.toJson(updateEmailInput))
-
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
@@ -295,8 +305,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
       implicit val request: Request[JsValue] =
         FakeRequest("POST", "/update-htsuser-email").withBody(Json.toJson(updateEmailInput))
 
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
-
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
 
@@ -320,8 +328,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport {
 
       implicit val request: Request[JsValue] =
         FakeRequest("POST", "/update-htsuser-email").withBody(Json.toJson(inValidFormData))
-
-      val controller = new HtsUserUpdateController(mockRepository, mcc, mockAuthConnector)
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))

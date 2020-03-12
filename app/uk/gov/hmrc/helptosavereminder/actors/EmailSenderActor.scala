@@ -78,7 +78,9 @@ class EmailSenderActor @Inject()(
 
   def sendReceivedTemplatedEmail(template: HtsReminderTemplate)(implicit hc: HeaderCarrier): Future[Boolean] = {
 
-    val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/hmrc/bouncedEmail/" + template.callBackUrlRef
+    val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
+
+    Logger.info("The callback URL = " + callBackUrl)
 
     val request = SendTemplatedEmailRequest(
       List(template.email),

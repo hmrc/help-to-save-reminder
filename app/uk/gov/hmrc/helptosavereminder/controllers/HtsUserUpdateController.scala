@@ -22,7 +22,9 @@ import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth
-import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HtsUser, UpdateEmail}
+import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUser, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, HtsReminderRepository}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,7 +34,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class HtsUserUpdateController @Inject()(
   repository: HtsReminderRepository,
   cc: ControllerComponents,
-  override val authConnector: AuthConnector)(implicit val ec: ExecutionContext)
+  auditor: HTSAuditor,
+  override val authConnector: AuthConnector)(implicit val ec: ExecutionContext, appConfig: AppConfig)
     extends HtsReminderAuth(authConnector, cc) {
 
   def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
@@ -46,7 +49,13 @@ class HtsUserUpdateController @Inject()(
         (htsUser: HtsUser) => {
           Logger.info(s"The HtsUser received from frontend to update is : " + htsUser)
           repository.updateReminderUser(htsUser).map {
-            case true  => Ok(Json.toJson(htsUser))
+            case true => {
+              val path = routes.HtsUserUpdateController.update().url
+              auditor.sendEvent(
+                HtsReminderUserUpdatedEvent(HtsReminderUserUpdated(htsUser.nino.nino, Json.toJson(htsUser)), path),
+                htsUser.nino.nino)
+              Ok(Json.toJson(htsUser))
+            }
             case false => NotModified
           }
         }
@@ -77,7 +86,13 @@ class HtsUserUpdateController @Inject()(
           Logger.info(s"The HtsUser received from frontend to delete is : " + userReminder)
           repository.deleteHtsUser(userReminder.nino).map {
             case Left(error) => NotModified
-            case Right(())   => Ok
+            case Right(()) => {
+              val path = routes.HtsUserUpdateController.deleteHtsUser().url
+              auditor.sendEvent(
+                HtsReminderUserDeletedEvent(HtsReminderUserDeleted(userReminder.nino, Json.toJson(userReminder)), path),
+                userReminder.nino)
+              Ok
+            }
           }
         }
       )

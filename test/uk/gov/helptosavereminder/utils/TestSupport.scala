@@ -28,6 +28,7 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.ControllerComponents
 import play.api.{Application, Configuration, Play}
 import uk.gov.hmrc.domain.Generator
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.test.UnitSpec
@@ -75,6 +76,8 @@ trait TestSupport extends UnitSpec with MockFactory with BeforeAndAfterAll {
   val testCC: ControllerComponents = fakeApplication.injector.instanceOf[ControllerComponents]
 
   val servicesConfig = fakeApplication.injector.instanceOf[ServicesConfig]
+
+  implicit lazy val appConfig: AppConfig = fakeApplication.injector.instanceOf[AppConfig]
 
   private val hmrcGenerator: Generator = new Generator()
 
