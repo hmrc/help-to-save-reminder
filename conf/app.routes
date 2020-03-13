@@ -6,7 +6,7 @@ GET        /generate-reminders/:n                   uk.gov.hmrc.helptosaveremind
 
 GET        /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.handleCallBack(callbackreference)
 
-GET        /getifhtsuserexists/:nino                uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getIfHtsUserExists(nino : String)
+GET        /gethtsuser/:nino                        uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getHtsUser(nino : String)
 
 POST       /update-htsuser-entity                   uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.update
 

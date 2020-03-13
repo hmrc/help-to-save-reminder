@@ -36,26 +36,37 @@ class EmailCallbackController @Inject()(
   def handleCallBack(callBackReference: String) = Action.async { implicit request =>
     val nino = callBackReference.takeRight(9)
     Logger.info("Reminder Callback service called for NINO = " + nino)
+
     repository.findByNino(nino).flatMap { htsUser =>
-      repository.deleteHtsUser(nino).map {
-        case Left(error) => {
-          Logger.info("Could not modify NINO = " + nino)
-          NotModified
-        }
-        case Right(()) =>
-          val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
-          Logger.info("The URL to request email deletion is " + url)
-          http.DELETE(url, Seq(("Content-Type", "application/json"))) map { response =>
-            response.status match {
+      val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
+      Logger.info("The URL to request email deletion is " + url)
 
-              case 200 => Logger.info(s"[EmailCallbackController] Email deleted: ${response.body}");
-              case x  => Logger.error(s"[EmailCallbackController] Email not deleted: HttsResponse code = ${x} and response body = ${response.body}");
-
+      http.DELETE(url, Seq(("Content-Type", "application/json"))) map { response =>
+        response.status match {
+          case 200 => {
+            Logger.info(
+              s"[EmailCallbackController] Email got unblocked in Email Service for Nino = $nino and response body = ${response.body}")
+            repository.deleteHtsUser(nino).map {
+              case Left(error) => {
+                Logger.info("Could not delete from HtsReminder Repository for NINO = " + nino)
+                NotModified
+              }
+              case Right(()) => {
+                Logger.info(
+                  s"[EmailCallbackController] Email deleted from HtsReminder Repository and response = : ${response.body}")
+                Ok
+              }
             }
           }
-          Ok
+          case x => {
+            Logger.error(
+              s"[EmailCallbackController] Email not deleted: HttsResponse code = $x and response body = ${response.body}")
+          }
+        }
+        Ok
       }
     }
+
   }
 
 }

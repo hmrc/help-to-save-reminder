@@ -247,7 +247,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
         mockGetRepository("AE123456C")(Some(htsReminderUser))
       }
 
-      val result = controller.getIfHtsUserExists("AE123456C")(fakeRequest)
+      val result = controller.getHtsUser("AE123456C")(fakeRequest)
       status(result) shouldBe 200
 
     }
@@ -260,7 +260,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
         mockGetRepository("AE123456C")(None)
       }
 
-      val result = controller.getIfHtsUserExists("AE123456C")(fakeRequest)
+      val result = controller.getHtsUser("AE123456C")(fakeRequest)
       status(result) shouldBe 404
 
     }
