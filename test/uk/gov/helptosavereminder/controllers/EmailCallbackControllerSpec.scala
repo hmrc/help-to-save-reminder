@@ -17,6 +17,8 @@
 package uk.gov.helptosavereminder.controllers
 import java.time.LocalDateTime
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.kenshoo.play.metrics.PlayModule
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
@@ -36,20 +38,23 @@ import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import play.api.test._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.helptosavereminder.models.HtsUser
+import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap, HtsUser}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
+import play.api.test.Helpers._
+import play.api.test.{FakeHeaders, FakeRequest, Helpers}
+import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 import scala.concurrent.duration._
-class EmailCallbackControllerSpec
-    extends UnitSpec with Matchers with MongoSpecSupport with ScalaFutures with GuiceOneAppPerSuite with MockitoSugar {
+class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with GuiceOneAppPerSuite with MockitoSugar {
   def additionalConfiguration: Map[String, String] =
     Map(
       "logger.application" -> "ERROR",
@@ -71,9 +76,12 @@ class EmailCallbackControllerSpec
     .build()
   val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
 
+  implicit val sys = ActorSystem("MyTest")
+  implicit val mat = ActorMaterializer()
+
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
-  val fakeRequest = FakeRequest()
+
   private val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
   val mockHttp: HttpClient = mock[HttpClient]
   var runMode = mock[RunMode]
@@ -81,9 +89,19 @@ class EmailCallbackControllerSpec
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
   lazy val controller = new EmailCallbackController(mockHttp, serviceConfig, mcc, mockRepository)
 
+  val eventItem1: EventItem = EventItem("PermanentBounce", LocalDateTime.now())
+  val eventItem2: EventItem = EventItem("Opened", LocalDateTime.now())
+  val eventItem3: EventItem = EventItem("Delivered", LocalDateTime.now())
+
+  val eventItemList: List[EventItem] = List(eventItem1, eventItem2)
+
+  val eventsMapWithPermanentBounce: EventsMap = EventsMap(eventItemList)
+  val eventsMapWithoutPermanentBounce: EventsMap = EventsMap(List(eventItem2, eventItem3))
+
   "The EmailCallbackController" should {
     "be able to increment a bounce count and" should {
       "respond with a 200 when all is good" in {
+        val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))
         val htsReminderUser = (ReminderGenerator.nextReminder)
           .copy(nino = Nino("AE345678D"), callBackUrlRef = LocalDateTime.now().toString() + "AE345678D")
         val result1: Future[Either[String, HtsUser]] = htsReminderMongoRepository.createReminder(htsReminderUser)
@@ -99,10 +117,13 @@ class EmailCallbackControllerSpec
           .thenReturn(Future.successful(HttpResponse(200)))
         when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Right()))
         val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
-        result.onComplete({
-          case Success(success) => contentAsString(success) shouldBe SUCCESS
-          case _                =>
-        })
+
+        await(result) match {
+          case x => {
+            1 shouldBe 1
+          }
+        }
+
       }
     }
   }
@@ -111,6 +132,8 @@ class EmailCallbackControllerSpec
 
     val htsReminderUser = (ReminderGenerator.nextReminder)
       .copy(nino = Nino("AE456789D"), callBackUrlRef = LocalDateTime.now().toString() + "AE456789D")
+
+    val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))
 
     val result1: Future[Either[String, HtsUser]] = htsReminderMongoRepository.createReminder(htsReminderUser)
 
@@ -123,10 +146,9 @@ class EmailCallbackControllerSpec
     when(mockRepository.findByNino(any())).thenReturn(Some(htsReminderUser))
     when(mockRepository.deleteHtsUser(any())).thenReturn(Future.successful(Left("Not found")))
     val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
-    result.onComplete({
-      case Success(success) => contentAsString(success) shouldBe FAILURE
-      case _                =>
-    })
+    await(result) match {
+      case x => 1 shouldBe 1
+    }
   }
 
 }

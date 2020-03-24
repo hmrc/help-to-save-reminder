@@ -18,13 +18,15 @@ package uk.gov.hmrc.helptosavereminder.controllers
 
 import com.google.inject.Inject
 import play.api.Logger
-import play.api.mvc.MessagesControllerComponents
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import uk.gov.hmrc.helptosavereminder.models.EventsMap
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class EmailCallbackController @Inject()(
   http: HttpClient,
@@ -33,40 +35,48 @@ class EmailCallbackController @Inject()(
   repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends BackendController(cc) {
 
-  def handleCallBack(callBackReference: String) = Action.async { implicit request =>
-    val nino = callBackReference.takeRight(9)
-    Logger.info("Reminder Callback service called for NINO = " + nino)
-
-    repository.findByNino(nino).flatMap { htsUser =>
-      val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
-      Logger.info("The URL to request email deletion is " + url)
-
-      http.DELETE(url, Seq(("Content-Type", "application/json"))) map { response =>
-        response.status match {
-          case 200 => {
-            Logger.info(
-              s"[EmailCallbackController] Email got unblocked in Email Service for Nino = $nino and response body = ${response.body}")
-            repository.deleteHtsUser(nino).map {
-              case Left(error) => {
-                Logger.info("Could not delete from HtsReminder Repository for NINO = " + nino)
-                NotModified
+  def handleCallBack(callBackReference: String): Action[AnyContent] = Action.async { implicit request =>
+    {
+      request.body.asJson.get
+        .validate[EventsMap]
+        .fold(
+          { error =>
+            Logger.info(s"Unable to parse Events List for CallBackRequest = $callBackReference")
+          }, { (eventsMap: EventsMap) =>
+            if (eventsMap.events.exists(x => (x.event == "PermanentBounce"))) {
+              val nino = callBackReference.takeRight(9)
+              Logger.info("Reminder Callback service called for NINO = " + nino)
+              repository.findByNino(nino).flatMap {
+                htsUser =>
+                  val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
+                  Logger.info("The URL to request email deletion is " + url)
+                  repository.deleteHtsUser(nino).map {
+                    case Left(error) => {
+                      Logger.info("Could not delete from HtsReminder Repository for NINO = " + nino)
+                    }
+                    case Right(()) => {
+                      Logger.info(
+                        s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUser.get.nino}")
+                      http
+                        .DELETE(url, Seq(("Content-Type", "application/json")))
+                        .onComplete({
+                          case Success(response) =>
+                            Logger.info(s"Email Service successfully unblocked email for Nino = ${htsUser.get.nino}")
+                          case Failure(ex) =>
+                            Logger.info(
+                              s"Email Service could not unblock email for user Nino = ${htsUser.get.nino} and exception is $ex")
+                        })
+                    }
+                  }
               }
-              case Right(()) => {
-                Logger.info(
-                  s"[EmailCallbackController] Email deleted from HtsReminder Repository and response = : ${response.body}")
-                Ok
-              }
+            } else {
+              Logger.info(
+                s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
+                  s"eventsList received from Email Service = ${eventsMap.events}")
             }
           }
-          case x => {
-            Logger.error(
-              s"[EmailCallbackController] Email not deleted: HttsResponse code = $x and response body = ${response.body}")
-          }
-        }
-        Ok
-      }
+        )
+      Future.successful(Ok)
     }
-
   }
-
 }

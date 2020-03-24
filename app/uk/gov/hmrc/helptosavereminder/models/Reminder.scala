@@ -19,7 +19,7 @@ package uk.gov.hmrc.helptosavereminder.models
 import java.time.{LocalDate, LocalDateTime}
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, JsString, Json, Reads, Writes}
+import play.api.libs.json.{Format, JsPath, JsString, Json, Reads, Writes, __}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -108,5 +108,32 @@ object Schedule {
     (JsPath \ "lastExecutedAt").readNullable[LocalDateTime] and
       (JsPath \ "nextExecutionAt").read[LocalDateTime]
   )(Schedule.apply(_, _))
+
+}
+
+case class EventsMap(events: List[EventItem])
+
+object EventsMap {
+
+  implicit val eventsMapFormat: Format[EventsMap] = Json.format[EventsMap]
+
+  implicit val writes: Writes[EventsMap] = Writes[EventsMap](s ⇒ JsString(s.toString))
+
+  implicit val reads: Reads[EventsMap] = Json.reads[EventsMap]
+
+}
+
+case class EventItem(event: String, detected: LocalDateTime)
+
+object EventItem {
+
+  implicit val eventFormat: Format[EventItem] = Json.format[EventItem]
+
+  implicit val writes: Writes[EventItem] = Writes[EventItem](s ⇒ JsString(s.toString))
+
+  implicit val reads: Reads[EventItem] = (
+    (JsPath \ "event").read[String] and
+      (JsPath \ "detected").read[LocalDateTime]
+  )(EventItem.apply(_, _))
 
 }

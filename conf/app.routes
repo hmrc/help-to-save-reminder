@@ -4,7 +4,7 @@ GET        /hello-world                             uk.gov.hmrc.helptosaveremind
 
 GET        /generate-reminders/:n                   uk.gov.hmrc.helptosavereminder.controllers.ReminderGeneratorController.populateReminders(n : Int)
 
-GET        /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.handleCallBack(callbackreference)
+POST       /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.handleCallBack(callbackreference)
 
 GET        /gethtsuser/:nino                        uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getHtsUser(nino : String)
 
