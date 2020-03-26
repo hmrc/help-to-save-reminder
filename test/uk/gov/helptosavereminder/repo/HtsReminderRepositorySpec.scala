@@ -108,19 +108,6 @@ class HtsReminderRepositorySpec
     }
   }
 
-  "Calls to updateEmailBounceCount a Hts Reminder repository" should {
-    "should successfully update EmailBounceCount " in {
-
-      val reminderValue = ReminderGenerator.nextReminder
-
-      val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateEmailBounceCount(reminderValue.nino.toString())
-
-      await(nextSendDate) shouldBe true
-
-    }
-  }
-
   "Calls to updateReminderUser on Hts Reminder repository" should {
     "should successfully update the user " in {
 
@@ -178,6 +165,21 @@ class HtsReminderRepositorySpec
 
       val result =
         htsReminderMongoRepository.deleteHtsUser("YP798383D")
+
+      await(result) shouldBe Right(())
+
+    }
+  }
+
+  "Calls to deleteHtsUserByCallBack on Hts Reminder repository" should {
+    "should successfully delete the user " in {
+
+      val htsUserOption = htsReminderMongoRepository.findByNino("SK798383D")
+
+      val callBackUrlRef = (await(htsUserOption).get).callBackUrlRef
+
+      val result =
+        htsReminderMongoRepository.deleteHtsUserByCallBack("YP798383D", callBackUrlRef)
 
       await(result) shouldBe Right(())
 

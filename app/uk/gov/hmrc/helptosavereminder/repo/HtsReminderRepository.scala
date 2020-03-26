@@ -43,11 +43,11 @@ trait HtsReminderRepository {
   def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]]
   def findHtsUsersToProcess(): Future[Option[List[HtsUser]]]
   def updateNextSendDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
-  def updateEmailBounceCount(nino: String): Future[Boolean]
   def updateCallBackRef(nino: String, callBackRef: String): Future[Boolean]
   def updateReminderUser(htsReminder: HtsUser): Future[Boolean]
   def findByNino(nino: String): Future[Option[HtsUser]]
   def deleteHtsUser(nino: String): Future[Either[String, Unit]]
+  def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]]
   def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean]
 }
 
@@ -166,28 +166,6 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   }
 
-  override def updateEmailBounceCount(nino: String): Future[Boolean] = {
-
-    val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$inc" -> Json.obj("bounceCount" -> 1))
-
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
-
-    result
-      .map { status =>
-        Logger.debug(s"[HtsReminderMongoRepository][updateEmailBounceCount] incremented:, result : $status ")
-        status.ok
-      }
-      .recover {
-        // $COVERAGE-OFF$
-        case e =>
-          Logger.error("Failed to update HtsUser", e)
-          false
-        // $COVERAGE-ON$
-      }
-
-  }
-
   override def updateReminderUser(htsReminder: HtsUser): Future[Boolean] = {
 
     val selector = Json.obj("nino" -> htsReminder.nino.nino)
@@ -236,6 +214,20 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       .recover {
         case e ⇒
           Left(s"Could not delete htsUser: ${e.getMessage}")
+      }
+
+  override def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]] =
+    remove("nino" → Json.obj("$regex" → JsString(nino), "callBackUrlRef" -> callBackUrlRef))
+      .map[Either[String, Unit]] { res ⇒
+        if (res.writeErrors.nonEmpty) {
+          Left(s"Could not delete htsUser by callBackUrlRef: ${res.writeErrors.mkString(";")}")
+        } else {
+          Right(())
+        }
+      }
+      .recover {
+        case e ⇒
+          Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
 
   override def findByNino(nino: String): Future[Option[HtsUser]] = {

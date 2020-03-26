@@ -30,15 +30,14 @@ object ReminderGenerator {
   private lazy val generator = new Generator(rand)
 
   private def nino: Nino = generator.nextNino
-  private def email: String = s"maruthi.thammineni+${UUID.randomUUID()}@digital.hmrc.gov.uk"
+  private def email: String = s"mohan.dolla+${UUID.randomUUID()}@digital.hmrc.gov.uk"
   private def firstName: String = "Mohan"
   private def lastName: String = "Dolla"
   private def daysToReceive = Seq(1, 25)
   private def nextSendDate: LocalDate = getNextSendDate(Seq(1, 25))
-  private def bounceCount: Int = 0
   private def callBackUrlRef: String = LocalDateTime.now().toString + nino.nino
 
   def nextReminder: HtsUser =
-    HtsUser(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, bounceCount, callBackUrlRef)
+    HtsUser(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
 
 }

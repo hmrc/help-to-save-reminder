@@ -7,7 +7,7 @@ val appName = "help-to-save-reminder"
 
 lazy val scoverageSettings = Seq(
   ScoverageKeys.coverageExcludedPackages := "<empty>;app.*;test.*;config.*;metrics.*;testOnlyDoNotUseInAppConf.*;views.html.*;prod.*;uk.gov.hmrc.helptosavereminder.controllers.test.*;uk.gov.hmrc.helptosavereminder.models.test.*;uk.gov.hmrc.helptosavereminder.services.test.*",
-  ScoverageKeys.coverageMinimum := 50,
+  ScoverageKeys.coverageMinimum := 80,
   ScoverageKeys.coverageFailOnMinimum := true,
   ScoverageKeys.coverageHighlighting := true
 )

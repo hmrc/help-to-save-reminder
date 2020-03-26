@@ -31,7 +31,6 @@ case class HtsUser(
   optInStatus: Boolean = false,
   daysToReceive: Seq[Int] = Seq(),
   nextSendDate: LocalDate = LocalDate.now(),
-  bounceCount: Int = 0,
   callBackUrlRef: String = "")
 
 case class UpdateCallBackRef(reminder: HtsUser, callBackRefUrl: String)
@@ -58,9 +57,8 @@ object HtsUser {
       (JsPath \ "optInStatus").read[Boolean] and
       (JsPath \ "daysToReceive").read[List[Int]] and
       (JsPath \ "nextSendDate").read[LocalDate] and
-      (JsPath \ "bounceCount").read[Int] and
       (JsPath \ "callBackUrlRef").read[String]
-  )(HtsUser.apply(_, _, _, _, _, _, _, _, _))
+  )(HtsUser.apply(_, _, _, _, _, _, _, _))
 
 }
 

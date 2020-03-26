@@ -18,8 +18,11 @@ package uk.gov.hmrc.helptosavereminder.controllers
 
 import com.google.inject.Inject
 import play.api.Logger
+import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
-import uk.gov.hmrc.helptosavereminder.models.EventsMap
+import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -32,7 +35,8 @@ class EmailCallbackController @Inject()(
   http: HttpClient,
   servicesConfig: ServicesConfig,
   val cc: MessagesControllerComponents,
-  repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
+  repository: HtsReminderMongoRepository,
+  auditor: HTSAuditor)(implicit ec: ExecutionContext, appConfig: AppConfig)
     extends BackendController(cc) {
 
   def handleCallBack(callBackReference: String): Action[AnyContent] = Action.async { implicit request =>
@@ -50,11 +54,17 @@ class EmailCallbackController @Inject()(
                 htsUser =>
                   val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.get.email}"
                   Logger.info("The URL to request email deletion is " + url)
-                  repository.deleteHtsUser(nino).map {
+                  repository.deleteHtsUserByCallBack(nino, callBackReference).map {
                     case Left(error) => {
                       Logger.info("Could not delete from HtsReminder Repository for NINO = " + nino)
                     }
                     case Right(()) => {
+                      val path = routes.HtsUserUpdateController.deleteHtsUser().url
+                      auditor.sendEvent(
+                        HtsReminderUserDeletedEvent(
+                          HtsReminderUserDeleted(htsUser.get.nino.nino, Json.toJson(htsUser)),
+                          path),
+                        htsUser.get.nino.nino)
                       Logger.info(
                         s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUser.get.nino}")
                       http
