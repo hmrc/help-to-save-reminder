@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
+import java.time.YearMonth
+import java.util.Calendar
+
 import akka.actor._
 import com.google.inject.Inject
 import javax.inject.Singleton
@@ -45,6 +48,7 @@ class EmailSenderActor @Inject()(
       "htsUserUpdate-actor")
   lazy val sendEmailTemplateId = runModeConfiguration.get[String]("microservice.services.email.templateId")
   lazy val nameParam = runModeConfiguration.get[String]("microservice.services.email.nameParam")
+  lazy val monthParam = runModeConfiguration.get[String]("microservice.services.email.monthParam")
   lazy val callBackUrlParam = runModeConfiguration.get[String]("microservice.services.email.callBackUrlParam")
 
   override def receive: Receive = {
@@ -82,10 +86,20 @@ class EmailSenderActor @Inject()(
 
     Logger.info("The callback URL = " + callBackUrl)
 
+    val monthName =
+      (YearMonth
+        .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
+        .getMonth
+        .toString
+        .toLowerCase
+        .capitalize
+
+    Logger.info("The month to send is " + monthName)
+
     val request = SendTemplatedEmailRequest(
       List(template.email),
       sendEmailTemplateId,
-      Map(nameParam -> template.name, callBackUrlParam -> callBackUrl))
+      Map(nameParam -> template.name, monthParam -> monthName, callBackUrlParam -> callBackUrl))
 
     sendEmail(request)
 
