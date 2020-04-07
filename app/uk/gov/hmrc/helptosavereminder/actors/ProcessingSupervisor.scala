@@ -117,10 +117,6 @@ class ProcessingSupervisor @Inject()(
 
               }
 
-              val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
-
-              context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
-
             }
             case _ => {
               Logger.info(s"[ProcessingSupervisor][receive] no requests pending")
@@ -133,13 +129,17 @@ class ProcessingSupervisor @Inject()(
 
             Logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
 
+            val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
+
+            context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
+
           }
           case _ => {
             val delayInNanos = getNextDelayInNanos()
             Logger.info(
               s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock. Scheduling for next available slot at " + LocalDateTime
                 .now()
-                .plusNanos(getNextDelayInNanos()))
+                .plusNanos(delayInNanos))
             context.system.scheduler.scheduleOnce(delayInNanos nanos, self, START)
           }
         }

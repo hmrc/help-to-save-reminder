@@ -42,8 +42,16 @@ object DateTimeFunctions {
     val maxDaysInMonth = getMaxDaysInMonth
     val scheduledDaysFiltered = scheduledDaysList.filter(x => x <= maxDaysInMonth)
 
-    val mapOfScheduledTimes = scheduledDaysFiltered.flatMap(day =>
-      scheduledTimesList.map(timePoint => (day, timePoint.split(':').toList(0), timePoint.split(':').toList(1))))
+    val mapOfScheduledTimes: Seq[(Int, Int, Int)] =
+      if (isSummerTime(LocalDateTime.now())) {
+        scheduledDaysFiltered.flatMap(day =>
+          scheduledTimesList.map(timePoint =>
+            (day, timePoint.split(':').toList(0).toInt - 1, timePoint.split(':').toList(1).toInt)))
+      } else {
+        scheduledDaysFiltered.flatMap(day =>
+          scheduledTimesList.map(timePoint =>
+            (day, timePoint.split(':').toList(0).toInt, timePoint.split(':').toList(1).toInt)))
+      }
 
     val scheduledTimesFinalized = mapOfScheduledTimes.map(
       x =>
@@ -51,8 +59,8 @@ object DateTimeFunctions {
           .plusMonths(0)
           .withDayOfMonth(x._1.toInt)
           .atStartOfDay()
-          .plusHours(x._2.toInt)
-          .plusMinutes(x._3.toInt)
+          .plusHours(x._2)
+          .plusMinutes(x._3)
     )
 
     val nextTimeSlot = scheduledTimesFinalized.find(x => x.isAfter(LocalDateTime.now()))
@@ -83,5 +91,16 @@ object DateTimeFunctions {
     (YearMonth
       .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
       .lengthOfMonth()
-}
 
+  private def isSummerTime(dateTimeToCheck: LocalDateTime): Boolean = {
+
+    val ukTz = ZoneId.of("Europe/London")
+    val zonedTimeSeconds = dateTimeToCheck.atZone(ukTz).getOffset.getTotalSeconds
+
+    if (zonedTimeSeconds > 0) {
+      true
+    } else
+      false
+
+  }
+}
