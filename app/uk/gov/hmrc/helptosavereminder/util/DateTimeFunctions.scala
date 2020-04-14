@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.{Duration, Instant, LocalDate, LocalDateTime, YearMonth, ZoneId}
+import java.time.{Duration, LocalDate, LocalDateTime, YearMonth, ZoneId}
 import java.util.Calendar
 
 object DateTimeFunctions {
@@ -43,15 +43,9 @@ object DateTimeFunctions {
     val scheduledDaysFiltered = scheduledDaysList.filter(x => x <= maxDaysInMonth)
 
     val mapOfScheduledTimes: Seq[(Int, Int, Int)] =
-      if (isSummerTime(LocalDateTime.now())) {
-        scheduledDaysFiltered.flatMap(day =>
-          scheduledTimesList.map(timePoint =>
-            (day, timePoint.split(':').toList(0).toInt - 1, timePoint.split(':').toList(1).toInt)))
-      } else {
-        scheduledDaysFiltered.flatMap(day =>
-          scheduledTimesList.map(timePoint =>
-            (day, timePoint.split(':').toList(0).toInt, timePoint.split(':').toList(1).toInt)))
-      }
+      scheduledDaysFiltered.flatMap(day =>
+        scheduledTimesList.map(timePoint =>
+          (day, timePoint.split(':').toList(0).toInt, timePoint.split(':').toList(1).toInt)))
 
     val scheduledTimesFinalized = mapOfScheduledTimes.map(
       x =>
@@ -63,7 +57,9 @@ object DateTimeFunctions {
           .plusMinutes(x._3)
     )
 
-    val nextTimeSlot = scheduledTimesFinalized.find(x => x.isAfter(LocalDateTime.now()))
+    val bstAdjustedTimes = scheduledTimesFinalized.map(x => if (isSummerTime(x)) x.minusHours(1) else x)
+
+    val nextTimeSlot = bstAdjustedTimes.find(x => x.isAfter(LocalDateTime.now()))
 
     nextTimeSlot match {
       case Some(slot) => {
@@ -81,7 +77,9 @@ object DateTimeFunctions {
           .plusHours(timeTuples._2.toInt)
           .plusMinutes(timeTuples._3.toInt)
 
-        Duration.between(LocalDateTime.now(), nextMonthSlot).toNanos
+        val bstAdjustedNextMonthSlot = if (isSummerTime(nextMonthSlot)) nextMonthSlot.minusHours(1) else nextMonthSlot
+
+        Duration.between(LocalDateTime.now(), bstAdjustedNextMonthSlot).toNanos
 
       }
     }
