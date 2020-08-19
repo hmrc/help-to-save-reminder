@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.controllers
+package uk.gov.hmrc.helptosavereminder.controllers
 
 /*
  * Copyright 2020 HM Revenue & Customs
@@ -40,7 +40,6 @@ import play.api.mvc.{ControllerComponents, Request}
 import uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import play.api.test._
-import uk.gov.helptosavereminder.utils.TestSupport
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUser, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
@@ -48,6 +47,7 @@ import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
+import uk.gov.hmrc.helptosavereminder.utils.TestSupport
 
 import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success}

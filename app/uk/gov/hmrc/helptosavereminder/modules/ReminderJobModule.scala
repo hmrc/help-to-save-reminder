@@ -25,6 +25,6 @@ import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 class ReminderJobModule extends AbstractModule with AkkaGuiceSupport {
   override def configure(): Unit = {
     bind(classOf[Scheduler]).asEagerSingleton()
-    bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector])
+    bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]).asEagerSingleton()
   }
 }

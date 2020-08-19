@@ -38,7 +38,8 @@ class HtsUserUpdateController @Inject()(
     extends HtsReminderAuth(authConnector, cc) {
 
   def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
-    request.body.asJson.get
+    request.body.asJson
+      .getOrElse(Json.toJson(""))
       .validate[HtsUser]
       .fold(
         error => {
@@ -46,7 +47,7 @@ class HtsUserUpdateController @Inject()(
           Future.successful(BadRequest)
         },
         (htsUser: HtsUser) => {
-          Logger.debug(s"The HtsUser received from frontend to update is : " + htsUser)
+          Logger.debug(s"The HtsUser received from frontend to update is : " + htsUser.nino.nino)
           repository.updateReminderUser(htsUser).map {
             case true => {
               val path = routes.HtsUserUpdateController.update().url
@@ -61,7 +62,7 @@ class HtsUserUpdateController @Inject()(
       )
   }
 
-  def getHtsUser(nino: String) = Action.async { implicit request =>
+  def getHtsUser(nino: String): Action[AnyContent] = Action.async { implicit request =>
     repository.findByNino(nino).map {
       case Some(htsUser) => {
         Ok(Json.toJson(htsUser))
@@ -74,7 +75,8 @@ class HtsUserUpdateController @Inject()(
   }
 
   def deleteHtsUser(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
-    request.body.asJson.get
+    request.body.asJson
+      .getOrElse(Json.toJson(""))
       .validate[CancelHtsUserReminder]
       .fold(
         error => {
@@ -82,7 +84,7 @@ class HtsUserUpdateController @Inject()(
           Future.successful(BadRequest)
         },
         (userReminder: CancelHtsUserReminder) => {
-          Logger.debug(s"The HtsUser received from frontend to delete is : " + userReminder)
+          Logger.debug(s"The HtsUser received from frontend to delete is : " + userReminder.nino)
           repository.deleteHtsUser(userReminder.nino).map {
             case Left(error) => NotModified
             case Right(()) => {
@@ -98,7 +100,8 @@ class HtsUserUpdateController @Inject()(
   }
 
   def updateEmail(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
-    request.body.asJson.get
+    request.body.asJson
+      .getOrElse(Json.toJson(""))
       .validate[UpdateEmail]
       .fold(
         error => {

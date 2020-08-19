@@ -35,10 +35,15 @@ lazy val wartRemoverSettings = {
     wartremoverExcluded in (Compile, compile) ++=
       routes.in(Compile).value ++
         (baseDirectory.value ** "*.sc").get ++
+        (baseDirectory.value ** "ProcessingSupervisor.scala").get ++
+        (baseDirectory.value ** "EmailSenderActor.scala").get ++
+        (baseDirectory.value ** "HtsUserUpdateActor.scala").get ++
         Seq(sourceManaged.value / "main" / "sbt-buildinfo" / "BuildInfo.scala") ++
         (baseDirectory.value / "app" / "uk" / "gov" / "hmrc" / "helptosavereminder" / "config").get,
     wartremoverExcluded in (Test, compile) ++=
-      (baseDirectory.value / "app" / "uk" / "gov" / "hmrc" / "helptosavereminder" / "config").get
+      (baseDirectory.value ** "HtsReminderRepositorySpec.scala").get ++
+        (baseDirectory.value ** "EmailCallbackControllerSpec.scala").get ++
+        (baseDirectory.value / "app" / "uk" / "gov" / "hmrc" / "helptosavereminder").get
   )
 }
 lazy val scoverageSettings = Seq(
