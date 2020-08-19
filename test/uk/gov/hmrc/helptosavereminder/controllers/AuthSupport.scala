@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.controllers
+package uk.gov.hmrc.helptosavereminder.controllers
 
 import org.scalamock.handlers.CallHandler4
-import uk.gov.helptosavereminder.utils.TestSupport
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
 import uk.gov.hmrc.auth.core.retrieve._
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.helptosave.util._
+import uk.gov.hmrc.helptosavereminder.utils.TestSupport
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Success

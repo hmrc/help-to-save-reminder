@@ -18,8 +18,10 @@ package uk.gov.hmrc.helptosavereminder.models
 
 import java.time.{LocalDate, LocalDateTime}
 
+import org.joda.time.DateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{Format, JsPath, JsString, Json, Reads, Writes, __}
+import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -44,8 +46,8 @@ case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: S
 case class Schedule(lastExecutedAt: Option[LocalDateTime], nextExecutionAt: LocalDateTime)
 
 object HtsUser {
-  implicit val dateFormat = ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat = ReactiveMongoFormats.objectIdFormats
+  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
+  implicit val idFormat: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
   implicit val htsUserFormat: Format[HtsUser] = Json.format[HtsUser]
   implicit val writes: Writes[HtsUser] = Writes[HtsUser](s ⇒ JsString(s.toString))
 

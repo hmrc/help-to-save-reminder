@@ -17,13 +17,16 @@
 package uk.gov.hmrc.helptosavereminder.services.test
 
 import javax.inject.{Inject, Singleton}
+import uk.gov.hmrc.helptosavereminder.models.HtsUser
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
+
+import scala.concurrent.Future
 
 @Singleton
 class ReminderService @Inject()(htsReminderRepository: HtsReminderRepository) {
 
-  def generateAndInsertReminder =
-    htsReminderRepository.createReminder(ReminderGenerator.nextReminder)
+  def generateAndInsertReminder: Future[Boolean] =
+    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder)
 
 }

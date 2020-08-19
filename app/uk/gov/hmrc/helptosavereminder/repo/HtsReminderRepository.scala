@@ -20,6 +20,8 @@ import java.time.LocalDate
 
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
+import cats.instances.int._
+import cats.syntax.eq._
 import play.api.Logger
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -40,7 +42,7 @@ import scala.util.{Failure, Success, Try}
 
 @ImplementedBy(classOf[HtsReminderMongoRepository])
 trait HtsReminderRepository {
-  def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]]
+  //def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]]
   def findHtsUsersToProcess(): Future[Option[List[HtsUser]]]
   def updateNextSendDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
   def updateCallBackRef(nino: String, callBackRef: String): Future[Boolean]
@@ -61,14 +63,14 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   lazy val proxyCollection: GenericCollection[JSONSerializationPack.type] = collection
 
-  override def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]] =
+  /*override def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]] =
     insert(reminder)
       .map(result =>
         if (result.ok) {
           Right(reminder)
         } else {
           Left("Unexpected error while creating Reminder ")
-      })
+      })*/
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUser]]] = {
 
@@ -169,27 +171,29 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
   override def updateReminderUser(htsReminder: HtsUser): Future[Boolean] = {
 
     val selector = Json.obj("nino" -> htsReminder.nino.nino)
-    val modifier = Json.obj(
-      "$set" -> Json.obj(
-        "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
-        "email"         -> htsReminder.email,
-        "firstName"     -> htsReminder.firstName,
-        "lastName"      -> htsReminder.lastName,
-        "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive),
-        "daysToReceive" -> htsReminder.daysToReceive
-      ))
+    val modifierJson = Json.obj(
+      "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
+      "email"         -> htsReminder.email,
+      "firstName"     -> htsReminder.firstName,
+      "lastName"      -> htsReminder.lastName,
+      "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive),
+      "daysToReceive" -> htsReminder.daysToReceive
+    )
 
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
+    val updatedModifierJson =
+      if (!htsReminder.callBackUrlRef.isEmpty)
+        modifierJson ++ Json.obj("callBackUrlRef" -> htsReminder.callBackUrlRef)
+      else modifierJson
+
+    val modifier = Json.obj(
+      "$set" -> updatedModifierJson
+    )
+
+    val result = proxyCollection.update(ordered = false).one(selector, modifier, upsert = true)
 
     result
       .map { status =>
-        if (status.n == 0) {
-          val updatedReminder = htsReminder.copy(nextSendDate = getNextSendDate(htsReminder.daysToReceive))
-          createReminder(updatedReminder)
-          Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] new user created: $status ")
-        } else {
-          Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
-        }
+        Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
         status.ok
       }
       .recover {

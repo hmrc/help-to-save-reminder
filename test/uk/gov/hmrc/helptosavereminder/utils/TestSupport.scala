@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.utils
+package uk.gov.hmrc.helptosavereminder.utils
 
 import java.time.LocalDate
 

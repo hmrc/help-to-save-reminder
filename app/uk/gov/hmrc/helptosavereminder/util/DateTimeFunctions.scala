@@ -30,7 +30,7 @@ object DateTimeFunctions {
 
     nextAvailableDayOfMonth match {
       case Some(day) => (LocalDate.now).plusDays(day - currentDayOfMonth)
-      case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.head)
+      case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.headOption.getOrElse(1))
     }
 
   }

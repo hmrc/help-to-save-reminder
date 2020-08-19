@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.repo
+package uk.gov.hmrc.helptosavereminder.repo
 
 import java.time.LocalDate
 
@@ -56,11 +56,18 @@ class HtsReminderRepositorySpec
 
       val reminderValue = ReminderGenerator.nextReminder
 
-      val result: Future[Either[String, HtsUser]] = htsReminderMongoRepository.createReminder(reminderValue)
+      val result: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(reminderValue)
 
       await(result) match {
-        case (Right(x)) => x.nino shouldBe reminderValue.nino
+        case x => x shouldBe true
       }
+
+      val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
+
+      val nextSendDate: Future[Boolean] =
+        htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.toString(), callBackRef)
+
+      await(nextSendDate) shouldBe true
 
     }
   }
@@ -121,6 +128,13 @@ class HtsReminderRepositorySpec
 
       await(updateStatus) shouldBe true
 
+      val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
+
+      val nextSendDate: Future[Boolean] =
+        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.toString(), callBackRef)
+
+      await(nextSendDate) shouldBe true
+
     }
   }
 
@@ -137,6 +151,13 @@ class HtsReminderRepositorySpec
 
       await(updateStatus) shouldBe true
 
+      val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
+
+      val nextSendDate: Future[Boolean] =
+        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.toString(), callBackRef)
+
+      await(nextSendDate) shouldBe true
+
     }
   }
 
@@ -145,8 +166,8 @@ class HtsReminderRepositorySpec
 
       val reminderValue = ReminderGenerator.nextReminder
 
-      val result: Future[Either[String, HtsUser]] =
-        htsReminderMongoRepository.createReminder(reminderValue.copy(nino = Nino("SK798383D")))
+      val result: Future[Boolean] =
+        htsReminderMongoRepository.updateReminderUser(reminderValue.copy(nino = Nino("SK798383D")))
 
       result onComplete ({
         case Success(x) => {
@@ -176,10 +197,15 @@ class HtsReminderRepositorySpec
 
       val htsUserOption = htsReminderMongoRepository.findByNino("SK798383D")
 
-      val callBackUrlRef = (await(htsUserOption).get).callBackUrlRef
+      val callBackRef = System.currentTimeMillis().toString + "SK798383D"
+
+      val nextSendDate: Future[Boolean] =
+        htsReminderMongoRepository.updateCallBackRef("SK798383D", callBackRef)
+
+      await(nextSendDate) shouldBe true
 
       val result =
-        htsReminderMongoRepository.deleteHtsUserByCallBack("YP798383D", callBackUrlRef)
+        htsReminderMongoRepository.deleteHtsUserByCallBack("SK798383D", callBackRef)
 
       await(result) shouldBe Right(())
 
@@ -196,4 +222,5 @@ class HtsReminderRepositorySpec
 
     }
   }
+
 }
