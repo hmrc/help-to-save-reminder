@@ -35,10 +35,9 @@ import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap, HtsUser}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.{HttpClient, HttpResponse}
 import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.play.bootstrap.config.{RunMode, ServicesConfig}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.test.UnitSpec
 import play.api.test.FakeRequest
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
@@ -73,9 +72,8 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)
 
-  private val serviceConfig = new ServicesConfig(configuration, new RunMode(configuration, Mode.Dev))
+  private val serviceConfig = new ServicesConfig(configuration)
   val mockHttp: HttpClient = mock[HttpClient]
-  var runMode = mock[RunMode]
   lazy val mockRepository = mock[HtsReminderMongoRepository]
   implicit val auditor: HTSAuditor = mock[HTSAuditor]
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]

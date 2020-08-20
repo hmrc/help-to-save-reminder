@@ -26,8 +26,8 @@ import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.models.Schedule
 import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository}
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._

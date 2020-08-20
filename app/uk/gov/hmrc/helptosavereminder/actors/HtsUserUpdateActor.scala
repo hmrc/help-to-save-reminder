@@ -31,7 +31,7 @@ import scala.concurrent.ExecutionContext
 class HtsUserUpdateActor(
   http: HttpClient,
   environment: Environment,
-  val runModeConfiguration: Configuration,
+  val configuration: Configuration,
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends Actor {
@@ -40,7 +40,7 @@ class HtsUserUpdateActor(
     context.actorOf(Props(classOf[HtsUserUpdateActor], repository, ec), "htsUserUpdate-actor")
 
   lazy val origSender = context.actorOf(
-    Props(classOf[EmailSenderActor], http, environment, runModeConfiguration, servicesConfig, repository, ec),
+    Props(classOf[EmailSenderActor], http, environment, configuration, servicesConfig, repository, ec),
     "emailSender-actor")
 
   override def receive: Receive = {

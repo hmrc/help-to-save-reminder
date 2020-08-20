@@ -44,9 +44,7 @@ import uk.gov.helptosavereminder.utils.TestSupport
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUser, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.play.bootstrap.config.RunMode
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
@@ -101,8 +99,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
       .returning(result)
 
   val fakeRequest = FakeRequest()
-
-  var runMode = mock[RunMode]
 
   override val mockAuthConnector: AuthConnector = mock[AuthConnector]
 

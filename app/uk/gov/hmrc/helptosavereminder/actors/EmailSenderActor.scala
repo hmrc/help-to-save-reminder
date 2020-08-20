@@ -26,9 +26,8 @@ import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUser, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class EmailSenderActor @Inject()(
   http: HttpClient,
   environment: Environment,
-  val runModeConfiguration: Configuration,
+  val configuration: Configuration,
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends Actor {
@@ -44,12 +43,12 @@ class EmailSenderActor @Inject()(
   implicit lazy val hc = HeaderCarrier()
   lazy val htsUserUpdateActor: ActorRef =
     context.actorOf(
-      Props(classOf[HtsUserUpdateActor], http, environment, runModeConfiguration, servicesConfig, repository, ec),
+      Props(classOf[HtsUserUpdateActor], http, environment, configuration, servicesConfig, repository, ec),
       "htsUserUpdate-actor")
-  lazy val sendEmailTemplateId = runModeConfiguration.get[String]("microservice.services.email.templateId")
-  lazy val nameParam = runModeConfiguration.get[String]("microservice.services.email.nameParam")
-  lazy val monthParam = runModeConfiguration.get[String]("microservice.services.email.monthParam")
-  lazy val callBackUrlParam = runModeConfiguration.get[String]("microservice.services.email.callBackUrlParam")
+  lazy val sendEmailTemplateId = configuration.get[String]("microservice.services.email.templateId")
+  lazy val nameParam = configuration.get[String]("microservice.services.email.nameParam")
+  lazy val monthParam = configuration.get[String]("microservice.services.email.monthParam")
+  lazy val callBackUrlParam = configuration.get[String]("microservice.services.email.callBackUrlParam")
 
   override def receive: Receive = {
 
