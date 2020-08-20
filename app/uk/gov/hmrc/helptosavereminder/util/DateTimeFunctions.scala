@@ -29,7 +29,7 @@ object DateTimeFunctions {
     val nextAvailableDayOfMonth = validDaysToReceive.filter(x => x > currentDayOfMonth).headOption
 
     nextAvailableDayOfMonth match {
-      case Some(day) => (LocalDate.now).plusDays(day - currentDayOfMonth)
+      case Some(day) => (LocalDate.now()).plusDays(day - currentDayOfMonth)
       case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.headOption.getOrElse(1))
     }
 
@@ -39,5 +39,7 @@ object DateTimeFunctions {
     (YearMonth
       .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
       .lengthOfMonth()
+
+  31
 
 }
