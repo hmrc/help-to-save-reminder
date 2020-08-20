@@ -87,6 +87,4 @@ object DateTimeFunctions {
       .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
       .lengthOfMonth()
 
-  31
-
 }
