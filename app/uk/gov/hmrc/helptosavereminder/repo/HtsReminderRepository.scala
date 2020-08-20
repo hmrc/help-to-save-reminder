@@ -20,8 +20,6 @@ import java.time.LocalDate
 
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
-import cats.instances.int._
-import cats.syntax.eq._
 import play.api.Logger
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -42,7 +40,6 @@ import scala.util.{Failure, Success, Try}
 
 @ImplementedBy(classOf[HtsReminderMongoRepository])
 trait HtsReminderRepository {
-  //def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]]
   def findHtsUsersToProcess(): Future[Option[List[HtsUser]]]
   def updateNextSendDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
   def updateCallBackRef(nino: String, callBackRef: String): Future[Boolean]
@@ -62,15 +59,6 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
     ) with HtsReminderRepository {
 
   lazy val proxyCollection: GenericCollection[JSONSerializationPack.type] = collection
-
-  /*override def createReminder(reminder: HtsUser): Future[Either[String, HtsUser]] =
-    insert(reminder)
-      .map(result =>
-        if (result.ok) {
-          Right(reminder)
-        } else {
-          Left("Unexpected error while creating Reminder ")
-      })*/
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUser]]] = {
 
