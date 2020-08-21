@@ -59,7 +59,7 @@ class EmailCallbackController @Inject()(
                   repository.deleteHtsUserByCallBack(nino, callBackReference).flatMap {
                     case Left(error) => {
                       Logger.error("Could not delete from HtsReminder Repository for NINO = " + nino)
-                      Future.failed(new Exception("Error deleting the hts schedule by nino"))
+                      Future.successful(Ok("Error deleting the hts schedule by nino"))
                     }
                     case Right(()) => {
                       val path = routes.HtsUserUpdateController.deleteHtsUser().url

@@ -147,7 +147,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
     }
   }
 
-  /*"respond with a 200 containing FAILURE string if Nino does not exists or update fails" in {
+  "respond with a 200 containing FAILURE string if Nino does not exists or update fails" in {
 
     val callBackReferences = "1580214107339AE456789B"
 
@@ -173,7 +173,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
     await(result) match {
       case x => 1 shouldBe 1
     }
-  }*/
+  }
 
   "respond with a 200  if the event List submitted do not contain PermanentBounce event" in {
 
