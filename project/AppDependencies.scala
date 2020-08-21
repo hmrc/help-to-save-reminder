@@ -6,14 +6,15 @@ import sbt._
 object AppDependencies {
 
   val compile = Seq(
-    "org.reactivemongo"       %% "play2-reactivemongo" % "0.17.1-play26",
+    "org.reactivemongo"       %% "play2-reactivemongo"      % "0.17.1-play26",
     "uk.gov.hmrc"             %% "simple-reactivemongo"     % "7.30.0-play-26",
     "org.reactivemongo"       %% "reactivemongo-iteratees"  % "0.20.3",
     "uk.gov.hmrc"             %% "bootstrap-backend-play-26"% "2.24.0",
     "uk.gov.hmrc"             %% "domain"                   % "5.9.0-play-26",
     "uk.gov.hmrc"             %% "mongo-lock"               % "6.23.0-play-26",
     "org.typelevel"           %% "cats-core"                % "2.1.1",
-    "uk.gov.hmrc"             %% "auth-client"              % "2.32.0-play-26"
+    "uk.gov.hmrc"             %% "auth-client"              % "2.32.0-play-26",
+  "com.enragedginger"         %% "akka-quartz-scheduler"      % "1.8.1-akka-2.5.x"
   )
 
 

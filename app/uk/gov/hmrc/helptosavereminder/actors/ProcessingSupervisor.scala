@@ -17,6 +17,7 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.time.{Instant, LocalDateTime, ZoneId}
+import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
 import javax.inject.{Inject, Singleton}
@@ -28,6 +29,8 @@ import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, Schedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
@@ -57,13 +60,15 @@ class ProcessingSupervisor @Inject()(
 
   val scheduledTimes = config.get[String]("scheduledTimes")
 
+  val cronExpression = config.get[String]("cronExpression")
+
   val lockKeeper = new LockKeeper {
 
     override def repo: LockRepository = lockrepo //The repo created before
 
     override def lockId: String = "emailProcessing"
 
-    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(1)
+    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardSeconds(10)
 
     // $COVERAGE-OFF$
     override def tryLock[T](body: => Future[T])(implicit ec: ExecutionContext): Future[Option[T]] =
@@ -89,14 +94,21 @@ class ProcessingSupervisor @Inject()(
 
     case BOOTSTRAP => {
 
-      Logger.info(
-        "[ProcessingSupervisor] BOOTSTRAP processing started and the next schedule is at : " + LocalDateTime
-          .now()
-          .plusNanos(getNextDelayInNanos()))
+      Logger.info("[ProcessingSupervisor] BOOTSTRAP processing started and the next schedule is at : ")
 
-      val nextInNanos = storeNextSchedule(None)
+      //val nextInNanos = storeNextSchedule(None)
 
-      context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
+      val scheduler = QuartzSchedulerExtension(context.system)
+
+      scheduler
+        .createSchedule(
+          "UserSchdeuleJob",
+          Some("For sending reminder emails to the users"),
+          cronExpression,
+          timezone = TimeZone.getTimeZone("Europe/London"))
+      scheduler.schedule("UserSchdeuleJob", self, START)
+
+      //context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)getNextSchedule(
 
     }
 
