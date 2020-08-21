@@ -35,53 +35,6 @@ object DateTimeFunctions {
 
   }
 
-  def getNextSchedule(scheduledDays: String, scheduledTimes: String): Long = {
-
-    val scheduledDaysList = scheduledDays.split(",").toList.map(x => x.toInt)
-    val scheduledTimesList = scheduledTimes.split(",").toList
-    val maxDaysInMonth = getMaxDaysInMonth
-    val scheduledDaysFiltered = scheduledDaysList.filter(x => x <= maxDaysInMonth)
-
-    val mapOfScheduledTimes: Seq[(Int, Int, Int)] =
-      scheduledDaysFiltered.flatMap(day =>
-        scheduledTimesList.map(timePoint =>
-          (day, timePoint.split(':').toList(0).toInt, timePoint.split(':').toList(1).toInt)))
-
-    val scheduledTimesFinalized = mapOfScheduledTimes.map(
-      x =>
-        (LocalDate.now)
-          .withDayOfMonth(x._1.toInt)
-          .atStartOfDay()
-          .atZone(ZoneId.of("Europe/London"))
-          .plusHours(x._2)
-          .plusMinutes(x._3)
-    )
-
-    val nextTimeSlot = scheduledTimesFinalized.find(x => (x.toLocalDateTime).isAfter(LocalDateTime.now()))
-
-    nextTimeSlot match {
-      case Some(slot) => {
-
-        Duration.between(LocalDateTime.now(), slot).toNanos
-
-      }
-      case None => {
-
-        val timeTuples = mapOfScheduledTimes.apply(0)
-        val nextMonthSlot = (LocalDate.now)
-          .plusMonths(1)
-          .withDayOfMonth(timeTuples._1)
-          .atStartOfDay()
-          .atZone(ZoneId.of("Europe/London"))
-          .plusHours(timeTuples._2.toInt)
-          .plusMinutes(timeTuples._3.toInt)
-
-        Duration.between(LocalDateTime.now(), nextMonthSlot).toNanos
-
-      }
-    }
-  }
-
   private def getMaxDaysInMonth =
     (YearMonth
       .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{Instant, LocalDateTime, ZoneId}
+import java.time.LocalDateTime
 import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
@@ -24,17 +24,12 @@ import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.models.Schedule
-import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository}
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository}
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-
 @Singleton
 class ProcessingSupervisor @Inject()(
   mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,
@@ -46,8 +41,6 @@ class ProcessingSupervisor @Inject()(
     extends Actor {
 
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
-
-  lazy val schedulerRepository = new SchedulerMongoRepository(mongoApi)
 
   lazy val emailSenderActor: ActorRef =
     context.actorOf(
@@ -83,8 +76,6 @@ class ProcessingSupervisor @Inject()(
     // $COVERAGE-ON$
   }
 
-  private def getNextDelayInNanos() = DateTimeFunctions.getNextSchedule(scheduledDays, scheduledTimes)
-
   override def receive: Receive = {
 
     case STOP => {
@@ -96,8 +87,6 @@ class ProcessingSupervisor @Inject()(
 
       Logger.info("[ProcessingSupervisor] BOOTSTRAP processing started and the next schedule is at : ")
 
-      //val nextInNanos = storeNextSchedule(None)
-
       val scheduler = QuartzSchedulerExtension(context.system)
 
       scheduler
@@ -108,13 +97,9 @@ class ProcessingSupervisor @Inject()(
           timezone = TimeZone.getTimeZone("Europe/London"))
       scheduler.schedule("UserSchdeuleJob", self, START)
 
-      //context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)getNextSchedule(
-
     }
 
     case START => {
-
-      val scheduleKickOffTime = LocalDateTime.now()
 
       lockKeeper
         .tryLock {
@@ -141,43 +126,13 @@ class ProcessingSupervisor @Inject()(
 
             Logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
 
-            val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
-
-            context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
-
           }
           case _ => {
-            val delayInNanos = getNextDelayInNanos()
-            Logger.info(
-              s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock. Scheduling for next available slot at " + LocalDateTime
-                .now()
-                .plusNanos(delayInNanos))
-            context.system.scheduler.scheduleOnce(delayInNanos nanos, self, START)
+            Logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
           }
         }
 
     }
-  }
-
-  private def storeNextSchedule(scheduleKickOffTime: Option[LocalDateTime]): Long = {
-
-    val millis = System.currentTimeMillis()
-    val instant = Instant.ofEpochMilli(millis)
-    val nextInNanos = getNextDelayInNanos()
-    val nextScheduledAt = instant.atZone(ZoneId.systemDefault).toLocalDateTime.plusNanos(nextInNanos)
-
-    val scheduleToSave = scheduleKickOffTime match {
-      case Some(t) => Schedule(Some(t), nextScheduledAt)
-      case None    => Schedule(None, nextScheduledAt)
-    }
-
-    schedulerRepository.createSchedule(scheduleToSave).map {
-      case Left(error) => Logger.error("Error occurred while writing the schedule details : " + scheduleToSave)
-      case Right(x)    => Logger.debug("Scheduled saved to DB = " + x)
-    }
-
-    nextInNanos
-
   }
 
 }
