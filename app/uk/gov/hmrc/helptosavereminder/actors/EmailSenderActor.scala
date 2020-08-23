@@ -16,13 +16,14 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.YearMonth
+import java.time.{LocalDate, YearMonth, ZoneId}
 import java.util.Calendar
 
 import akka.actor._
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.{Configuration, Environment, Logger}
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUser, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -68,7 +69,8 @@ class EmailSenderActor @Inject()(
 
       sendReceivedTemplatedEmail(template).map({
         case true => {
-          val nextSendDate = DateTimeFunctions.getNextSendDate(reminder.daysToReceive)
+          val nextSendDate =
+            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
           val updatedReminder = reminder.copy(nextSendDate = nextSendDate)
           htsUserUpdateActor ! updatedReminder
         }

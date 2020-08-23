@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.repo
 
-import java.time.LocalDate
+import java.time.{LocalDate, ZoneId}
 
 import com.google.inject.ImplementedBy
 import javax.inject.Inject
@@ -164,14 +164,14 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       "email"         -> htsReminder.email,
       "firstName"     -> htsReminder.firstName,
       "lastName"      -> htsReminder.lastName,
-      "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive),
+      "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London"))),
       "daysToReceive" -> htsReminder.daysToReceive
     )
 
     val updatedModifierJson =
-      if (!htsReminder.callBackUrlRef.isEmpty)
-        modifierJson ++ Json.obj("callBackUrlRef" -> htsReminder.callBackUrlRef)
-      else modifierJson
+      if (htsReminder.callBackUrlRef.isEmpty)
+        modifierJson ++ Json.obj("callBackUrlRef"    -> "")
+      else modifierJson ++ Json.obj("callBackUrlRef" -> htsReminder.callBackUrlRef)
 
     val modifier = Json.obj(
       "$set" -> updatedModifierJson
@@ -181,7 +181,7 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
     result
       .map { status =>
-        Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status ")
+        Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status")
         status.ok
       }
       .recover {

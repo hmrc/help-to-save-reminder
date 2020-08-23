@@ -32,6 +32,7 @@ package uk.gov.hmrc.helptosavereminder.utils
  * limitations under the License.
  */
 
+import java.time.{LocalDate, ZoneId}
 import java.util.Calendar
 
 import org.scalatest.{Matchers, WordSpec}
@@ -42,15 +43,40 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
   val lastDayOftheMonth = Calendar.getInstance.getActualMaximum(Calendar.DAY_OF_MONTH);
 
+  val monthsList = List(
+    "JANUARY",
+    "FEBRUARY",
+    "MARCH",
+    "APRIL",
+    "MAY",
+    "JUNE",
+    "JULY",
+    "AUGUST",
+    "SEPTEMBER",
+    "OCTOBER",
+    "NOVEMBER",
+    "DECEMBER")
+
   "DateTimeFunctions object " should {
     "return appropriate day " in {
-      val returnDate1 = DateTimeFunctions.getNextSendDate(Seq(1))
-      val returnDate2 = DateTimeFunctions.getNextSendDate(Seq(10))
-      val returnDate3 = DateTimeFunctions.getNextSendDate(Seq(1, 10))
-      val returnDate4 = DateTimeFunctions.getNextSendDate(Seq(25))
-      val returnDate5 = DateTimeFunctions.getNextSendDate(Seq(27, 28))
 
-      val returnDate6 = DateTimeFunctions.getNextSendDate(Seq(15, 33))
+      val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
+      val startOfMonth = localDateParam.withDayOfMonth(1)
+      val nextMonthFirstDay = startOfMonth.plusMonths(1)
+
+      val thisMonthIndex = monthsList.indexOf(localDateParam.getMonth.toString)
+      val dateResult1 = DateTimeFunctions.getNextSendDate(Seq(1), localDateParam)
+      monthsList((thisMonthIndex + 1) % 12) shouldBe dateResult1.getMonth.toString
+
+      val inputAtDec29th = localDateParam.withDayOfYear(363)
+      val inputMonthsIndex1 = monthsList.indexOf(inputAtDec29th.getMonth.toString)
+      val dateResult2 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th)
+      monthsList((inputMonthsIndex1 + 1) % 12) shouldBe dateResult2.getMonth.toString
+
+      val inputAtFeb14th = localDateParam.withDayOfYear(45)
+      val inputMonthsIndex2 = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
+      val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
+      monthsList((inputMonthsIndex2) % 12) shouldBe dateResult3.getMonth.toString
 
     }
 

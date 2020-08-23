@@ -218,7 +218,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
     }
 
-    "return NotModified status if there is an error while storing in database" in {
+    "return NotModified status if there is an error while deleting from database" in {
 
       val cancelHtsUser = CancelHtsUserReminder("AE123456C")
       val fakeRequest = FakeRequest("POST", "/")
@@ -231,6 +231,21 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
       val result = controller.deleteHtsUser()(fakeRequest.withJsonBody(Json.toJson(cancelHtsUser)))
       status(result) shouldBe 304
+
+    }
+
+    "be able to return a failure if input Hts user is not successfully casted to CancelHtsUserReminder object" in {
+
+      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
+      val fakeRequest = FakeRequest("POST", "/") //.withBody(Json.toJson(htsReminderUser))
+      val invalidFormData = "Not able to cast to CancelHtsUserReminder object"
+
+      inSequence {
+        mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
+      }
+
+      val result = controller.deleteHtsUser()(fakeRequest.withJsonBody(Json.toJson(invalidFormData)))
+      status(result) shouldBe 400
 
     }
 
