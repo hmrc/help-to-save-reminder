@@ -30,7 +30,6 @@ import play.api.libs.json.Json
 import play.api.mvc.MessagesControllerComponents
 import play.api.{Application, Configuration, Environment, Mode}
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
-import uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
@@ -215,6 +214,30 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
     await(result) match {
       case x => status(x) shouldBe 400
     }
+  }
+
+  "send back error response if the request do not contain Json body in deleteUser request" in {
+
+    val htsReminderUser = (ReminderGenerator.nextReminder)
+      .copy(nino = Nino("AE456789D"), callBackUrlRef = LocalDateTime.now().toString() + "AE456789D")
+
+    val result1: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(htsReminderUser)
+
+    await(result1) match {
+      case x => {
+        x shouldBe true
+      }
+    }
+
+    val fakeRequest = FakeRequest("POST", "/")
+
+    val callBackReferences = "1580214107339AE456789D"
+    val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
+
+    await(result) match {
+      case x => status(x) shouldBe 400
+    }
+
   }
 
 }

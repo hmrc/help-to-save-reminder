@@ -136,8 +136,6 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
     "fail to update if the input data for Hts user is not correct" in {
 
-      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
-
       val inValidFormData = "Not able to Stringify to HtsUser"
       val fakeRequest = FakeRequest("POST", "/")
 
@@ -168,6 +166,23 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
       val result = controller.update()(fakeRequest.withJsonBody(Json.toJson(htsReminderUser)))
       status(result) shouldBe 304
+
+    }
+
+    "send back error response if the request do not contain Json body" in {
+
+      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
+
+      val fakeRequest = FakeRequest("POST", "/")
+
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
+
+      inSequence {
+        mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
+      }
+
+      val result = controller.update()(fakeRequest)
+      status(result) shouldBe 400
 
     }
 
@@ -245,6 +260,23 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
       }
 
       val result = controller.deleteHtsUser()(fakeRequest.withJsonBody(Json.toJson(invalidFormData)))
+      status(result) shouldBe 400
+
+    }
+
+    "send back error response if the request do not contain Json body in deleteUser request" in {
+
+      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
+
+      val fakeRequest = FakeRequest("POST", "/")
+
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
+
+      inSequence {
+        mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
+      }
+
+      val result = controller.deleteHtsUser()(fakeRequest)
       status(result) shouldBe 400
 
     }
@@ -346,6 +378,23 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
       }
 
       val result = controller.updateEmail()(fakeRequest.withJsonBody(Json.toJson(inValidFormData)))
+      status(result) shouldBe 400
+
+    }
+
+    "send back error response if the request do not contain Json body in updateEmail request" in {
+
+      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
+
+      val fakeRequest = FakeRequest("POST", "/")
+
+      val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
+
+      inSequence {
+        mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
+      }
+
+      val result = controller.updateEmail()(fakeRequest)
       status(result) shouldBe 400
 
     }

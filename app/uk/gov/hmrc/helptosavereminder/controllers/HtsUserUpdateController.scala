@@ -17,17 +17,15 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import javax.inject.{Inject, Singleton}
-import org.apache.commons.lang3.ObjectUtils.Null
 import play.api.Logger
-import play.api.libs.json.{JsResult, _}
+import play.api.libs.json._
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUser, UpdateEmail}
-import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, HtsReminderRepository}
-import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -60,6 +58,10 @@ class HtsUserUpdateController @Inject()(
         Logger.warn(s"Could not parse HtsUser JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse HtsUser JSON in request body: $errorString"))
 
+      case None ⇒
+        Logger.warn("No JSON body found in request")
+        Future.successful(BadRequest(s"No JSON body found in request"))
+
     }
   }
 
@@ -89,6 +91,10 @@ class HtsUserUpdateController @Inject()(
         val errorString = error.prettyPrint()
         Logger.warn(s"Could not parse CancelHtsUserReminder JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse CancelHtsUserReminder JSON in request body: $errorString"))
+
+      case None ⇒
+        Logger.warn("No JSON body found in request")
+        Future.successful(BadRequest(s"No JSON body found in request"))
     }
   }
 
@@ -107,6 +113,10 @@ class HtsUserUpdateController @Inject()(
         val errorString = error.prettyPrint()
         Logger.warn(s"Could not parse UpdateEmail JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse UpdateEmail JSON in request body:: $errorString"))
+
+      case None ⇒
+        Logger.warn("No JSON body found in request")
+        Future.successful(BadRequest(s"No JSON body found in request"))
     }
   }
 

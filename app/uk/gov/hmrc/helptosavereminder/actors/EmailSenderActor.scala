@@ -23,7 +23,6 @@ import akka.actor._
 import com.google.inject.Inject
 import javax.inject.Singleton
 import play.api.{Configuration, Environment, Logger}
-import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUser, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -85,7 +84,7 @@ class EmailSenderActor @Inject()(
 
     val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
 
-    Logger.debug("The callback URL = " + callBackUrl)
+    Logger.debug(s"The callback URL = $callBackUrl")
 
     val monthName =
       (YearMonth

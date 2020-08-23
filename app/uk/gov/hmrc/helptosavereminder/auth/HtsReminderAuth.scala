@@ -19,7 +19,6 @@ package uk.gov.hmrc.helptosave.controllers
 import cats.instances.string._
 import cats.syntax.eq._
 import play.api.Logger
-import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthProvider.{GovernmentGateway, PrivilegedApplication}
 import uk.gov.hmrc.auth.core._

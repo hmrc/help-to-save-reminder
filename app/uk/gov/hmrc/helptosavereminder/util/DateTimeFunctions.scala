@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.{Duration, LocalDate, LocalDateTime, YearMonth, ZoneId}
-import java.util.Calendar
+import java.time.LocalDate
 
 object DateTimeFunctions {
 
@@ -41,10 +40,4 @@ object DateTimeFunctions {
     }
 
   }
-
-  private def getMaxDaysInMonth =
-    (YearMonth
-      .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
-      .lengthOfMonth()
-
 }

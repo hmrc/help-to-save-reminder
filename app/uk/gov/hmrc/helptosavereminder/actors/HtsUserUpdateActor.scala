@@ -17,12 +17,11 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor._
-import javax.inject.{Inject, Singleton}
+import javax.inject.Singleton
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.{HtsUser, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext
@@ -45,19 +44,14 @@ class HtsUserUpdateActor(
 
   override def receive: Receive = {
     case reminder: HtsUser => {
-
       repository.updateNextSendDate(reminder.nino.nino, reminder.nextSendDate).map {
-
         case true => {
-          Logger.debug("Updated the User nextSendDate for " + reminder.nino)
+          Logger.debug("Updated the User nextSendDate for ${reminder.nino}")
         }
-
         case _ => {
-          Logger.error("Failed to update nextSendDate for the User " + reminder.nino)
+          Logger.error(s"Failed to update nextSendDate for the User: ${reminder.nino}")
         }
       }
-
-      //TODO: Update reminder in mongo to have a new next send date
     }
 
     case updateReminder: UpdateCallBackRef => {
@@ -65,14 +59,13 @@ class HtsUserUpdateActor(
       repository.updateCallBackRef(updateReminder.reminder.nino.nino, updateReminder.callBackRefUrl).map {
 
         case true => {
-          Logger.debug("Updated the User callBackRef for " + updateReminder.reminder.nino.nino)
-          origSender ! UpdateCallBackSuccess(updateReminder.reminder)
+          Logger.debug(s"Updated the User callBackRef for ${updateReminder.reminder.nino.nino}")
+          sender ! UpdateCallBackSuccess(updateReminder.reminder)
         }
 
         case _ => //Failure
       }
 
-      //TODO: Update reminder in mongo to have a new next send date
     }
 
   }
