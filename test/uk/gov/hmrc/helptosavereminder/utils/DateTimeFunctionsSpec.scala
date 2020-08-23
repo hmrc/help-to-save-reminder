@@ -41,8 +41,6 @@ import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 
 class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
 
-  val lastDayOftheMonth = Calendar.getInstance.getActualMaximum(Calendar.DAY_OF_MONTH);
-
   val monthsList = List(
     "JANUARY",
     "FEBRUARY",

@@ -35,18 +35,11 @@ class HtsUserUpdateActor(
   repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends Actor {
 
-  lazy val htsUserUpdateActor: ActorRef =
-    context.actorOf(Props(classOf[HtsUserUpdateActor], repository, ec), "htsUserUpdate-actor")
-
-  lazy val origSender = context.actorOf(
-    Props(classOf[EmailSenderActor], http, environment, runModeConfiguration, servicesConfig, repository, ec),
-    "emailSender-actor")
-
   override def receive: Receive = {
     case reminder: HtsUser => {
       repository.updateNextSendDate(reminder.nino.nino, reminder.nextSendDate).map {
         case true => {
-          Logger.debug("Updated the User nextSendDate for ${reminder.nino}")
+          Logger.debug(s"Updated the User nextSendDate for ${reminder.nino}")
         }
         case _ => {
           Logger.error(s"Failed to update nextSendDate for the User: ${reminder.nino}")
@@ -55,18 +48,15 @@ class HtsUserUpdateActor(
     }
 
     case updateReminder: UpdateCallBackRef => {
-
+      val origSender = sender
       repository.updateCallBackRef(updateReminder.reminder.nino.nino, updateReminder.callBackRefUrl).map {
-
         case true => {
-          Logger.debug(s"Updated the User callBackRef for ${updateReminder.reminder.nino.nino}")
-          sender ! UpdateCallBackSuccess(updateReminder.reminder)
+          Logger.debug(
+            s"Updated the User callBackRef for ${updateReminder.reminder.nino.nino} with value : ${updateReminder.callBackRefUrl}")
+          origSender ! UpdateCallBackSuccess(updateReminder.reminder)
         }
-
         case _ => //Failure
       }
-
     }
-
   }
 }

@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{LocalDate, YearMonth, ZoneId}
-import java.util.Calendar
+import java.time.{LocalDate, ZoneId}
 
 import akka.actor._
 import com.google.inject.Inject
@@ -86,13 +85,7 @@ class EmailSenderActor @Inject()(
 
     Logger.debug(s"The callback URL = $callBackUrl")
 
-    val monthName =
-      (YearMonth
-        .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
-        .getMonth
-        .toString
-        .toLowerCase
-        .capitalize
+    val monthName = LocalDate.now(ZoneId.of("Europe/London")).getMonth.toString.toLowerCase.capitalize
 
     val request = SendTemplatedEmailRequest(
       List(template.email),

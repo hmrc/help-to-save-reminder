@@ -55,10 +55,10 @@ class EmailCallbackController @Inject()(
           repository.findByNino(nino).flatMap {
             case Some(htsUser) =>
               val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.email}"
-              Logger.debug("The URL to request email deletion is " + url)
+              Logger.debug(s"The URL to request email deletion is $url")
               repository.deleteHtsUserByCallBack(nino, callBackReference).flatMap {
                 case Left(error) => {
-                  Logger.error("Could not delete from HtsReminder Repository for NINO = ${nino}")
+                  Logger.error(s"Could not delete from HtsReminder Repository for NINO = $nino")
                   Future.successful(Ok("Error deleting the hts schedule by nino"))
                 }
                 case Right(()) => {
