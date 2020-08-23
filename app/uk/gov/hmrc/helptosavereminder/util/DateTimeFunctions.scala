@@ -21,16 +21,23 @@ import java.util.Calendar
 
 object DateTimeFunctions {
 
-  def getNextSendDate(daysToReceive: Seq[Int]): LocalDate = {
+  def getNextSendDate(daysToReceive: Seq[Int], localDateParam: LocalDate): LocalDate = {
 
-    val maxDaysInMonth = getMaxDaysInMonth
+    val maxDaysInMonth = localDateParam.getMonth.maxLength();
+    val currentDayOfMonth = localDateParam.getDayOfMonth
     val validDaysToReceive = daysToReceive.filter(x => x <= maxDaysInMonth)
-    val currentDayOfMonth = Calendar.getInstance.get(Calendar.DAY_OF_MONTH)
     val nextAvailableDayOfMonth = validDaysToReceive.filter(x => x > currentDayOfMonth).headOption
 
     nextAvailableDayOfMonth match {
-      case Some(day) => (LocalDate.now()).plusDays(day - currentDayOfMonth)
-      case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.headOption.getOrElse(1))
+      case Some(day) => localDateParam.plusDays(day - currentDayOfMonth)
+      case None => {
+        daysToReceive.sorted.headOption match {
+          case Some(usersFirstChoice) =>
+            localDateParam
+              .plusMonths(1)
+              .withDayOfMonth(validDaysToReceive.headOption.getOrElse(usersFirstChoice))
+        }
+      }
     }
 
   }
