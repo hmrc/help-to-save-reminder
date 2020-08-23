@@ -17,17 +17,22 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import com.google.inject.Inject
+
 import play.api.Logger
 import play.api.libs.json.{JsError, JsSuccess, Json}
 import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
-import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, UpdateEmail}
+import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+
 import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
+
 import cats.instances.string._
 import cats.syntax.eq._
 
@@ -47,14 +52,14 @@ class EmailCallbackController @Inject()(
       case Some(JsSuccess(eventsMap, _)) ⇒ {
         if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
           val nino = callBackReference.takeRight(9)
-          Logger.info("Reminder Callback service called for NINO = " + nino)
+          Logger.info(s"Reminder Callback service called for NINO = ${nino}")
           repository.findByNino(nino).flatMap {
             case Some(htsUser) =>
               val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.email}"
               Logger.debug("The URL to request email deletion is " + url)
               repository.deleteHtsUserByCallBack(nino, callBackReference).flatMap {
                 case Left(error) => {
-                  Logger.error("Could not delete from HtsReminder Repository for NINO = " + nino)
+                  Logger.error("Could not delete from HtsReminder Repository for NINO = ${nino}")
                   Future.successful(Ok("Error deleting the hts schedule by nino"))
                 }
                 case Right(()) => {
@@ -89,6 +94,10 @@ class EmailCallbackController @Inject()(
         val errorString = error.prettyPrint()
         Logger.error(s"Unable to parse Events List for CallBackRequest = $errorString")
         Future.successful(BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString"))
+
+      case None ⇒
+        Logger.warn("No JSON body found in request")
+        Future.successful(BadRequest(s"No JSON body found in request"))
     }
   }
 }

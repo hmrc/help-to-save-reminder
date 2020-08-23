@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.LocalDateTime
 import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
@@ -24,10 +23,11 @@ import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository}
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import org.quartz.CronExpression
 
 import scala.concurrent.{ExecutionContext, Future}
 @Singleton
@@ -53,7 +53,9 @@ class ProcessingSupervisor @Inject()(
 
   val scheduledTimes = config.get[String]("scheduledTimes")
 
-  val cronExpression = config.get[String]("cronExpression")
+  lazy val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
+
+  lazy val userScheduleCronExpression: String = config.getOptional[String](s"userScheduleCronExpression").getOrElse("")
 
   val lockKeeper = new LockKeeper {
 
@@ -85,18 +87,28 @@ class ProcessingSupervisor @Inject()(
 
     case BOOTSTRAP => {
 
-      Logger.info("[ProcessingSupervisor] BOOTSTRAP processing started and the next schedule is at : ")
+      Logger.info("[ProcessingSupervisor] BOOTSTRAP UserSchedule Quartz Scheduler processing started")
 
       val scheduler = QuartzSchedulerExtension(context.system)
+      val isExpressionValid = CronExpression.isValidExpression(userScheduleCronExpression)
 
-      scheduler
-        .createSchedule(
-          "UserSchdeuleJob",
-          Some("For sending reminder emails to the users"),
-          cronExpression,
-          timezone = TimeZone.getTimeZone("Europe/London"))
-      scheduler.schedule("UserSchdeuleJob", self, START)
+      (isUserScheduleEnabled, isExpressionValid) match {
+        case (true, true) =>
+          scheduler
+            .createSchedule(
+              "UserScheduleJob",
+              Some("For sending reminder emails to the users"),
+              userScheduleCronExpression,
+              timezone = TimeZone.getTimeZone("Europe/London"))
+          scheduler.schedule("UserScheduleJob", self, START)
 
+        case (_, false) =>
+          Logger.warn(s"UserScheduleJob cannot Scheduled due to invalid cronExpression : $userScheduleCronExpression")
+
+        case _ =>
+          Logger.warn(s"UserScheduleJob cannot Scheduled. Please check configuration parameters: " +
+            s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled")
+      }
     }
 
     case START => {

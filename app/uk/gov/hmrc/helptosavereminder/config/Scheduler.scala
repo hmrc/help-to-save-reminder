@@ -16,18 +16,15 @@
 
 package uk.gov.hmrc.helptosavereminder.config
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import javax.inject.{Inject, Named, Singleton}
-import play.api.inject.DefaultApplicationLifecycle
+import akka.actor.{ActorSystem, Props}
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import play.api.{Application, Configuration, Environment, Logger}
-import uk.gov.hmrc.helptosavereminder.actors.{EmailSenderActor, ProcessingSupervisor}
-import uk.gov.hmrc.http.HeaderCarrier
+import play.api.{Configuration, Environment, Logger}
+import uk.gov.hmrc.helptosavereminder.actors.ProcessingSupervisor
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 @Singleton
 class Scheduler @Inject()(

@@ -57,26 +57,75 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
     "NOVEMBER",
     "DECEMBER")
 
+  val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
+
   "DateTimeFunctions object " should {
-    "return appropriate day " in {
 
-   val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
-      val startOfMonth = localDateParam.withDayOfMonth(1)
-      val nextMonthFirstDay = startOfMonth.plusMonths(1)
+    "return correct nextSendDate for any day in the current month of the year" in {
 
-      val thisMonthIndex = monthsList.indexOf(localDateParam.getMonth.toString)
-      val dateResult1 = DateTimeFunctions.getNextSendDate(Seq(1), localDateParam)
-      monthsList((thisMonthIndex + 1) % 12) shouldBe dateResult1.getMonth.toString
+      //We are now at the first day of the present month
+      val inputAt1stDayOfPresentMonth = localDateParam.withDayOfMonth(1)
+      val inputMonthsIndex = monthsList.indexOf(inputAt1stDayOfPresentMonth.getMonth.toString)
 
-      val inputAtDec29th = localDateParam.withDayOfYear(363)
-      val inputMonthsIndex1 = monthsList.indexOf(inputAtDec29th.getMonth.toString)
-      val dateResult2 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th)
-      monthsList((inputMonthsIndex1 + 1) % 12) shouldBe dateResult2.getMonth.toString
+      val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt1stDayOfPresentMonth)
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getMonth.toString
+      dateResult.getDayOfMonth shouldBe 25
+
+      val dateResult1 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt1stDayOfPresentMonth)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult1.getMonth.toString
+      dateResult1.getDayOfMonth shouldBe 1
+
+      val dateResult2 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt1stDayOfPresentMonth)
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult2.getMonth.toString
+      dateResult2.getDayOfMonth shouldBe 25
+
+      //Now we are at the 10th day of the present month and repeat the previous three tests.
+      val inputAt10thtDayOfPresentMonth = localDateParam.withDayOfMonth(10)
+      val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt10thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult3.getMonth.toString
+      dateResult3.getDayOfMonth shouldBe 25
+
+      val dateResult4 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt10thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult4.getMonth.toString
+      dateResult4.getDayOfMonth shouldBe 1
+
+      val dateResult5 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt10thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult5.getMonth.toString
+      dateResult5.getDayOfMonth shouldBe 25
+
+      //Now we are at the 25th day of the present month and repeat the previous three tests.
+      val inputAt25thtDayOfPresentMonth = localDateParam.withDayOfMonth(25)
+      val dateResult6 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt25thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult6.getMonth.toString
+      dateResult6.getDayOfMonth shouldBe 1
+
+      val dateResult7 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt25thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult7.getMonth.toString
+      dateResult7.getDayOfMonth shouldBe 1
+
+      val dateResult8 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt25thtDayOfPresentMonth)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult8.getMonth.toString
+      dateResult8.getDayOfMonth shouldBe 25
+
+    }
+
+    "return correct nextSendDate for a day in February of the year" in {
 
       val inputAtFeb14th = localDateParam.withDayOfYear(45)
-      val inputMonthsIndex2 = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
-      val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
-      monthsList((inputMonthsIndex2) % 12) shouldBe dateResult3.getMonth.toString
+      val inputMonthsIndex = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
+      val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getMonth.toString
+      dateResult.getDayOfMonth shouldBe 25
+
+    }
+
+    "return correct nextSendDate for a day in the December month of the year" in {
+
+      val inputAtDec29th = localDateParam.withDayOfYear(363)
+      val inputMonthsIndex = monthsList.indexOf(inputAtDec29th.getMonth.toString)
+      val dateResult: LocalDate = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th)
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult.getMonth.toString
+      dateResult.getDayOfMonth shouldBe 1
 
     }
 
