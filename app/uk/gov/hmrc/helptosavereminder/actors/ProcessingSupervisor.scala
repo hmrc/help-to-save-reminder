@@ -99,10 +99,10 @@ class ProcessingSupervisor @Inject()(
           scheduler.schedule("UserScheduleJob", self, START)
 
         case (_, false) =>
-          Logger.warn(s"UserScheduleJob cannot Scheduled due to invalid cronExpression : $userScheduleCronExpression")
+          Logger.warn(s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression")
 
         case _ =>
-          Logger.warn(s"UserScheduleJob cannot Scheduled. Please check configuration parameters: " +
+          Logger.warn(s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
             s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled")
       }
     }
