@@ -60,12 +60,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
   "DateTimeFunctions object " should {
     "return appropriate day " in {
 
-      val returnTimeInNanos1 = DateTimeFunctions.getNextSchedule("1,25", "10:29,16:30")
-      val returnTimeInNanos2 = DateTimeFunctions.getNextSchedule("1,28,15", "10:29,16:30")
-      val returnTimeInNanos3 = DateTimeFunctions.getNextSchedule("1", "10:29,16:30")
-      val returnTimeInNanos4 = DateTimeFunctions.getNextSchedule(lastDayOftheMonth.toString, "10:29,16:30")
-
-      val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
+   val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
       val startOfMonth = localDateParam.withDayOfMonth(1)
       val nextMonthFirstDay = startOfMonth.plusMonths(1)
 
