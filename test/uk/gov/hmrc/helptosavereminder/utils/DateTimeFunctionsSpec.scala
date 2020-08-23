@@ -33,7 +33,6 @@ package uk.gov.hmrc.helptosavereminder.utils
  */
 
 import java.time.{LocalDate, ZoneId}
-import java.util.Calendar
 
 import org.scalatest.{Matchers, WordSpec}
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
