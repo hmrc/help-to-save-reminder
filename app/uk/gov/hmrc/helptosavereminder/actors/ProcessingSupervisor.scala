@@ -49,10 +49,6 @@ class ProcessingSupervisor @Inject()(
 
   val lockrepo = LockMongoRepository(mongoApi.mongoConnector.db)
 
-  val scheduledDays = config.get[String]("scheduledDays")
-
-  val scheduledTimes = config.get[String]("scheduledTimes")
-
   lazy val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
 
   lazy val userScheduleCronExpression: String = config.getOptional[String](s"userScheduleCronExpression").getOrElse("")

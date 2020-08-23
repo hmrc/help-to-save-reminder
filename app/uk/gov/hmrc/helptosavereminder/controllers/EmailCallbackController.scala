@@ -52,14 +52,14 @@ class EmailCallbackController @Inject()(
       case Some(JsSuccess(eventsMap, _)) ⇒ {
         if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
           val nino = callBackReference.takeRight(9)
-          Logger.info(s"Reminder Callback service called for NINO = ${nino}")
+          Logger.info(s"Reminder Callback service called for NINO = $nino")
           repository.findByNino(nino).flatMap {
             case Some(htsUser) =>
               val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUser.email}"
-              Logger.debug("The URL to request email deletion is " + url)
+              Logger.debug(s"The URL to request email deletion is $url")
               repository.deleteHtsUserByCallBack(nino, callBackReference).flatMap {
                 case Left(error) => {
-                  Logger.error("Could not delete from HtsReminder Repository for NINO = ${nino}")
+                  Logger.error(s"Could not delete from HtsReminder Repository for NINO = $nino")
                   Future.successful(Ok("Error deleting the hts schedule by nino"))
                 }
                 case Right(()) => {
