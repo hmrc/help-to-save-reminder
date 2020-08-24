@@ -17,25 +17,17 @@
 package uk.gov.hmrc.helptosavereminder.util
 
 import java.time.{LocalDate, Month}
+import java.time.temporal.ChronoUnit.DAYS
+
 
 object DateTimeFunctions {
 
-  def filterValidDays(days: Seq[Int], month: Month) : Seq[Int] =
-    days.filter(x => x >= 1 && x <= month.maxLength())
+  val sixtyTwoDays : Int = LocalDate.parse("2020-06-01").until(LocalDate.parse("2020-08-01"), DAYS).toInt
 
   def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): LocalDate = {
-    val sortedDays = daysToReceive.sorted
-    val laterDays = sortedDays.filter(x => x > today.getDayOfMonth)
-    filterValidDays(laterDays, today.getMonth) match {
-      case day :: _ => today.withDayOfMonth(day)
-      case _ => {
-        val laterMonth = today.plusMonths(1)
-        filterValidDays(sortedDays, laterMonth.getMonth) match {
-          case day :: _ => laterMonth.withDayOfMonth(day)
-          case _ => throw new Exception(s"No next send date for $daysToReceive from $today")
-        }
-       }
-    }
-
+    (1 to sixtyTwoDays)
+      .map(today.plusDays(_))
+      .find(x => daysToReceive.contains(x.getDayOfMonth))
+      .getOrElse(throw new Exception(s"No next send date for $daysToReceive from $today"))
   }
 }
