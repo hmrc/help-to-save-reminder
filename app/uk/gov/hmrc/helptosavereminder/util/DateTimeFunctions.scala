@@ -16,27 +16,25 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.LocalDate
+import java.time.{LocalDate, Month}
 
 object DateTimeFunctions {
 
-  def getNextSendDate(daysToReceive: Seq[Int], localDateParam: LocalDate): LocalDate = {
+  def filterValidDays(days: Seq[Int], month: Month) : Seq[Int] =
+    days.filter(x => x >= 1 && x <= month.maxLength())
 
-    val maxDaysInMonth = localDateParam.getMonth.maxLength();
-    val currentDayOfMonth = localDateParam.getDayOfMonth
-    val validDaysToReceive = daysToReceive.filter(x => x <= maxDaysInMonth)
-    val nextAvailableDayOfMonth = validDaysToReceive.filter(x => x > currentDayOfMonth).headOption
-
-    nextAvailableDayOfMonth match {
-      case Some(day) => localDateParam.plusDays(day - currentDayOfMonth)
-      case None => {
-        daysToReceive.sorted.headOption match {
-          case Some(usersFirstChoice) =>
-            localDateParam
-              .plusMonths(1)
-              .withDayOfMonth(validDaysToReceive.headOption.getOrElse(usersFirstChoice))
+  def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): LocalDate = {
+    val sortedDays = daysToReceive.sorted
+    val laterDays = sortedDays.filter(x => x > today.getDayOfMonth)
+    filterValidDays(laterDays, today.getMonth) match {
+      case day :: _ => today.withDayOfMonth(day)
+      case _ => {
+        val laterMonth = today.plusMonths(1)
+        filterValidDays(sortedDays, laterMonth.getMonth) match {
+          case day :: _ => laterMonth.withDayOfMonth(day)
+          case _ => throw new Exception(s"No next send date for $daysToReceive from $today")
         }
-      }
+       }
     }
 
   }
