@@ -119,13 +119,13 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
       val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
 
       val auditEventObject = HtsReminderUserUpdatedEvent(
-        HtsReminderUserUpdated(htsReminderUser.nino.nino, Json.toJson(htsReminderUser)),
+        HtsReminderUserUpdated(htsReminderUser.nino.value, Json.toJson(htsReminderUser)),
         "/help-to-save-reminder/update-htsuser-entity")
 
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         mockUpdateRepository(htsReminderUser)(true)
-        mockSendAuditEvent(auditEventObject, htsReminderUser.nino.nino)
+        mockSendAuditEvent(auditEventObject, htsReminderUser.nino.value)
 
       }
 
@@ -324,7 +324,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
 
         mockUpdateEmailRepository(
-          updateEmailInput.nino.nino,
+          updateEmailInput.nino.value,
           updateEmailInput.firstName,
           updateEmailInput.lastName,
           updateEmailInput.email)(true)
@@ -352,7 +352,7 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
 
         mockUpdateEmailRepository(
-          updateEmailInput.nino.nino,
+          updateEmailInput.nino.value,
           updateEmailInput.firstName,
           updateEmailInput.lastName,
           updateEmailInput.email)(false)

@@ -64,7 +64,7 @@ class HtsReminderRepositorySpec
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.toString(), callBackRef)
+        htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.value, callBackRef)
 
       await(nextSendDate) shouldBe true
 
@@ -93,7 +93,7 @@ class HtsReminderRepositorySpec
       val reminderValue = ReminderGenerator.nextReminder
 
       val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.toString(), LocalDate.now())
+        htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.value, LocalDate.now())
 
       await(nextSendDate) shouldBe true
 
@@ -107,7 +107,7 @@ class HtsReminderRepositorySpec
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.toString(), callBackRef)
+        htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.value, callBackRef)
 
       await(nextSendDate) shouldBe true
 
@@ -130,7 +130,7 @@ class HtsReminderRepositorySpec
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.toString(), callBackRef)
+        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
       await(nextSendDate) shouldBe true
 
@@ -153,7 +153,7 @@ class HtsReminderRepositorySpec
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
-        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.toString(), callBackRef)
+        htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
       await(nextSendDate) shouldBe true
 
@@ -173,7 +173,7 @@ class HtsReminderRepositorySpec
           val htsUserOption: Option[HtsUser] =
             htsReminderMongoRepository.findByNino("SK798383D")
 
-          await(htsUserOption).get.nino.nino shouldBe "SK798383D"
+          await(htsUserOption).get.nino.value shouldBe "SK798383D"
         }
       })
 

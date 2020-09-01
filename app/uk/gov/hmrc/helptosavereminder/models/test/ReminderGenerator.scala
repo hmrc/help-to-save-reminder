@@ -36,7 +36,7 @@ object ReminderGenerator {
   private def daysToReceive = Seq(1, 25)
   private def nextSendDate: LocalDate =
     getNextSendDate(Seq(1, 25), LocalDate.now(ZoneId.of("Europe/London"))).getOrElse(LocalDate.now())
-  private def callBackUrlRef: String = LocalDateTime.now().toString + nino.nino
+  private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
 
   def nextReminder: HtsUser =
     HtsUser(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
