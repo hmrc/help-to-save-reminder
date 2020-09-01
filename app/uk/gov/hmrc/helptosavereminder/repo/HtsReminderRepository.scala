@@ -158,7 +158,7 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   override def updateReminderUser(htsReminder: HtsUser): Future[Boolean] = {
 
-    val selector = Json.obj("nino" -> htsReminder.nino.toString)
+    val selector = Json.obj("nino" -> htsReminder.nino.value)
     val modifierJson = Json.obj(
       "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
       "email"         -> htsReminder.email,

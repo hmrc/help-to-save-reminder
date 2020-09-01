@@ -37,7 +37,7 @@ class HtsUserUpdateActor(
 
   override def receive: Receive = {
     case reminder: HtsUser => {
-      repository.updateNextSendDate(reminder.nino.toString, reminder.nextSendDate).map {
+      repository.updateNextSendDate(reminder.nino.value, reminder.nextSendDate).map {
         case true => {
           Logger.debug(s"Updated the User nextSendDate for ${reminder.nino}")
         }
@@ -49,10 +49,10 @@ class HtsUserUpdateActor(
 
     case updateReminder: UpdateCallBackRef => {
       val origSender = sender
-      repository.updateCallBackRef(updateReminder.reminder.nino.toString, updateReminder.callBackRefUrl).map {
+      repository.updateCallBackRef(updateReminder.reminder.nino.value, updateReminder.callBackRefUrl).map {
         case true => {
           Logger.debug(
-            s"Updated the User callBackRef for ${updateReminder.reminder.nino.toString} with value : ${updateReminder.callBackRefUrl}")
+            s"Updated the User callBackRef for ${updateReminder.reminder.nino.value} with value : ${updateReminder.callBackRefUrl}")
           origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
         }
         case _ => //Failure
