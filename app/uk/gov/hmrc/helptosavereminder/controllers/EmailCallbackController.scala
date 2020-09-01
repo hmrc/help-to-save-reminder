@@ -64,8 +64,10 @@ class EmailCallbackController @Inject()(
                 case Right(()) => {
                   val path = routes.HtsUserUpdateController.deleteHtsUser().url
                   auditor.sendEvent(
-                    HtsReminderUserDeletedEvent(HtsReminderUserDeleted(htsUser.nino.nino, Json.toJson(htsUser)), path),
-                    htsUser.nino.nino)
+                    HtsReminderUserDeletedEvent(
+                      HtsReminderUserDeleted(htsUser.nino.toString, Json.toJson(htsUser)),
+                      path),
+                    htsUser.nino.toString)
                   Logger.debug(
                     s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUser.nino}")
                   http

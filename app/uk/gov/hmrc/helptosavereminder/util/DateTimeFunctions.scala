@@ -16,18 +16,15 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.{LocalDate, Month}
+import java.time.LocalDate
 import java.time.temporal.ChronoUnit.DAYS
-
 
 object DateTimeFunctions {
 
-  val sixtyTwoDays : Int = LocalDate.parse("2020-06-01").until(LocalDate.parse("2020-08-01"), DAYS).toInt
+  val sixtyTwoDays: Int = LocalDate.parse("2020-06-01").until(LocalDate.parse("2020-08-01"), DAYS).toInt
 
-  def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): LocalDate = {
+  def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): Option[LocalDate] =
     (1 to sixtyTwoDays)
       .map(today.plusDays(_))
       .find(x => daysToReceive.contains(x.getDayOfMonth))
-      .getOrElse(throw new Exception(s"No next send date for $daysToReceive from $today"))
-  }
 }

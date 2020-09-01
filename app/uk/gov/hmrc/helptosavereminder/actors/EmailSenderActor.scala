@@ -17,6 +17,7 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.time.{LocalDate, ZoneId}
+import java.util.UUID
 
 import akka.actor._
 import com.google.inject.Inject
@@ -53,7 +54,7 @@ class EmailSenderActor @Inject()(
 
     case htsUserReminder: HtsUser => {
 
-      val callBackRef = System.currentTimeMillis().toString + htsUserReminder.nino
+      val callBackRef = UUID.randomUUID().toString + htsUserReminder.nino
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminder, callBackRef)
 
     }
@@ -69,10 +70,14 @@ class EmailSenderActor @Inject()(
         case true => {
           val nextSendDate =
             DateTimeFunctions.getNextSendDate(reminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
-          val updatedReminder = reminder.copy(nextSendDate = nextSendDate)
-          htsUserUpdateActor ! updatedReminder
+          nextSendDate match {
+            case Some(x) =>
+              val updatedReminder = reminder.copy(nextSendDate = x)
+              htsUserUpdateActor ! updatedReminder
+            case None =>
+          }
         }
-        case false =>
+        case false => Logger.error(s"nextSendDate for User: $template cannot be updated.")
       })
 
     }

@@ -41,13 +41,13 @@ class HtsUserUpdateController @Inject()(
   def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
     request.body.asJson.map(_.validate[HtsUser]) match {
       case Some(JsSuccess(htsUser, _)) ⇒ {
-        Logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.value}")
+        Logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.toString}")
         repository.updateReminderUser(htsUser).map {
           case true => {
             val path = routes.HtsUserUpdateController.update().url
             auditor.sendEvent(
-              HtsReminderUserUpdatedEvent(HtsReminderUserUpdated(htsUser.nino.value, Json.toJson(htsUser)), path),
-              htsUser.nino.value)
+              HtsReminderUserUpdatedEvent(HtsReminderUserUpdated(htsUser.nino.toString, Json.toJson(htsUser)), path),
+              htsUser.nino.toString)
             Ok(Json.toJson(htsUser))
           }
           case false => NotModified
@@ -103,7 +103,7 @@ class HtsUserUpdateController @Inject()(
       case Some(JsSuccess(userReminder, _)) ⇒ {
         Logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino}")
         repository
-          .updateEmail(userReminder.nino.value, userReminder.firstName, userReminder.lastName, userReminder.email)
+          .updateEmail(userReminder.nino.toString, userReminder.firstName, userReminder.lastName, userReminder.email)
           .map {
             case true  => Ok
             case false => NotFound
