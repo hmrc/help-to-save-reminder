@@ -158,23 +158,32 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
 
   override def updateReminderUser(htsReminder: HtsUser): Future[Boolean] = {
 
-    val selector = Json.obj("nino" -> htsReminder.nino.nino)
+    val selector = Json.obj("nino" -> htsReminder.nino.toString)
     val modifierJson = Json.obj(
       "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
       "email"         -> htsReminder.email,
       "firstName"     -> htsReminder.firstName,
       "lastName"      -> htsReminder.lastName,
-      "nextSendDate"  -> getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London"))),
       "daysToReceive" -> htsReminder.daysToReceive
     )
 
-    val updatedModifierJson =
+    val updatedModifierJsonCallBackRef =
       if (htsReminder.callBackUrlRef.isEmpty)
         modifierJson ++ Json.obj("callBackUrlRef"    -> "")
       else modifierJson ++ Json.obj("callBackUrlRef" -> htsReminder.callBackUrlRef)
 
+    val updatedNextSendDate: Option[LocalDate] =
+      getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
+
+    val finalModifiedJson = updatedNextSendDate match {
+      case Some(localDate) => updatedModifierJsonCallBackRef ++ Json.obj("nextSendDate" -> localDate)
+      case None =>
+        Logger.error(s"nextSendDate for User: $htsReminder cannot be updated.")
+        updatedModifierJsonCallBackRef
+    }
+
     val modifier = Json.obj(
-      "$set" -> updatedModifierJson
+      "$set" -> finalModifiedJson
     )
 
     val result = proxyCollection.update(ordered = false).one(selector, modifier, upsert = true)

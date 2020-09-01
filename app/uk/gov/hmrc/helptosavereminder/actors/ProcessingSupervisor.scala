@@ -51,7 +51,10 @@ class ProcessingSupervisor @Inject()(
 
   lazy val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
 
-  lazy val userScheduleCronExpression: String = config.getOptional[String](s"userScheduleCronExpression").getOrElse("")
+  lazy val userScheduleCronExpression
+    : String = config.getOptional[String](s"userScheduleCronExpression") map (_.replaceAll("_", " ")) getOrElse ("")
+
+  lazy val repoLockPeriod: Int = config.getOptional[Int](s"mongodb.repoLockPeriod").getOrElse(55)
 
   val lockKeeper = new LockKeeper {
 
@@ -59,7 +62,7 @@ class ProcessingSupervisor @Inject()(
 
     override def lockId: String = "emailProcessing"
 
-    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(55)
+    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(repoLockPeriod)
 
     // $COVERAGE-OFF$
     override def tryLock[T](body: => Future[T])(implicit ec: ExecutionContext): Future[Option[T]] =

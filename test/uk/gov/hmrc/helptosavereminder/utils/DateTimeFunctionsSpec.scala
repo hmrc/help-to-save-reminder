@@ -65,44 +65,44 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       val inputMonthsIndex = monthsList.indexOf(inputAt1stDayOfPresentMonth.getMonth.toString)
 
       val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt1stDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getMonth.toString
-      dateResult.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       val dateResult1 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt1stDayOfPresentMonth)
-      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult1.getMonth.toString
-      dateResult1.getDayOfMonth shouldBe 1
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult1.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult1.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult2 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt1stDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult2.getMonth.toString
-      dateResult2.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult2.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult2.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       //Now we are at the 10th day of the present month and repeat the previous three tests.
       val inputAt10thtDayOfPresentMonth = localDateParam.withDayOfMonth(10)
       val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt10thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult3.getMonth.toString
-      dateResult3.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult3.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult3.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       val dateResult4 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt10thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult4.getMonth.toString
-      dateResult4.getDayOfMonth shouldBe 1
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult4.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult4.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult5 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt10thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult5.getMonth.toString
-      dateResult5.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult5.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult5.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       //Now we are at the 25th day of the present month and repeat the previous three tests.
       val inputAt25thtDayOfPresentMonth = localDateParam.withDayOfMonth(25)
       val dateResult6 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt25thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult6.getMonth.toString
-      dateResult6.getDayOfMonth shouldBe 1
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult6.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult6.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult7 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt25thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult7.getMonth.toString
-      dateResult7.getDayOfMonth shouldBe 1
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult7.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult7.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult8 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt25thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult8.getMonth.toString
-      dateResult8.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult8.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult8.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
     }
 
@@ -111,8 +111,8 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       val inputAtFeb14th = localDateParam.withDayOfYear(45)
       val inputMonthsIndex = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
       val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getMonth.toString
-      dateResult.getDayOfMonth shouldBe 25
+      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
+      dateResult.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
     }
 
@@ -120,7 +120,8 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       val inputAtDec29th = localDateParam.withDayOfYear(363)
       val inputMonthsIndex = monthsList.indexOf(inputAtDec29th.getMonth.toString)
-      val dateResult: LocalDate = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th)
+      val dateResult: LocalDate =
+        DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th).getOrElse(LocalDate.now())
       monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult.getMonth.toString
       dateResult.getDayOfMonth shouldBe 1
 

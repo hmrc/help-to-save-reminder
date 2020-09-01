@@ -37,7 +37,7 @@ case class HtsUser(
 
 case class UpdateCallBackRef(reminder: HtsUser, callBackRefUrl: String)
 
-case class UpdateCallBackSuccess(reminder: HtsUser)
+case class UpdateCallBackSuccess(reminder: HtsUser, callBackRefUrl: String)
 
 case class CancelHtsUserReminder(nino: String)
 

@@ -121,7 +121,7 @@ class EmailSenderActorSpec
 
         emailSenderActor ! mockObject
 
-        emailSenderActor ! UpdateCallBackSuccess(mockObject)
+        emailSenderActor ! UpdateCallBackSuccess(mockObject, "callBackUrlRefValue")
         //htsUserUpdateActorProbe.expectMsg(mockObject)
 
       }
