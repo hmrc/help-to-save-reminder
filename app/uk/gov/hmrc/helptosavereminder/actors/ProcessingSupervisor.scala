@@ -16,22 +16,20 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{Instant, LocalDateTime, ZoneId}
+import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.models.Schedule
-import uk.gov.hmrc.helptosavereminder.repo.{HtsReminderMongoRepository, SchedulerMongoRepository}
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import org.quartz.CronExpression
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
-
 @Singleton
 class ProcessingSupervisor @Inject()(
   mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,
@@ -44,8 +42,6 @@ class ProcessingSupervisor @Inject()(
 
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
 
-  lazy val schedulerRepository = new SchedulerMongoRepository(mongoApi)
-
   lazy val emailSenderActor: ActorRef =
     context.actorOf(
       Props(classOf[EmailSenderActor], httpClient, env, config, servicesConfig, repository, ec),
@@ -53,9 +49,12 @@ class ProcessingSupervisor @Inject()(
 
   val lockrepo = LockMongoRepository(mongoApi.mongoConnector.db)
 
-  val scheduledDays = config.get[String]("scheduledDays")
+  lazy val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
 
-  val scheduledTimes = config.get[String]("scheduledTimes")
+  lazy val userScheduleCronExpression
+    : String = config.getOptional[String](s"userScheduleCronExpression") map (_.replaceAll("_", " ")) getOrElse ("")
+
+  lazy val repoLockPeriod: Int = config.getOptional[Int](s"mongodb.repoLockPeriod").getOrElse(55)
 
   val lockKeeper = new LockKeeper {
 
@@ -63,7 +62,7 @@ class ProcessingSupervisor @Inject()(
 
     override def lockId: String = "emailProcessing"
 
-    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(1)
+    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(repoLockPeriod)
 
     // $COVERAGE-OFF$
     override def tryLock[T](body: => Future[T])(implicit ec: ExecutionContext): Future[Option[T]] =
@@ -78,8 +77,6 @@ class ProcessingSupervisor @Inject()(
     // $COVERAGE-ON$
   }
 
-  private def getNextDelayInNanos() = DateTimeFunctions.getNextSchedule(scheduledDays, scheduledTimes)
-
   override def receive: Receive = {
 
     case STOP => {
@@ -89,20 +86,32 @@ class ProcessingSupervisor @Inject()(
 
     case BOOTSTRAP => {
 
-      Logger.info(
-        "[ProcessingSupervisor] BOOTSTRAP processing started and the next schedule is at : " + LocalDateTime
-          .now()
-          .plusNanos(getNextDelayInNanos()))
+      Logger.info("[ProcessingSupervisor] BOOTSTRAP UserSchedule Quartz Scheduler processing started")
 
-      val nextInNanos = storeNextSchedule(None)
+      val scheduler = QuartzSchedulerExtension(context.system)
+      val isExpressionValid = CronExpression.isValidExpression(userScheduleCronExpression)
 
-      context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
+      (isUserScheduleEnabled, isExpressionValid) match {
+        case (true, true) =>
+          scheduler
+            .createSchedule(
+              "UserScheduleJob",
+              Some("For sending reminder emails to the users"),
+              userScheduleCronExpression,
+              timezone = TimeZone.getTimeZone("Europe/London"))
+          scheduler.schedule("UserScheduleJob", self, START)
 
+        case (_, false) =>
+          Logger.warn(
+            s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression")
+
+        case _ =>
+          Logger.warn(s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
+            s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled")
+      }
     }
 
     case START => {
-
-      val scheduleKickOffTime = LocalDateTime.now()
 
       lockKeeper
         .tryLock {
@@ -129,43 +138,13 @@ class ProcessingSupervisor @Inject()(
 
             Logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
 
-            val nextInNanos = storeNextSchedule(Some(scheduleKickOffTime))
-
-            context.system.scheduler.scheduleOnce(nextInNanos nanos, self, START)
-
           }
           case _ => {
-            val delayInNanos = getNextDelayInNanos()
-            Logger.info(
-              s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock. Scheduling for next available slot at " + LocalDateTime
-                .now()
-                .plusNanos(delayInNanos))
-            context.system.scheduler.scheduleOnce(delayInNanos nanos, self, START)
+            Logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
           }
         }
 
     }
-  }
-
-  private def storeNextSchedule(scheduleKickOffTime: Option[LocalDateTime]): Long = {
-
-    val millis = System.currentTimeMillis()
-    val instant = Instant.ofEpochMilli(millis)
-    val nextInNanos = getNextDelayInNanos()
-    val nextScheduledAt = instant.atZone(ZoneId.systemDefault).toLocalDateTime.plusNanos(nextInNanos)
-
-    val scheduleToSave = scheduleKickOffTime match {
-      case Some(t) => Schedule(Some(t), nextScheduledAt)
-      case None    => Schedule(None, nextScheduledAt)
-    }
-
-    schedulerRepository.createSchedule(scheduleToSave).map {
-      case Left(error) => Logger.error("Error occurred while writing the schedule details : " + scheduleToSave)
-      case Right(x)    => Logger.debug("Scheduled saved to DB = " + x)
-    }
-
-    nextInNanos
-
   }
 
 }

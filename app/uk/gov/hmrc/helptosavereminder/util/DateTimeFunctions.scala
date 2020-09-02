@@ -16,75 +16,15 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.{Duration, LocalDate, LocalDateTime, YearMonth, ZoneId}
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit.DAYS
 
 object DateTimeFunctions {
 
-  def getNextSendDate(daysToReceive: Seq[Int]): LocalDate = {
+  val sixtyTwoDays: Int = LocalDate.parse("2020-06-01").until(LocalDate.parse("2020-08-01"), DAYS).toInt
 
-    val maxDaysInMonth = getMaxDaysInMonth
-    val validDaysToReceive = daysToReceive.filter(x => x <= maxDaysInMonth)
-    val currentDayOfMonth = Calendar.getInstance.get(Calendar.DAY_OF_MONTH)
-    val nextAvailableDayOfMonth = validDaysToReceive.filter(x => x > currentDayOfMonth).headOption
-
-    nextAvailableDayOfMonth match {
-      case Some(day) => (LocalDate.now).plusDays(day - currentDayOfMonth)
-      case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.head)
-    }
-
-  }
-
-  def getNextSchedule(scheduledDays: String, scheduledTimes: String): Long = {
-
-    val scheduledDaysList = scheduledDays.split(",").toList.map(x => x.toInt)
-    val scheduledTimesList = scheduledTimes.split(",").toList
-    val maxDaysInMonth = getMaxDaysInMonth
-    val scheduledDaysFiltered = scheduledDaysList.filter(x => x <= maxDaysInMonth)
-
-    val mapOfScheduledTimes: Seq[(Int, Int, Int)] =
-      scheduledDaysFiltered.flatMap(day =>
-        scheduledTimesList.map(timePoint =>
-          (day, timePoint.split(':').toList(0).toInt, timePoint.split(':').toList(1).toInt)))
-
-    val scheduledTimesFinalized = mapOfScheduledTimes.map(
-      x =>
-        (LocalDate.now)
-          .withDayOfMonth(x._1.toInt)
-          .atStartOfDay()
-          .atZone(ZoneId.of("Europe/London"))
-          .plusHours(x._2)
-          .plusMinutes(x._3)
-    )
-
-    val nextTimeSlot = scheduledTimesFinalized.find(x => (x.toLocalDateTime).isAfter(LocalDateTime.now()))
-
-    nextTimeSlot match {
-      case Some(slot) => {
-
-        Duration.between(LocalDateTime.now(), slot).toNanos
-
-      }
-      case None => {
-
-        val timeTuples = mapOfScheduledTimes.apply(0)
-        val nextMonthSlot = (LocalDate.now)
-          .plusMonths(1)
-          .withDayOfMonth(timeTuples._1)
-          .atStartOfDay()
-          .atZone(ZoneId.of("Europe/London"))
-          .plusHours(timeTuples._2.toInt)
-          .plusMinutes(timeTuples._3.toInt)
-
-        Duration.between(LocalDateTime.now(), nextMonthSlot).toNanos
-
-      }
-    }
-  }
-
-  private def getMaxDaysInMonth =
-    (YearMonth
-      .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
-      .lengthOfMonth()
-
+  def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): Option[LocalDate] =
+    (1 to sixtyTwoDays)
+      .map(today.plusDays(_))
+      .find(x => daysToReceive.contains(x.getDayOfMonth))
 }

@@ -13,7 +13,8 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "domain"                   % "5.6.0-play-26",
     "uk.gov.hmrc"             %% "mongo-lock"               % "6.15.0-play-26",
     "org.typelevel"           %% "cats-core"                % "2.0.0",
-    "uk.gov.hmrc"       %% "auth-client"              % "2.32.0-play-26"
+    "uk.gov.hmrc"             %% "auth-client"              % "2.32.0-play-26",
+    "com.enragedginger"       %% "akka-quartz-scheduler"    % "1.8.1-akka-2.5.x"
   )
 
 

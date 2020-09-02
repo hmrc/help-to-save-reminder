@@ -17,13 +17,12 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor._
-import javax.inject.{Inject, Singleton}
+import javax.inject.Singleton
 import play.api.{Configuration, Environment, Logger}
 import uk.gov.hmrc.helptosavereminder.models.{HtsUser, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 
 import scala.concurrent.ExecutionContext
 
@@ -36,44 +35,28 @@ class HtsUserUpdateActor(
   repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext)
     extends Actor {
 
-  lazy val htsUserUpdateActor: ActorRef =
-    context.actorOf(Props(classOf[HtsUserUpdateActor], repository, ec), "htsUserUpdate-actor")
-
-  lazy val origSender = context.actorOf(
-    Props(classOf[EmailSenderActor], http, environment, runModeConfiguration, servicesConfig, repository, ec),
-    "emailSender-actor")
-
   override def receive: Receive = {
     case reminder: HtsUser => {
-
-      repository.updateNextSendDate(reminder.nino.nino, reminder.nextSendDate).map {
-
+      repository.updateNextSendDate(reminder.nino.value, reminder.nextSendDate).map {
         case true => {
-          Logger.debug("Updated the User nextSendDate for " + reminder.nino)
+          Logger.debug(s"Updated the User nextSendDate for ${reminder.nino}")
         }
-
         case _ => {
-          Logger.error("Failed to update nextSendDate for the User " + reminder.nino)
+          Logger.error(s"Failed to update nextSendDate for the User: ${reminder.nino}")
         }
       }
-
-      //TODO: Update reminder in mongo to have a new next send date
     }
 
     case updateReminder: UpdateCallBackRef => {
-
-      repository.updateCallBackRef(updateReminder.reminder.nino.nino, updateReminder.callBackRefUrl).map {
-
+      val origSender = sender
+      repository.updateCallBackRef(updateReminder.reminder.nino.value, updateReminder.callBackRefUrl).map {
         case true => {
-          Logger.debug("Updated the User callBackRef for " + updateReminder.reminder.nino.nino)
-          origSender ! UpdateCallBackSuccess(updateReminder.reminder)
+          Logger.debug(
+            s"Updated the User callBackRef for ${updateReminder.reminder.nino.value} with value : ${updateReminder.callBackRefUrl}")
+          origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
         }
-
         case _ => //Failure
       }
-
-      //TODO: Update reminder in mongo to have a new next send date
     }
-
   }
 }

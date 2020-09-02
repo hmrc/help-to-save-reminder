@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.YearMonth
-import java.util.Calendar
+import java.time.{LocalDate, ZoneId}
+import java.util.UUID
 
 import akka.actor._
 import com.google.inject.Inject
@@ -55,7 +55,7 @@ class EmailSenderActor @Inject()(
 
     case htsUserReminder: HtsUser => {
 
-      val callBackRef = System.currentTimeMillis().toString + htsUserReminder.nino
+      val callBackRef = UUID.randomUUID().toString + htsUserReminder.nino
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminder, callBackRef)
 
     }
@@ -69,11 +69,16 @@ class EmailSenderActor @Inject()(
 
       sendReceivedTemplatedEmail(template).map({
         case true => {
-          val nextSendDate = DateTimeFunctions.getNextSendDate(reminder.daysToReceive)
-          val updatedReminder = reminder.copy(nextSendDate = nextSendDate)
-          htsUserUpdateActor ! updatedReminder
+          val nextSendDate =
+            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
+          nextSendDate match {
+            case Some(x) =>
+              val updatedReminder = reminder.copy(nextSendDate = x)
+              htsUserUpdateActor ! updatedReminder
+            case None =>
+          }
         }
-        case false =>
+        case false => Logger.error(s"nextSendDate for User: $template cannot be updated.")
       })
 
     }
@@ -84,15 +89,9 @@ class EmailSenderActor @Inject()(
 
     val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
 
-    Logger.debug("The callback URL = " + callBackUrl)
+    Logger.debug(s"The callback URL = $callBackUrl")
 
-    val monthName =
-      (YearMonth
-        .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
-        .getMonth
-        .toString
-        .toLowerCase
-        .capitalize
+    val monthName = LocalDate.now(ZoneId.of("Europe/London")).getMonth.toString.toLowerCase.capitalize
 
     val request = SendTemplatedEmailRequest(
       List(template.email),
