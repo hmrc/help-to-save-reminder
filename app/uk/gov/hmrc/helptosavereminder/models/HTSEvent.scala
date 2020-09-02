@@ -16,10 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.models
 
-import cats.instances.int._
-import cats.syntax.eq._
 import play.api.libs.json._
-import uk.gov.hmrc.helptosave.util.NINO
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.AuditExtensions._

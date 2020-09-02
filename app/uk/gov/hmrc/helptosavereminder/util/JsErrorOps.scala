@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.utils
+package uk.gov.hmrc.helptosavereminder.util
 
 /*
  * Copyright 2020 HM Revenue & Customs
@@ -32,28 +32,26 @@ package uk.gov.helptosavereminder.utils
  * limitations under the License.
  */
 
-import java.util.Calendar
+import play.api.libs.json.JsError
+import scala.language.implicitConversions
 
-import org.scalatest.{Matchers, WordSpec}
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
+object JsErrorOps {
 
-class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSuite {
+  implicit def jsErrorOps(error: JsError): JsErrorOps = new JsErrorOps(error)
 
-  val lastDayOftheMonth = Calendar.getInstance.getActualMaximum(Calendar.DAY_OF_MONTH);
+}
 
-  "DateTimeFunctions object " should {
-    "return appropriate day " in {
-      val returnDate1 = DateTimeFunctions.getNextSendDate(Seq(1))
-      val returnDate2 = DateTimeFunctions.getNextSendDate(Seq(10))
-      val returnDate3 = DateTimeFunctions.getNextSendDate(Seq(1, 10))
-      val returnDate4 = DateTimeFunctions.getNextSendDate(Seq(25))
-      val returnDate5 = DateTimeFunctions.getNextSendDate(Seq(27, 28))
+class JsErrorOps(val error: JsError) extends AnyVal {
 
-      val returnDate6 = DateTimeFunctions.getNextSendDate(Seq(15, 33))
-
-    }
-
-  }
+  /**
+    * Create a legible string describing the error suitable for debugging purposes
+    */
+  def prettyPrint(): String =
+    error.errors
+      .map {
+        case (jsPath, validationErrors) ⇒
+          jsPath.toString + ": [" + validationErrors.map(_.message).mkString(",") + "]"
+      }
+      .mkString("; ")
 
 }

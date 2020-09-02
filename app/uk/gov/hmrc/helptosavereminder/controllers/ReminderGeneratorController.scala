@@ -31,7 +31,7 @@ class ReminderGeneratorController @Inject()(reminderService: ReminderService, cc
   def populateReminders(n: Int): Action[AnyContent] = Action.async {
     Future
       .sequence((0 until n).map(_ => reminderService.generateAndInsertReminder))
-      .map(_ => Ok("Total no of records created = " + n))
+      .map(_ => Ok(s"Total no of records created = $n"))
   }
 
 }

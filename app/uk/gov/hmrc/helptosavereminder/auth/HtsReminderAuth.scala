@@ -19,13 +19,12 @@ package uk.gov.hmrc.helptosave.controllers
 import cats.instances.string._
 import cats.syntax.eq._
 import play.api.Logger
-import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.auth.core.AuthProvider.{GovernmentGateway, PrivilegedApplication}
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
-import uk.gov.hmrc.auth.core.retrieve.{GGCredId, PAClientId, Retrieval, v2}
+import uk.gov.hmrc.auth.core.retrieve.{GGCredId, PAClientId, v2}
 import uk.gov.hmrc.helptosave.util.{NINO, toFuture}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
