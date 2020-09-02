@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.util.UUID
 import java.time.{LocalDate, ZoneId}
 import java.util.UUID
 

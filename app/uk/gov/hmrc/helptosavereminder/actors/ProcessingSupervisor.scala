@@ -20,17 +20,21 @@ import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.{Configuration, Environment, Logger}
+
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.HttpClient
+
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
+
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 
 import org.quartz.CronExpression
 
 import scala.concurrent.{ExecutionContext, Future}
+
 @Singleton
 class ProcessingSupervisor @Inject()(
   mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,

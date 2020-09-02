@@ -61,6 +61,8 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
     val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
     val startOfMonth = localDateParam.withDayOfMonth(1)
 
+    val nextMonthFirstDay = startOfMonth.plusMonths(1)
+
     "return correct nextSendDate for any day in the current month of the year" in {
 
       //We are now at the first day of the present month
@@ -132,6 +134,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
 
       monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult.getMonth.toString
       dateResult.getDayOfMonth shouldBe 1
+
     }
 
   }
