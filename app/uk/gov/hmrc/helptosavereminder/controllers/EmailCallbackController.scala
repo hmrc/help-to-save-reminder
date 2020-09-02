@@ -26,11 +26,11 @@ import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
 
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
+import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
 
 import cats.instances.string._
 import cats.syntax.eq._
@@ -58,7 +58,7 @@ class EmailCallbackController @Inject()(
               Logger.debug(s"The URL to request email deletion is $url")
               repository.deleteHtsUserByCallBack(nino, callBackReference).flatMap {
                 case Left(error) => {
-                  Logger.error(s"Could not delete from HtsReminder Repository for NINO = $nino")
+                  Logger.error("Could not delete from HtsReminder Repository for NINO = ${nino}")
                   Future.successful(Ok("Error deleting the hts schedule by nino"))
                 }
                 case Right(()) => {

@@ -27,4 +27,5 @@ object DateTimeFunctions {
     (1 to sixtyTwoDays)
       .map(today.plusDays(_))
       .find(x => daysToReceive.contains(x.getDayOfMonth))
+
 }

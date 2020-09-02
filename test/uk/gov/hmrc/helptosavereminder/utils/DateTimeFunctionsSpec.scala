@@ -83,6 +83,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       //Now we are at the 10th day of the present month and repeat the previous three tests.
       val inputAt10thtDayOfPresentMonth = localDateParam.withDayOfMonth(10)
       val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt10thtDayOfPresentMonth)
+
       monthsList((inputMonthsIndex) % 12) shouldBe dateResult3.getOrElse(LocalDate.now()).getMonth.toString
       dateResult3.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
@@ -97,6 +98,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       //Now we are at the 25th day of the present month and repeat the previous three tests.
       val inputAt25thtDayOfPresentMonth = localDateParam.withDayOfMonth(25)
       val dateResult6 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt25thtDayOfPresentMonth)
+
       monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult6.getOrElse(LocalDate.now()).getMonth.toString
       dateResult6.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
@@ -115,6 +117,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       val inputAtFeb14th = localDateParam.withDayOfYear(45)
       val inputMonthsIndex = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
       val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
+
       monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
       dateResult.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
@@ -126,6 +129,7 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
       val inputMonthsIndex = monthsList.indexOf(inputAtDec29th.getMonth.toString)
       val dateResult: LocalDate =
         DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtDec29th).getOrElse(LocalDate.now())
+
       monthsList((inputMonthsIndex + 1) % 12) shouldBe dateResult.getMonth.toString
       dateResult.getDayOfMonth shouldBe 1
 

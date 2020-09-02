@@ -26,6 +26,7 @@ import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.HttpClient
+
 import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
@@ -110,7 +111,10 @@ class ProcessingSupervisor @Inject()(
             s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression")
 
         case _ =>
-          Logger.warn(s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
+          Logger.warn(s"UserScheduleJob cannot Scheduled due to invalid cronExpression : $userScheduleCronExpression")
+
+        case _ =>
+          Logger.warn(s"UserScheduleJob cannot Scheduled. Please check configuration parameters: " +
             s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled")
       }
     }
