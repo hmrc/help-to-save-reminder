@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.helptosavereminder.controllers
+package uk.gov.hmrc.helptosavereminder.controllers
 
 import play.api.http.Status
 import play.api.mvc.Results.Ok

@@ -16,28 +16,15 @@
 
 package uk.gov.hmrc.helptosavereminder.util
 
-import java.time.{Duration, LocalDate, LocalDateTime, YearMonth, ZoneId}
-import java.util.Calendar
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit.DAYS
 
 object DateTimeFunctions {
 
-  def getNextSendDate(daysToReceive: Seq[Int]): LocalDate = {
+  val sixtyTwoDays: Int = LocalDate.parse("2020-06-01").until(LocalDate.parse("2020-08-01"), DAYS).toInt
 
-    val maxDaysInMonth = getMaxDaysInMonth
-    val validDaysToReceive = daysToReceive.filter(x => x <= maxDaysInMonth)
-    val currentDayOfMonth = Calendar.getInstance.get(Calendar.DAY_OF_MONTH)
-    val nextAvailableDayOfMonth = validDaysToReceive.filter(x => x > currentDayOfMonth).headOption
-
-    nextAvailableDayOfMonth match {
-      case Some(day) => (LocalDate.now).plusDays(day - currentDayOfMonth)
-      case None      => (LocalDate.now).plusMonths(1).withDayOfMonth(validDaysToReceive.head)
-    }
-
-  }
-
-  private def getMaxDaysInMonth =
-    (YearMonth
-      .of(Calendar.getInstance.get(Calendar.YEAR), Calendar.getInstance.get(Calendar.MONTH) + 1))
-      .lengthOfMonth()
-
+  def getNextSendDate(daysToReceive: Seq[Int], today: LocalDate): Option[LocalDate] =
+    (1 to sixtyTwoDays)
+      .map(today.plusDays(_))
+      .find(x => daysToReceive.contains(x.getDayOfMonth))
 }

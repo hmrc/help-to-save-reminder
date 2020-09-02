@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.models
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, OFormat}
 
 case class HtsReminderTemplate(email: String, name: String, callBackUrlRef: String)
 
@@ -27,5 +27,5 @@ case class SendTemplatedEmailRequest(
   eventUrl: String)
 
 object SendTemplatedEmailRequest {
-  implicit val format = Json.format[SendTemplatedEmailRequest]
+  implicit val format: OFormat[SendTemplatedEmailRequest] = Json.format[SendTemplatedEmailRequest]
 }

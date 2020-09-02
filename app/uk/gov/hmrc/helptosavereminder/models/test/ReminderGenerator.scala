@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.models.test
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime, ZoneId}
 import java.util.UUID
 
 import uk.gov.hmrc.domain.{Generator, Nino}
@@ -34,8 +34,9 @@ object ReminderGenerator {
   private def firstName: String = "Mohan"
   private def lastName: String = "Dolla"
   private def daysToReceive = Seq(1, 25)
-  private def nextSendDate: LocalDate = getNextSendDate(Seq(1, 25))
-  private def callBackUrlRef: String = LocalDateTime.now().toString + nino.nino
+  private def nextSendDate: LocalDate =
+    getNextSendDate(Seq(1, 25), LocalDate.now(ZoneId.of("Europe/London"))).getOrElse(LocalDate.now())
+  private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
 
   def nextReminder: HtsUser =
     HtsUser(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
