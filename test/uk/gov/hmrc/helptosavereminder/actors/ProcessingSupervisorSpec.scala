@@ -41,7 +41,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
-/*class ReminderSchedulerSpec
+class ReminderSchedulerSpec
     extends TestKit(ActorSystem("TestProcessingSystem")) with UnitSpec with MockitoSugar with GuiceOneAppPerSuite
     with BeforeAndAfterAll with DefaultTimeout with ImplicitSender {
 
@@ -117,4 +117,4 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
   }
 
-}*/
+}
