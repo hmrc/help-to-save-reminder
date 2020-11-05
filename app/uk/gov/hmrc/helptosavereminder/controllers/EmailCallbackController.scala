@@ -58,7 +58,7 @@ class EmailCallbackController @Inject()(
                   Future.successful(Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference"))
                 }
                 case Right(()) => {
-                  val path = routes.HtsUserUpdateController.deleteHtsUser().url
+                  val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
                   auditor.sendEvent(
                     HtsReminderUserDeletedEvent(
                       HtsReminderUserDeleted(htsUserSchedule.nino.toString, Json.toJson(htsUserSchedule)),
