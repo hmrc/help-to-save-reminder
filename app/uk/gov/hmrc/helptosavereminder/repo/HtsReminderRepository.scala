@@ -117,7 +117,7 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       }
       .recover {
         case e =>
-          //Logger.error("Failed to update HtsUser Email", e)
+          Logger.error("Failed to update HtsUser Email", e)
           false
       }
 
@@ -135,11 +135,9 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
         status.ok
       }
       .recover {
-        // $COVERAGE-OFF$
         case e =>
           Logger.error("Failed to update HtsUser", e)
           false
-        // $COVERAGE-ON$
       }
 
   }
