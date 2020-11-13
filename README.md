@@ -151,6 +151,10 @@ Endpoints
 | /update-htsuser-email             | POST | Updates email address in schedule for that NINO |
 | /bouncedEmail/:callbackreference  | POST | Deletes schedule if the request contains 'PermanentBounce' event and logs request info for other types of events |
 
+| TestOnly                          |      |               |
+|:-----------------------------     |:-------|:------------|
+| /help-to-save-reminder/test-only/:noUsers/:emailPrefix/:daysToReceive | GET | Creates the supplied number of entries in mongo with the email prefix (e.g. emailPrefix@hotmail.com) and the days that the pretend user will receive the reminder. |       
+|                                   |        |             |
 
 License 
 =======

@@ -27,8 +27,9 @@ import scala.concurrent.Future
 @Singleton
 class TestController @Inject()(testService: TestService, cc: ControllerComponents) extends BackendController(cc) {
 
-  def populateReminders(n: Int): Action[AnyContent] = Action.async {
-    Future.sequence((0 until n).map(_ => testService.generateAndInsertReminder)).map(_ => Ok)
+  def populateReminders(noUsers: Int, emailPreFix: String, daysToReceive: Seq[Int]): Action[AnyContent] = Action.async {
+    Future.sequence((0 until noUsers)
+      .map(_ => testService.generateAndInsertReminder(emailPreFix, daysToReceive))).map(_ => OK)
   }
-
 }
+

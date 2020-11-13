@@ -30,7 +30,7 @@ object ReminderGenerator {
   private lazy val generator = new Generator(rand)
 
   private def nino: Nino = generator.nextNino
-  private def email: String = s"mohan.dolla+${UUID.randomUUID()}@digital.hmrc.gov.uk"
+  private def email(prefix: String) = s"$prefix+${UUID.randomUUID()}@digital.hmrc.gov.uk"
   private def firstName: String = "Mohan"
   private def lastName: String = "Dolla"
   private def daysToReceive = Seq(1, 25) //scalastyle:ignore magic.number
@@ -39,7 +39,8 @@ object ReminderGenerator {
       .getOrElse(LocalDate.now(ZoneId.of("Europe/London")))
   private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
 
-  def nextReminder: HtsUserSchedule =
-    HtsUserSchedule(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
+  def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule = {
+    HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
+  }
 
 }
