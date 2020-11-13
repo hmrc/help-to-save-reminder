@@ -19,13 +19,24 @@ package uk.gov.hmrc.helptosavereminder.services.test
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
+import play.api.http.Status.{BAD_REQUEST, OK}
 
 import scala.concurrent.Future
 
 @Singleton
 class TestService @Inject()(htsReminderRepository: HtsReminderRepository) {
 
-  def generateAndInsertReminder: Future[Boolean] =
-    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder)
+  def generateAndInsertReminder(emailPrefix: String, daysToReceive: Seq[Int]): Future[Boolean] =
+    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder(emailPrefix, daysToReceive))
 
+  def preventEgregiousUseOfDates(daysToReceive: Seq[Int]) = {
+    val earliestDayInMonth = daysToReceive.min
+    val latestDayInMonth = daysToReceive.max
+
+    if (earliestDayInMonth < 1 || latestDayInMonth > 31) {
+      BAD_REQUEST
+    } else {
+      OK
+    }
+  }
 }
