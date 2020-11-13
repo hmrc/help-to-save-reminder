@@ -1,7 +1,5 @@
 # microservice specific routes
 
-GET        /generate-reminders/:n                   uk.gov.hmrc.helptosavereminder.controllers.ReminderGeneratorController.populateReminders(n : Int)
-
 POST       /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosavereminder.controllers.EmailCallbackController.handleCallBack(callbackreference)
 
 GET        /gethtsuser/:nino                        uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getHtsUser(nino : String)
