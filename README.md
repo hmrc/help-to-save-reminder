@@ -153,9 +153,11 @@ Endpoints
 
 | TestOnly                          |      |               |
 |:-----------------------------     |:-------|:------------|
-| /help-to-save-reminder/test-only/:noUsers/:emailPrefix/:daysToReceive | GET | Creates the supplied number of entries in mongo with the email prefix (e.g. emailPrefix@hotmail.com) and the days that the pretend user will receive the reminder. |       
+| /help-to-save-reminder/test-only/:noUsers/:emailPrefix/daysToReceive | GET | Creates the supplied number of entries in mongo with the email prefix (e.g. emailPrefix@hotmail.com) and the days that that user would receive the reminder. |       
 |                                   |        |             |
 
+Example request to test-only endpoint:
+http://localhost:7008/help-to-save-reminder/test-only/populate-reminders/5/johndoe/daysToReceive?day=1&day=25
 License 
 =======
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
