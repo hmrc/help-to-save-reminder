@@ -33,11 +33,4 @@ class TestController @Inject()(testService: TestService, cc: ControllerComponent
       .map(_ => Ok)
 
   }
-
-  def populateReminders(noUsers: Int, emailPrefix: String): Action[AnyContent] = Action.async {
-    Future
-      .sequence((0 until noUsers).map(_ => testService.generateAndInsertReminder(emailPrefix)))
-      .map(_ => Ok)
-
-  }
 }

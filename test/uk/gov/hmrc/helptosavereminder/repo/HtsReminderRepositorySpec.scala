@@ -20,7 +20,7 @@ import java.time.LocalDate
 import java.util.UUID
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Configuration
 import play.modules.reactivemongo.ReactiveMongoComponent

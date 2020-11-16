@@ -31,6 +31,7 @@ object ReminderGenerator {
 
   private def nino: Nino = generator.nextNino
   private def email(prefix: String) = s"$prefix+${UUID.randomUUID()}@digital.hmrc.gov.uk"
+  private def email = s"$firstName.$lastName+${UUID.randomUUID()}@digital.hmrc.gov.uk"
   private def firstName: String = "Mohan"
   private def lastName: String = "Dolla"
   private def daysToReceive = Seq(1, 25) //scalastyle:ignore magic.number
@@ -42,6 +43,6 @@ object ReminderGenerator {
   def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule =
     HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
 
-  def nextReminder(emailPrefix: String): HtsUserSchedule =
-    HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
+  def nextReminder: HtsUserSchedule =
+    HtsUserSchedule(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
 }
