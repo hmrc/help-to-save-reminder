@@ -1,2 +1,2 @@
-GET     /populate-reminders/:noUsers/:emailPrefix        uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(noUsers: Int, emailPrefix: String)
+GET     /populate-reminders/:noUsers/:emailPrefix/daysToReceive        uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(noUsers: Int, emailPrefix: String, day: List[Int])
 
