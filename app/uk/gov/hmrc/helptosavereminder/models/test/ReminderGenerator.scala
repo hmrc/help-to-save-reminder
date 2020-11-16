@@ -39,8 +39,9 @@ object ReminderGenerator {
       .getOrElse(LocalDate.now(ZoneId.of("Europe/London")))
   private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
 
-  def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule = {
+  def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule =
     HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
-  }
 
+  def nextReminder(emailPrefix: String): HtsUserSchedule =
+    HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
 }

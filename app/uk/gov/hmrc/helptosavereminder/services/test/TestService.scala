@@ -29,14 +29,20 @@ class TestService @Inject()(htsReminderRepository: HtsReminderRepository) {
   def generateAndInsertReminder(emailPrefix: String, daysToReceive: Seq[Int]): Future[Boolean] =
     htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder(emailPrefix, daysToReceive))
 
-  def preventEgregiousUseOfDates(daysToReceive: Seq[Int]) = {
-    val earliestDayInMonth = daysToReceive.min
-    val latestDayInMonth = daysToReceive.max
+  def generateAndInsertReminder(emailPrefix: String): Future[Boolean] =
+    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder(emailPrefix))
 
-    if (earliestDayInMonth < 1 || latestDayInMonth > 31) {
-      BAD_REQUEST
-    } else {
-      OK
-    }
-  }
+  def generateAndInsertReminder: Future[Boolean] =
+    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder)
+
+//  def preventEgregiousUseOfDates(daysToReceive: Seq[Int]) = {
+//    val earliestDayInMonth = daysToReceive.min
+//    val latestDayInMonth = daysToReceive.max
+//
+//    if (earliestDayInMonth < 1 || latestDayInMonth > 31) {
+//      BAD_REQUEST
+//    } else {
+//      OK
+//    }
+//  }
 }
