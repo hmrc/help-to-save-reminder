@@ -41,7 +41,7 @@ import uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import play.api.test._
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsReminderUserUpdated, HtsReminderUserUpdatedEvent, HtsUserSchedule, UpdateEmail}
+import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsUserSchedule, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
@@ -118,14 +118,9 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
       val controller = new HtsUserUpdateController(mockRepository, mcc, auditor, mockAuthConnector)
 
-      val auditEventObject = HtsReminderUserUpdatedEvent(
-        HtsReminderUserUpdated(htsReminderUser.nino.value, Json.toJson(htsReminderUser)),
-        "/help-to-save-reminder/update-htsuser-entity")
-
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         mockUpdateRepository(htsReminderUser)(true)
-        mockSendAuditEvent(auditEventObject, htsReminderUser.nino.value)
 
       }
 
@@ -218,14 +213,9 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
       val fakeRequest = FakeRequest("POST", "/")
 
-      val auditEventObject = HtsReminderUserDeletedEvent(
-        HtsReminderUserDeleted(cancelHtsUser.nino, Json.toJson(cancelHtsUser)),
-        "/help-to-save-reminder/delete-htsuser-entity")
-
       inSequence {
         mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         mockCancelRepository("AE123456C")(Right())
-        mockSendAuditEvent(auditEventObject, cancelHtsUser.nino)
       }
 
       val result = controller.deleteHtsUser()(fakeRequest.withJsonBody(Json.toJson(cancelHtsUser)))
