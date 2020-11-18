@@ -61,9 +61,9 @@ class EmailCallbackController @Inject()(
                   val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
                   auditor.sendEvent(
                     HtsReminderUserDeletedEvent(
-                      HtsReminderUserDeleted(Json.toJson(htsUserSchedule.nino, htsUserSchedule.email)),
+                      HtsReminderUserDeleted(htsUserSchedule.nino.value, htsUserSchedule.email),
                       path),
-                    htsUserSchedule.nino.toString
+                    htsUserSchedule.nino.value
                   )
                   Logger.debug(
                     s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}")

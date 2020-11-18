@@ -32,7 +32,7 @@ object HTSEvent {
     ExtendedDataEvent(appName, auditType = auditType, detail = detail, tags = hc.toAuditTags(transactionName, path))
 }
 
-case class HtsReminderUserDeleted(account: JsValue)
+case class HtsReminderUserDeleted(nino: String, emailAddress: String)
 
 object HtsReminderUserDeleted {
   implicit val format: Format[HtsReminderUserDeleted] = Json.format[HtsReminderUserDeleted]
