@@ -229,8 +229,15 @@ class HtsReminderRepositorySpec
   "Calls to deleteHtsUser on Hts Reminder repository" should {
     "should successfully delete the user " in {
 
+      val reminderValue = ReminderGenerator.nextReminder
+
+      val updateStatus: Future[Boolean] =
+        htsReminderMongoRepository.updateReminderUser(reminderValue)
+
+      await(updateStatus) shouldBe true
+
       val result =
-        htsReminderMongoRepository.deleteHtsUser("YP798383D")
+        htsReminderMongoRepository.deleteHtsUser(reminderValue.nino.toString())
 
       await(result) shouldBe Right(())
 
