@@ -54,7 +54,7 @@ class EmailCallbackController @Inject()(
               Logger.debug(s"The URL to request email deletion is $url")
               repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference).flatMap {
                 case Left(error) => {
-                  Logger.error(s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error")
+                  Logger.error(s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}")
                   Future.successful(Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference"))
                 }
                 case Right(()) => {

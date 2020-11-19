@@ -24,7 +24,7 @@ import play.api.Logger
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.collections.GenericCollection
-import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
+import reactivemongo.api.commands.UpdateWriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.bson.BSONObjectID
@@ -201,23 +201,13 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       case _ => status.ok
     }
 
-  def statusCheck(status: WriteResult): Boolean =
-    status.n match {
-      case 0 => false
-      case _ => true
-    }
-
   override def deleteHtsUser(nino: String): Future[Either[String, Unit]] =
     remove("nino" → Json.obj("$regex" → JsString(nino)))
       .map[Either[String, Unit]] { res ⇒
         if (res.writeErrors.nonEmpty) {
           Left(s"Could not delete htsUser: ${res.writeErrors.mkString(";")}")
         } else {
-          if (statusCheck(res)) {
-            Right(())
-          } else {
-            Left(s"Could not find htsUser to delete")
-          }
+          Right(())
         }
       }
       .recover {
@@ -231,11 +221,7 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
         if (res.writeErrors.nonEmpty) {
           Left(s"Could not delete htsUser by callBackUrlRef: ${res.writeErrors.mkString(";")}")
         } else {
-          if (statusCheck(res)) {
-            Right(())
-          } else {
-            Left(s"Could not find htsUser to delete by callBackUrlRef")
-          }
+          Right(())
         }
       }
       .recover {
