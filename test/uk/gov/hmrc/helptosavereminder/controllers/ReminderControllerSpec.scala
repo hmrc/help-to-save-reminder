@@ -32,22 +32,21 @@ package uk.gov.hmrc.helptosavereminder.controllers
  * limitations under the License.
  */
 
-import akka.util.ByteString
 import com.kenshoo.play.metrics.PlayModule
-import uk.gov.hmrc.domain.Nino
 import play.api.inject.guice.GuiceableModule
 import play.api.libs.json.{JsSuccess, JsValue, Json}
-import play.api.libs.streams.Accumulator
 import play.api.mvc.{ControllerComponents, Request, Result}
-import uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController
-import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import play.api.test._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HTSEvent, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsUserSchedule, UpdateEmail}
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
+import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
+import uk.gov.hmrc.helptosavereminder.models._
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import uk.gov.hmrc.helptosavereminder.utils.TestSupport
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,10 +56,10 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
   def additionalConfiguration: Map[String, String] =
     Map(
       "logger.application" -> "ERROR",
-      "logger.play" -> "ERROR",
-      "logger.root" -> "ERROR",
+      "logger.play"        -> "ERROR",
+      "logger.root"        -> "ERROR",
       "org.apache.logging" -> "ERROR",
-      "com.codahale" -> "ERROR")
+      "com.codahale"       -> "ERROR")
 
   private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
@@ -387,13 +386,12 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
 
     }
 
-
     "return a Forbidden status" when {
       val nino1 = "AE123456D"
       val htsReminderUser = ReminderGenerator.nextReminder.copy(nino = Nino(nino1))
       def shouldBeForbidden(result: Future[Result]) = status(result) shouldBe 403
 
-      "hitting the getHtsUser endpoint when the nino URL is different to the auth supplied nino" in {
+      "hitting the getHtsUser endpoint when the nino in the URL is different to the auth supplied nino" in {
 
         val fakeRequest = FakeRequest("GET", s"/gethtsuser/$nino1")
 
@@ -404,33 +402,33 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
         val result = controller.getHtsUser(nino1)(fakeRequest)
 
         shouldBeForbidden(result)
+      }
+
+      "hitting the update endpoint when the nino in the request body is different to the auth supplied nino" in {
+
+        val request = FakeRequest("POST", "/update-htsuser-entity").withJsonBody(Json.toJson(htsReminderUser))
+
+        inSequence {
+          mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         }
 
-    "hitting the update endpoint when the nino in the request body is different to the auth supplied nino" in {
+        val result = controller.update()(request)
 
-      val request = FakeRequest("POST", "/update-htsuser-entity").withJsonBody(Json.toJson(htsReminderUser))
-
-          inSequence {
-            mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
-          }
-
-          val result = controller.update()(request)
-
-          shouldBeForbidden(result)
-        }
+        shouldBeForbidden(result)
+      }
 
       "hitting the update email endpoint when the nino in the request body is different to the auth supplied nino" in {
 
-      val request = FakeRequest("POST", "/update-htsuser-email").withJsonBody(Json.toJson(htsReminderUser))
+        val request = FakeRequest("POST", "/update-htsuser-email").withJsonBody(Json.toJson(htsReminderUser))
 
-          inSequence {
-            mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
-          }
-
-          val result = controller.updateEmail()(request)
-
-          shouldBeForbidden(result)
+        inSequence {
+          mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
         }
+
+        val result = controller.updateEmail()(request)
+
+        shouldBeForbidden(result)
       }
+    }
   }
 }
