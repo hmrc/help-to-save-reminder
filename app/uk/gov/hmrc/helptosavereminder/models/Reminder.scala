@@ -39,7 +39,7 @@ case class UpdateCallBackRef(reminder: HtsUserSchedule, callBackRefUrl: String)
 
 case class UpdateCallBackSuccess(reminder: HtsUserSchedule, callBackRefUrl: String)
 
-case class CancelHtsUserReminder(nino: String)
+case class CancelHtsUserReminder(nino: String) // this should really be Nino class
 
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
 
