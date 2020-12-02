@@ -52,7 +52,6 @@ trait HtsReminderRepository {
   def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean]
 }
 
-//noinspection ScalaStyle
 class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
     extends ReactiveRepository[HtsUserSchedule, BSONObjectID](
       collectionName = "help-to-save-reminder",

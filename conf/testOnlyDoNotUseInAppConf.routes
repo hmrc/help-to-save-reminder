@@ -13,7 +13,6 @@
 
 ->        /                                               prod.Routes
 
-GET     /populate-reminders/:n         uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(n: Int)
+GET     /populate-reminders/:noUsers/:emailPrefix/daysToReceive        uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(noUsers: Int, emailPrefix: String, day: List[Int])
 
-GET     /gethtsuser/:nino              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
-
+GET     /gethtsuser/:nino                                              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
