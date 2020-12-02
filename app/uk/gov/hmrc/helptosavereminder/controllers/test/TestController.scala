@@ -37,7 +37,6 @@ class TestController @Inject()(
     Future
       .sequence((0 until noUsers).map(_ => testService.generateAndInsertReminder(emailPrefix, daysToReceive)))
       .map(_ => Ok)
-
   }
 
   def getHtsUser(nino: String): Action[AnyContent] = Action.async { implicit request =>
