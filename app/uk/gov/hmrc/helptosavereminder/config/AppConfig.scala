@@ -17,7 +17,7 @@
 package uk.gov.hmrc.helptosavereminder.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration, Environment, Mode}
+import play.api.{Configuration}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton

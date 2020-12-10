@@ -20,26 +20,26 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit._
 import com.kenshoo.play.metrics.PlayModule
 import org.mockito.ArgumentCaptor
-import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, SendTemplatedEmailRequest, UpdateCallBackSuccess}
-import play.api.{Application, Mode}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
+import play.api.{Application, Mode}
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
+import uk.gov.hmrc.helptosavereminder.models.{SendTemplatedEmailRequest, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
 class EmailSenderActorSpec
     extends TestKit(ActorSystem("TestProcessingSystem")) with UnitSpec with MockitoSugar with GuiceOneAppPerSuite
@@ -85,9 +85,6 @@ class EmailSenderActorSpec
   "Email Sender Actor" must {
 
     "should send an Hts object to DB for saving" in {
-
-      val htsUserUpdateActorProbe = TestProbe()
-
       val emailSenderActor = TestActorRef(
         Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {
           //override lazy val repository = mockRepository
@@ -98,9 +95,6 @@ class EmailSenderActorSpec
 
       val mockObject = ReminderGenerator.nextReminder
 
-      val mockResponse = HttpResponse(responseStatus = 202)
-
-      val template = HtsReminderTemplate("joe@bloggs.com", "upload-ref", "calBakcUrlRef")
       val requestCaptor = ArgumentCaptor.forClass(classOf[SendTemplatedEmailRequest])
 
       when(
@@ -108,7 +102,7 @@ class EmailSenderActorSpec
           anyString,
           requestCaptor.capture(),
           any[Seq[(String, String)]])(any(), any(), any[HeaderCarrier], any[ExecutionContext]))
-        .thenReturn(Future.successful(HttpResponse(202)))
+        .thenReturn(Future.successful(HttpResponse(202, "")))
 
       when(mockRepository.updateNextSendDate(any(), any()))
         .thenReturn(Future.successful(true))

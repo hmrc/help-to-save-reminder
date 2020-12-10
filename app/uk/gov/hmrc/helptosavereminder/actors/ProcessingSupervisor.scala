@@ -19,18 +19,16 @@ package uk.gov.hmrc.helptosavereminder.actors
 import java.util.TimeZone
 
 import akka.actor.{Actor, ActorRef, Props}
-import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import play.api.{Configuration, Environment, Logger}
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import javax.inject.{Inject, Singleton}
 import org.quartz.CronExpression
-import play.api.libs.json.Json
+import play.api.Logger
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
+import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 @Singleton

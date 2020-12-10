@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.helptosave.controllers
+package uk.gov.hmrc.helptosavereminder.auth
 
 import cats.instances.string._
 import cats.syntax.eq._

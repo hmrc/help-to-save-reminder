@@ -24,6 +24,7 @@ import play.api.Logger
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.collections.GenericCollection
+import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.bson.BSONObjectID
@@ -33,6 +34,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import reactivemongo.play.json.JSONSerializationPack
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
+import play.api.http.Status._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -48,7 +50,7 @@ trait HtsReminderRepository {
   def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]]
   def deleteHtsUser(nino: String): Future[Either[String, Unit]]
   def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]]
-  def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean]
+  def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int]
 }
 
 class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
@@ -93,19 +95,17 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
     result
       .map { status =>
         Logger.debug(s"[HtsReminderMongoRepository][updateNextSendDate] updated:, result : $status ")
-        status.ok
+        statusCheck("Failed to update HtsUser NextSendDate, No Matches Found", status)
       }
       .recover {
-        // $COVERAGE-OFF$
         case e =>
           Logger.error("Failed to update HtsUser", e)
           false
-        // $COVERAGE-ON$
       }
 
   }
 
-  override def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Boolean] = {
+  override def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int] = {
     val selector = Json.obj("nino" -> nino)
     val modifier = Json.obj("$set" -> Json.obj("email" -> email, "firstName" -> firstName, "lastName" -> lastName))
     val result = proxyCollection.update(ordered = false).one(selector, modifier)
@@ -113,12 +113,21 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
     result
       .map { status =>
         Logger.debug(s"[HtsReminderMongoRepository][updateEmail] updated:, result : $status ")
-        status.ok
+
+        (status.n, status.nModified) match {
+          case (0, _) => {
+            Logger.error("Failed to update HtsUser Email, No Matches Found")
+            NOT_FOUND
+          }
+          case (_, 0) => NOT_MODIFIED
+          case (_, _) => OK
+        }
+
       }
       .recover {
         case e =>
-          //Logger.error("Failed to update HtsUser Email", e)
-          false
+          Logger.error("Failed to update HtsUser Email", e)
+          NOT_FOUND
       }
 
   }
@@ -132,14 +141,12 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
     result
       .map { status =>
         Logger.debug(s"[HtsReminderMongoRepository][updateCallBackRef] updated:, result : $status ")
-        status.ok
+        statusCheck("Failed to update HtsUser CallbackRef, No Matches Found", status)
       }
       .recover {
-        // $COVERAGE-OFF$
         case e =>
           Logger.error("Failed to update HtsUser", e)
           false
-        // $COVERAGE-ON$
       }
 
   }
@@ -184,32 +191,53 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
       result
         .map { status =>
           Logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status")
-          status.ok
+          statusCheck("Failed to update Hts ReminderUser, No Matches Found", status)
         }
         .recover {
-          // $COVERAGE-OFF$
           case e =>
             Logger.error("Failed to update HtsUser", e)
             false
-          // $COVERAGE-ON$
         }
     }
 
   }
 
-  override def deleteHtsUser(nino: String): Future[Either[String, Unit]] =
+  def statusCheck(errorMsg: String, status: UpdateWriteResult): Boolean =
+    status.n match {
+      case 0 => {
+        Logger.error(errorMsg)
+        false
+      }
+      case _ => status.ok
+    }
+
+  def statusCheck(status: WriteResult): Boolean = {
+    Logger.debug("debug Status: " + status.toString)
+    status.n match {
+      case 0 => false
+      case _ => status.ok
+    }
+  }
+
+  override def deleteHtsUser(nino: String): Future[Either[String, Unit]] = {
+    Logger.debug(nino)
     remove("nino" → Json.obj("$regex" → JsString(nino)))
       .map[Either[String, Unit]] { res ⇒
         if (res.writeErrors.nonEmpty) {
           Left(s"Could not delete htsUser: ${res.writeErrors.mkString(";")}")
         } else {
-          Right(())
+          if (statusCheck(res)) {
+            Right(())
+          } else {
+            Left(s"Could not find htsUser to delete")
+          }
         }
       }
       .recover {
         case e ⇒
           Left(s"Could not delete htsUser: ${e.getMessage}")
       }
+  }
 
   override def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]] =
     remove("nino" → Json.obj("$regex" → JsString(nino), "callBackUrlRef" -> callBackUrlRef))
@@ -217,7 +245,11 @@ class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
         if (res.writeErrors.nonEmpty) {
           Left(s"Could not delete htsUser by callBackUrlRef: ${res.writeErrors.mkString(";")}")
         } else {
-          Right(())
+          if (statusCheck(res)) {
+            Right(())
+          } else {
+            Left(s"Could not find htsUser to delete by callBackUrlRef")
+          }
         }
       }
       .recover {

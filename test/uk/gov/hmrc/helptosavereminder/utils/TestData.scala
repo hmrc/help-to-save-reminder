@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.helptosavereminder.utils
 
-import java.time.LocalDate
-
 trait TestData {
 
   def payeDetails(nino: String): String =

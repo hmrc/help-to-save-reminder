@@ -25,7 +25,6 @@ import scala.concurrent.Future
 @Singleton
 class TestService @Inject()(htsReminderRepository: HtsReminderRepository) {
 
-  def generateAndInsertReminder: Future[Boolean] =
-    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder)
-
+  def generateAndInsertReminder(emailPrefix: String, daysToReceive: Seq[Int]): Future[Boolean] =
+    htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder(emailPrefix, daysToReceive))
 }

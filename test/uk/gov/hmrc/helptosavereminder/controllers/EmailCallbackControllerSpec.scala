@@ -29,21 +29,20 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
 import play.api.libs.json.Json
 import play.api.mvc.MessagesControllerComponents
+import play.api.test.FakeRequest
 import play.api.{Application, Configuration, Environment, Mode}
-import uk.gov.hmrc.helptosavereminder.config.AppConfig
-import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap, HtsUserSchedule}
+import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap}
+import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+import uk.gov.hmrc.http.{HttpClient, HttpResponse}
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.test.UnitSpec
-import play.api.test.FakeRequest
-import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -83,7 +82,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
   implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
   lazy val controller =
-    new EmailCallbackController(mockHttp, serviceConfig, mcc, mockRepository, auditor, mockEmailConnector)
+    new EmailCallbackController(serviceConfig, mcc, mockRepository, auditor, mockEmailConnector)
 
   val eventItem1: EventItem = EventItem("PermanentBounce", LocalDateTime.now())
   val eventItem2: EventItem = EventItem("Opened", LocalDateTime.now())
@@ -111,7 +110,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Some(htsReminderUser))
         when(mockEmailConnector.unBlockEmail(any())(any(), any()))
           .thenReturn(Future.successful(true))
-        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right()))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
 
         await(result) match {
@@ -137,7 +136,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Some(htsReminderUser))
         when(mockEmailConnector.unBlockEmail(any())(any(), any()))
           .thenReturn(Future.successful(false))
-        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right()))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
 
         await(result) match {
@@ -164,7 +163,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Some(htsReminderUser))
         when(mockEmailConnector.unBlockEmail(any())(any(), any()))
           .thenReturn(Future.failed(new Exception("Exception failure")))
-        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right()))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
 
         await(result) match {
@@ -181,7 +180,7 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
 
     val callBackReferences = UUID.randomUUID().toString
 
-    val htsReminderUser = (ReminderGenerator.nextReminder)
+    val htsReminderUser = ReminderGenerator.nextReminder
       .copy(nino = Nino("AE456789B"), callBackUrlRef = callBackReferences)
 
     val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))

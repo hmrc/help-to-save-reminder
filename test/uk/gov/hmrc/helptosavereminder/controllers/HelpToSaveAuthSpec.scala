@@ -23,8 +23,8 @@ import uk.gov.hmrc.auth.core.AuthorisationException.fromString
 import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
 import uk.gov.hmrc.auth.core.retrieve._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{authProviderId => v2AuthProviderId, nino => v2Nino}
-import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth
-import uk.gov.hmrc.helptosave.controllers.HtsReminderAuth._
+import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth
+import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
 
 import scala.concurrent.Future
 
@@ -36,8 +36,8 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
     "handling ggAuthorisedWithNINO" must {
 
-      def callAuth = htsAuth.ggAuthorisedWithNino { implicit request ⇒ implicit nino ⇒
-        Future.successful(Ok("authSuccess"))
+      def callAuth = htsAuth.ggAuthorisedWithNino { _ ⇒ _ ⇒
+        Future.successful(Ok(s"authSuccess"))
       }
 
       "return after successful authentication" in {
@@ -83,7 +83,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
     "handling ggOrPrivilegedAuthorised" must {
 
-      def callAuthNoRetrievals = htsAuth.ggOrPrivilegedAuthorised { implicit request ⇒
+      def callAuthNoRetrievals = htsAuth.ggOrPrivilegedAuthorised { _ ⇒
         Future.successful(Ok("authSuccess"))
       }
 
@@ -98,7 +98,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
     "handling ggOrPrivilegedAuthorisedWithNINO" when {
 
-      def callAuth(nino: Option[String]) = htsAuth.ggOrPrivilegedAuthorisedWithNINO(nino) { implicit request ⇒ _ ⇒
+      def callAuth(nino: Option[String]) = htsAuth.ggOrPrivilegedAuthorisedWithNINO(nino) { _ ⇒ _ ⇒
         Future.successful(Ok("authSuccess"))
       }
 
@@ -117,7 +117,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
         "retrieve a NINO and return successfully if a NINO is not given and a NINO is successfully retrieved" in {
           inSequence {
-            mockAuth(GGAndPrivilegedProviders, Retrievals.authProviderId)(Right(ggCredentials))
+            mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
             mockAuth(EmptyPredicate, v2Nino)(Right(Some("nino")))
           }
 

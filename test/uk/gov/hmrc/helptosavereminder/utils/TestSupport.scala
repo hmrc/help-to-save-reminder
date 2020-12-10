@@ -18,8 +18,6 @@ package uk.gov.hmrc.helptosavereminder.utils
 
 import java.time.LocalDate
 
-import com.codahale.metrics.{Counter, Gauge, Timer}
-import com.kenshoo.play.metrics.{Metrics => PlayMetrics}
 import com.typesafe.config.ConfigFactory
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
@@ -27,7 +25,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.ControllerComponents
 import play.api.{Application, Configuration, Play}
-import uk.gov.hmrc.domain.Generator
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -78,8 +75,6 @@ trait TestSupport extends UnitSpec with MockFactory with BeforeAndAfterAll {
   val servicesConfig = fakeApplication.injector.instanceOf[ServicesConfig]
 
   implicit lazy val appConfig: AppConfig = fakeApplication.injector.instanceOf[AppConfig]
-
-  private val hmrcGenerator: Generator = new Generator()
 
   val startDate: LocalDate = LocalDate.of(1800, 1, 1) // scalastyle:ignore magic.number
   val endDate: LocalDate = LocalDate.of(2000, 1, 1) // scalastyle:ignore magic.number

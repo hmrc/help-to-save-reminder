@@ -47,7 +47,7 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
             s"Updated the User callBackRef for ${updateReminder.reminder.nino.value} with value : ${updateReminder.callBackRefUrl}")
           origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
         }
-        case _ => //Failure
+        case _ => Logger.error(s"Failed to update CallbackRef for the User: ${updateReminder.reminder.nino.value}")
       }
     }
   }

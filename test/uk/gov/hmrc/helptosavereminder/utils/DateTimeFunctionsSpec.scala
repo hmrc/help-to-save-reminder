@@ -59,7 +59,6 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
   "DateTimeFunctions object " should {
 
     val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
-    val startOfMonth = localDateParam.withDayOfMonth(1)
 
     "return correct nextSendDate for any day in the current month of the year" in {
 

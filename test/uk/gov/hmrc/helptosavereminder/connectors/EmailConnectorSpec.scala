@@ -46,7 +46,7 @@ class EmailConnectorSpec extends UnitSpec with MongoSpecSupport with GuiceOneApp
         SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
 
       when(mockHttp.POST[SendTemplatedEmailRequest, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(202)))
+        .thenReturn(Future.successful(HttpResponse(202, "")))
       val result = emailConnector.sendEmail(sendTemplatedEmailRequest, url)
 
       await(result) match {
@@ -63,7 +63,7 @@ class EmailConnectorSpec extends UnitSpec with MongoSpecSupport with GuiceOneApp
         SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
 
       when(mockHttp.POST[SendTemplatedEmailRequest, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(300)))
+        .thenReturn(Future.successful(HttpResponse(300, "")))
       val result = emailConnector.sendEmail(sendTemplatedEmailRequest, url)
 
       await(result) match {
@@ -78,7 +78,7 @@ class EmailConnectorSpec extends UnitSpec with MongoSpecSupport with GuiceOneApp
       val url = "GET /sendEmail"
 
       when(mockHttp.DELETE[HttpResponse](any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(200)))
+        .thenReturn(Future.successful(HttpResponse(200, "")))
       val result = emailConnector.unBlockEmail(url)
 
       await(result) match {
@@ -93,7 +93,7 @@ class EmailConnectorSpec extends UnitSpec with MongoSpecSupport with GuiceOneApp
       val url = "GET /sendEmail"
 
       when(mockHttp.DELETE[HttpResponse](any(), any())(any(), any(), any()))
-        .thenReturn(Future.successful(HttpResponse(400)))
+        .thenReturn(Future.successful(HttpResponse(400, "")))
       val result = emailConnector.unBlockEmail(url)
 
       await(result) match {

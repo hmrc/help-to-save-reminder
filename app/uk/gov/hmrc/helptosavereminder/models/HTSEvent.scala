@@ -32,32 +32,10 @@ object HTSEvent {
     ExtendedDataEvent(appName, auditType = auditType, detail = detail, tags = hc.toAuditTags(transactionName, path))
 }
 
-case class HtsReminderUserUpdated(nino: String, account: JsValue)
-
-case class HtsReminderUserDeleted(nino: String, account: JsValue)
-
-object HtsReminderUserUpdated {
-  implicit val format: Format[HtsReminderUserUpdated] = Json.format[HtsReminderUserUpdated]
-}
+case class HtsReminderUserDeleted(nino: String, emailAddress: String)
 
 object HtsReminderUserDeleted {
   implicit val format: Format[HtsReminderUserDeleted] = Json.format[HtsReminderUserDeleted]
-}
-
-case class HtsReminderUserUpdatedEvent(htsReminderUserUpdated: HtsReminderUserUpdated, path: String)(
-  implicit hc: HeaderCarrier,
-  appConfig: AppConfig)
-    extends HTSEvent {
-
-  val value: ExtendedDataEvent = {
-    HTSEvent(
-      appConfig.appName,
-      "HtsReminderUserUpdated",
-      Json.toJson(htsReminderUserUpdated),
-      "htsUser-reminder-updated",
-      path)
-  }
-
 }
 
 case class HtsReminderUserDeletedEvent(htsReminderUserDeleted: HtsReminderUserDeleted, path: String)(
@@ -66,12 +44,7 @@ case class HtsReminderUserDeletedEvent(htsReminderUserDeleted: HtsReminderUserDe
     extends HTSEvent {
 
   val value: ExtendedDataEvent = {
-    HTSEvent(
-      appConfig.appName,
-      "HtsReminderUserDeleted",
-      Json.toJson(htsReminderUserDeleted),
-      "htsUser-reminder-deleted",
-      path)
+    HTSEvent(appConfig.appName, "ReminderDeleted", Json.toJson(htsReminderUserDeleted), "reminder-deleted", path)
   }
 
 }

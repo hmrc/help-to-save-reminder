@@ -1,1 +1,0 @@
-GET     /populate-reminders/:n         uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(n: Int)

@@ -11,6 +11,8 @@
 
 # Add all the application routes to the prod.routes file
 
-->        /help-to-save-reminder/test-only/               test.Routes
-
 ->        /                                               prod.Routes
+
+GET     /help-to-save-reminder/test-only/populate-reminders/:noUsers/:emailPrefix/daysToReceive        uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(noUsers: Int, emailPrefix: String, day: List[Int])
+
+GET     /help-to-save-reminder/test-only/gethtsuser/:nino                                              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
