@@ -28,7 +28,8 @@ trait HTSEvent {
 
 object HTSEvent {
   def apply(appName: String, auditType: String, detail: JsValue, transactionName: String, path: String)(
-    implicit hc: HeaderCarrier): ExtendedDataEvent =
+    implicit hc: HeaderCarrier
+  ): ExtendedDataEvent =
     ExtendedDataEvent(appName, auditType = auditType, detail = detail, tags = hc.toAuditTags(transactionName, path))
 }
 
@@ -40,8 +41,8 @@ object HtsReminderUserDeleted {
 
 case class HtsReminderUserDeletedEvent(htsReminderUserDeleted: HtsReminderUserDeleted, path: String)(
   implicit hc: HeaderCarrier,
-  appConfig: AppConfig)
-    extends HTSEvent {
+  appConfig: AppConfig
+) extends HTSEvent {
 
   val value: ExtendedDataEvent = {
     HTSEvent(appConfig.appName, "ReminderDeleted", Json.toJson(htsReminderUserDeleted), "reminder-deleted", path)

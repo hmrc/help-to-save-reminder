@@ -33,10 +33,11 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailSenderActor @Inject()(
+class EmailSenderActor @Inject() (
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository,
-  emailConnector: EmailConnector)(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
+  emailConnector: EmailConnector
+)(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
     extends Actor with Logging {
 
   implicit lazy val hc = HeaderCarrier()
@@ -65,11 +66,7 @@ class EmailSenderActor @Inject()(
 
       val ref = successReminder.callBackRefUrl
       val template =
-        HtsReminderTemplate(
-          reminder.email,
-          reminder.firstName + " " + reminder.lastName,
-          ref,
-          monthName)
+        HtsReminderTemplate(reminder.email, reminder.firstName + " " + reminder.lastName, ref, monthName)
 
       logger.info(s"Sending reminder for $ref")
       sendReceivedTemplatedEmail(template).map({
@@ -102,7 +99,8 @@ class EmailSenderActor @Inject()(
       List(template.email),
       sendEmailTemplateId,
       Map(nameParam -> template.name, monthParam -> template.monthName),
-      callBackUrl)
+      callBackUrl
+    )
 
     sendEmail(request)
 

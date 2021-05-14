@@ -20,7 +20,6 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import com.kenshoo.play.metrics.PlayModule
 import org.mockito.Matchers._
 import org.mockito.Mockito.when
@@ -53,7 +52,8 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
       "logger.play"        -> "ERROR",
       "logger.root"        -> "ERROR",
       "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR")
+      "com.codahale"       -> "ERROR"
+    )
 
   private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
@@ -69,7 +69,6 @@ class EmailCallbackControllerSpec extends UnitSpec with MongoSpecSupport with Gu
   val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
 
   implicit val sys = ActorSystem("MyTest")
-  implicit val mat = ActorMaterializer()
 
   private val env = Environment.simple()
   private val configuration = Configuration.load(env)

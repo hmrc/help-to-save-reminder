@@ -23,14 +23,14 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import play.api.libs.json.Json
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class TestController @Inject()(
+class TestController @Inject() (
   testService: TestService,
   repository: HtsReminderMongoRepository,
-  cc: ControllerComponents)
+  cc: ControllerComponents
+)(implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 
   def populateReminders(noUsers: Int, emailPrefix: String, daysToReceive: Seq[Int]): Action[AnyContent] = Action.async {

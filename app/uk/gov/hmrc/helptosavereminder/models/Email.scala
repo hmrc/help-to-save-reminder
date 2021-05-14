@@ -24,7 +24,8 @@ case class SendTemplatedEmailRequest(
   to: List[String],
   templateId: String,
   parameters: Map[String, String],
-  eventUrl: String)
+  eventUrl: String
+)
 
 object SendTemplatedEmailRequest {
   implicit val format: OFormat[SendTemplatedEmailRequest] = Json.format[SendTemplatedEmailRequest]

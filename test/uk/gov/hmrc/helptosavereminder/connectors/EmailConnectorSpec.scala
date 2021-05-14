@@ -25,12 +25,12 @@ import uk.gov.hmrc.http.HttpResponse
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.http.HeaderCarrier
 
-import uk.gov.hmrc.http.{HeaderCarrier}
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{ExecutionContext, Future}
 
-class EmailConnectorSpec extends UnitSpec with MongoSpecSupport with GuiceOneAppPerSuite with MockitoSugar {
+class EmailConnectorSpec(implicit ec: ExecutionContext)
+    extends UnitSpec with MongoSpecSupport with GuiceOneAppPerSuite with MockitoSugar {
 
   val mockHttp: HttpClient = mock[HttpClient]
 

@@ -29,11 +29,12 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailConnector @Inject()(http: HttpClient) extends Logging {
+class EmailConnector @Inject() (http: HttpClient) extends Logging {
 
-  def sendEmail(request: SendTemplatedEmailRequest, url: String)(
-    implicit hc: HeaderCarrier,
-    ec: ExecutionContext): Future[Boolean] =
+  def sendEmail(
+    request: SendTemplatedEmailRequest,
+    url: String
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec) map { response =>
       response.status match {
         case ACCEPTED =>

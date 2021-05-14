@@ -47,12 +47,14 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
         .map {
           case true => {
             logger.debug(
-              s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}")
+              s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}"
+            )
             origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
           }
           case _ =>
             logger.warn(
-              s"Failed to update CallbackRef for the User: ${updateReminder.reminder.htsUserSchedule.nino.value}")
+              s"Failed to update CallbackRef for the User: ${updateReminder.reminder.htsUserSchedule.nino.value}"
+            )
         }
     }
   }

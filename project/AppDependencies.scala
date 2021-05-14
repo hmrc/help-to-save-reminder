@@ -13,7 +13,9 @@ object AppDependencies {
     "uk.gov.hmrc"             %% "domain"                   % "5.11.0-play-27",
     "uk.gov.hmrc"             %% "mongo-lock"               % "7.0.0-play-28",
     "org.typelevel"           %% "cats-core"                % "2.6.0",
-    "com.enragedginger"       %% "akka-quartz-scheduler"    % "1.9.0-akka-2.6.x"
+    "com.enragedginger"       %% "akka-quartz-scheduler"    % "1.9.0-akka-2.6.x",
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
+    "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full
   )
 
 

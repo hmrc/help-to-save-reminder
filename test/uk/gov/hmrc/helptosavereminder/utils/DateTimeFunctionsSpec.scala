@@ -52,7 +52,8 @@ class DateTimeFunctionsSpec extends WordSpec with Matchers with GuiceOneAppPerSu
     "SEPTEMBER",
     "OCTOBER",
     "NOVEMBER",
-    "DECEMBER")
+    "DECEMBER"
+  )
 
   val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
 

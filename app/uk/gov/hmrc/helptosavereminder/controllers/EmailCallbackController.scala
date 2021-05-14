@@ -33,12 +33,13 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class EmailCallbackController @Inject()(
+class EmailCallbackController @Inject() (
   servicesConfig: ServicesConfig,
   val cc: MessagesControllerComponents,
   repository: HtsReminderMongoRepository,
   auditor: HTSAuditor,
-  emailConnector: EmailConnector)(implicit ec: ExecutionContext, appConfig: AppConfig)
+  emailConnector: EmailConnector
+)(implicit ec: ExecutionContext, appConfig: AppConfig)
     extends BackendController(cc) with Logging {
 
   def handleCallBack(callBackReference: String): Action[AnyContent] = Action.async { implicit request =>
@@ -53,7 +54,8 @@ class EmailCallbackController @Inject()(
               repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference).flatMap {
                 case Left(error) => {
                   logger.warn(
-                    s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error")
+                    s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
+                  )
                   Future.successful(Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference"))
                 }
                 case Right(()) => {
@@ -61,9 +63,12 @@ class EmailCallbackController @Inject()(
                   auditor.sendEvent(
                     HtsReminderUserDeletedEvent(
                       HtsReminderUserDeleted(htsUserSchedule.nino.value, htsUserSchedule.email),
-                      path))
+                      path
+                    )
+                  )
                   logger.debug(
-                    s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}")
+                    s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
+                  )
 
                   emailConnector
                     .unBlockEmail(url) map {
@@ -84,7 +89,8 @@ class EmailCallbackController @Inject()(
         } else {
           logger.debug(
             s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-              s"eventsList received from Email Service = ${eventsMap.events}")
+              s"eventsList received from Email Service = ${eventsMap.events}"
+          )
           Future.successful(Ok)
         }
       }
