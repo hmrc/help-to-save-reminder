@@ -6,14 +6,14 @@ import sbt._
 object AppDependencies {
 
   val compile = Seq(
-    "uk.gov.hmrc"             %% "simple-reactivemongo"     % "8.0.0-play-28",
-    "org.reactivemongo"       %% "reactivemongo-iteratees"  % "0.18.8", /* fix at 0.18.8 because that is what simple-reactivemongo 7.31.0-play-27 uses*/
-    "org.reactivemongo"       %% "play2-reactivemongo"      % "0.18.8-play27", /* see above */
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-28"% "4.2.0",
-    "uk.gov.hmrc"             %% "domain"                   % "5.11.0-play-27",
-    "uk.gov.hmrc"             %% "mongo-lock"               % "7.0.0-play-28",
-    "org.typelevel"           %% "cats-core"                % "2.6.0",
-    "com.enragedginger"       %% "akka-quartz-scheduler"    % "1.9.0-akka-2.6.x",
+    "uk.gov.hmrc"             %% "simple-reactivemongo"      % "8.0.0-play-28",
+    "org.reactivemongo"       %% "reactivemongo-iteratees"   % "0.18.8", /* fix at 0.18.8 because that is what simple-reactivemongo 7.31.0-play-27 uses*/
+    "org.reactivemongo"       %% "play2-reactivemongo"       % "0.18.8-play27", /* see above */
+    "uk.gov.hmrc"             %% "bootstrap-backend-play-28" % "5.2.0",
+    "uk.gov.hmrc"             %% "domain"                    % "5.11.0-play-27",
+    "uk.gov.hmrc"             %% "mongo-lock"                % "7.0.0-play-28",
+    "org.typelevel"           %% "cats-core"                 % "2.6.0",
+    "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x",
     compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
     "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full
   )
