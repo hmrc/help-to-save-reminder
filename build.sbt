@@ -1,7 +1,8 @@
 import scoverage.ScoverageKeys
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
-import wartremover.{Wart, Warts, wartremoverErrors, wartremoverExcluded}
+import wartremover.{Wart, Warts}
+import wartremover.WartRemover.autoImport.{wartremoverErrors,wartremoverExcluded}
 
 val appName = "help-to-save-reminder"
 
@@ -22,18 +23,18 @@ lazy val wartRemoverSettings = {
 
 
   Seq(
-    wartremoverErrors in (Compile, compile) ++= Warts.allBut(excludedWarts: _*),
+    Compile / compile / wartremoverErrors ++= Warts.allBut(excludedWarts: _*),
     // disable some wart remover checks in tests - (Any, Null, PublicInference) seems to struggle with
     // scalamock, (Equals) seems to struggle with stub generator AutoGen and (NonUnitStatements) is
     // incompatible with a lot of WordSpec
-    wartremover.WartRemover.autoImport.wartremoverErrors in (Test, compile) --= Seq(
+    Test / compile / wartremover.WartRemover.autoImport.wartremoverErrors --= Seq(
       Wart.Any,
       Wart.Equals,
       Wart.Null,
       Wart.NonUnitStatements,
       Wart.PublicInference),
     wartremover.WartRemover.autoImport.wartremoverExcluded  ++=
-      routes.in(Compile).value ++
+      (Compile / routes).value ++
         (baseDirectory.value ** "*.sc").get ++
         (baseDirectory.value ** "ProcessingSupervisor.scala").get ++
         (baseDirectory.value ** "EmailSenderActor.scala").get ++
@@ -42,11 +43,11 @@ lazy val wartRemoverSettings = {
         Seq(sourceManaged.value / "main" / "sbt-buildinfo" / "BuildInfo.scala") ++
         (baseDirectory.value / "app" / "uk" / "gov" / "hmrc" / "helptosavereminder" / "config").get,
     wartremover.WartRemover.autoImport.wartremoverExcluded ++=
-      routes.in(Test).value ++
+      (Test / routes).value ++
         (baseDirectory.value ** "AuthSupport.scala").get ++
         (baseDirectory.value ** "*Spec.scala").get ++
         (baseDirectory.value / "app" / "uk" / "gov" / "hmrc" / "helptosavereminder").get,
-    wartremoverExcluded ++= routes.in(Compile).value
+    wartremoverExcluded ++= (Compile / routes).value
   )
 }
 
