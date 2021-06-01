@@ -53,7 +53,8 @@ class EmailSenderActorSpec
       "logger.play"        -> "ERROR",
       "logger.root"        -> "ERROR",
       "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR")
+      "com.codahale"       -> "ERROR"
+    )
   private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
@@ -81,17 +82,11 @@ class EmailSenderActorSpec
   override def beforeAll =
     when(mockLockRepo lock (anyString, anyString, any())) thenReturn true
 
-  //override def afterAll: Unit =
-  //  shutdown()
-
   "Email Sender Actor" must {
 
     "should send an Hts object to DB for saving" in {
       val emailSenderActor = TestActorRef(
-        Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {
-          //override lazy val repository = mockRepository
-          //override val lockrepo = mockLockRepo
-        }),
+        Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {}),
         "email-sender-actor"
       )
 
@@ -105,8 +100,9 @@ class EmailSenderActorSpec
         httpClient.POST[SendTemplatedEmailRequest, HttpResponse](
           anyString,
           requestCaptor.capture(),
-          any[Seq[(String, String)]])(any(), any(), any[HeaderCarrier], any[ExecutionContext]))
-        .thenReturn(Future.successful(HttpResponse(202, "")))
+          any[Seq[(String, String)]]
+        )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
+      ).thenReturn(Future.successful(HttpResponse(202, "")))
 
       when(mockRepository.updateNextSendDate(any(), any()))
         .thenReturn(Future.successful(true))
@@ -118,10 +114,7 @@ class EmailSenderActorSpec
 
         emailSenderActor ! mockObject
 
-        val monthName = currentDate.getMonth.toString.toLowerCase.capitalize
-
         emailSenderActor ! UpdateCallBackSuccess(mockObject, "callBackSampleRef")
-        //htsUserUpdateActorProbe.expectMsg(mockObject)
 
       }
 

@@ -17,7 +17,6 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.time.{LocalDate, ZoneId}
-
 import akka.actor.{ActorSystem, Props}
 import akka.testkit._
 import com.kenshoo.play.metrics.PlayModule
@@ -38,11 +37,10 @@ import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
 
-class ReminderSchedulerSpec
+class ReminderSchedulerSpec(implicit ec: ExecutionContext)
     extends TestKit(ActorSystem("TestProcessingSystem")) with UnitSpec with MockitoSugar with GuiceOneAppPerSuite
     with BeforeAndAfterAll with DefaultTimeout with ImplicitSender {
 
@@ -52,7 +50,8 @@ class ReminderSchedulerSpec
       "logger.play"        -> "ERROR",
       "logger.root"        -> "ERROR",
       "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR")
+      "com.codahale"       -> "ERROR"
+    )
   private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()

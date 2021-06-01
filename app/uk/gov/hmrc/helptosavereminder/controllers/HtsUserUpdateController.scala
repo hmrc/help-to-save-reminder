@@ -31,10 +31,11 @@ import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class HtsUserUpdateController @Inject()(
+class HtsUserUpdateController @Inject() (
   repository: HtsReminderRepository,
   cc: ControllerComponents,
-  override val authConnector: AuthConnector)(implicit val ec: ExecutionContext)
+  override val authConnector: AuthConnector
+)(implicit val ec: ExecutionContext)
     extends HtsReminderAuth(authConnector, cc) with Logging {
 
   val notAllowedThisNino: Future[Result] =

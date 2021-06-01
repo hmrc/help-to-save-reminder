@@ -28,7 +28,7 @@ import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class Scheduler @Inject()(
+class Scheduler @Inject() (
   httpClient: HttpClient,
   actorSystem: ActorSystem,
   env: Environment,

@@ -75,8 +75,9 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
       }
     }
 
-  def ggOrPrivilegedAuthorisedWithNINO(nino: Option[String])(action: HtsActionWithNINO)(
-    implicit ec: ExecutionContext): Action[AnyContent] =
+  def ggOrPrivilegedAuthorisedWithNINO(
+    nino: Option[String]
+  )(action: HtsActionWithNINO)(implicit ec: ExecutionContext): Action[AnyContent] =
     Action.async { implicit request ⇒
       authorised(GGAndPrivilegedProviders)
         .retrieve(v2.Retrievals.authProviderId) {

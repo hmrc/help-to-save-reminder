@@ -34,7 +34,7 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 @Singleton
-class ProcessingSupervisor @Inject()(
+class ProcessingSupervisor @Inject() (
   mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,
   servicesConfig: ServicesConfig,
   emailConnector: EmailConnector
@@ -46,7 +46,8 @@ class ProcessingSupervisor @Inject()(
   lazy val emailSenderActor: ActorRef =
     context.actorOf(
       Props(classOf[EmailSenderActor], servicesConfig, repository, emailConnector, ec, appConfig),
-      "emailSender-actor")
+      "emailSender-actor"
+    )
 
   val lockrepo = LockMongoRepository(mongoApi.mongoConnector.db)
 
@@ -105,20 +106,27 @@ class ProcessingSupervisor @Inject()(
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.size} requests")
           logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(request => request.email).toSet.size} unique emails")
+            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(request => request.email).toSet.size} unique emails"
+          )
 
           logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${emailDuplicateOccurrencesSet.mkString(", ")} emailsOccurrences[Duplicates ,Occurrences]")
+            s"[ProcessingSupervisor][BOOTSTRAP] found ${emailDuplicateOccurrencesSet.mkString(", ")} emailsOccurrences[Duplicates ,Occurrences]"
+          )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${nextScheduledDates.mkString(", ")} [nextSendDates]")
-          nextScheduledDates.foreach(date =>
-            logger.info(
-              s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"))
+          nextScheduledDates.foreach(
+            date =>
+              logger.info(
+                s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
+              )
+          )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${daysToRecieve.mkString(", ")} [daysToReceive]")
-          daysToRecieve.foreach(days =>
-            logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
-              .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}"))
+          daysToRecieve.foreach(
+            days =>
+              logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
+                .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
+          )
         }
 
         case _ => {
@@ -129,22 +137,27 @@ class ProcessingSupervisor @Inject()(
       (isUserScheduleEnabled, isExpressionValid) match {
         case (true, true) =>
           logger.info(
-            s"[ProcessingSupervisor] BOOTSTRAP is scheduled with userScheduleCronExpression = $userScheduleCronExpression")
+            s"[ProcessingSupervisor] BOOTSTRAP is scheduled with userScheduleCronExpression = $userScheduleCronExpression"
+          )
           scheduler
             .createSchedule(
               "UserScheduleJob",
               Some("For sending reminder emails to the users"),
               userScheduleCronExpression,
-              timezone = TimeZone.getTimeZone("Europe/London"))
+              timezone = TimeZone.getTimeZone("Europe/London")
+            )
           scheduler.schedule("UserScheduleJob", self, START)
 
         case (_, false) =>
           logger.warn(
-            s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression")
+            s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression"
+          )
 
         case _ =>
-          logger.warn(s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
-            s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled")
+          logger.warn(
+            s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
+              s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled"
+          )
       }
     }
 

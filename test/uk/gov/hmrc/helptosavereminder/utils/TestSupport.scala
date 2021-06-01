@@ -49,7 +49,8 @@ trait TestSupport extends UnitSpec with MockFactory with BeforeAndAfterAll {
                                       | "play.modules.reactivemongo.ReactiveMongoHmrcModule",
                                       |  "play.api.mvc.CookiesModule" ]
           """.stripMargin)
-        ) ++ extraConfig)
+        ).withFallback(extraConfig)
+      )
       .build()
 
   lazy val fakeApplication: Application = buildFakeApplication(additionalConfig)

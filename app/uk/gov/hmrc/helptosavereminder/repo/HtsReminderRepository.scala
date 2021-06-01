@@ -17,8 +17,8 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import java.time.{LocalDate, ZoneId}
-
 import com.google.inject.ImplementedBy
+
 import javax.inject.Inject
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
@@ -35,8 +35,7 @@ import reactivemongo.play.json.JSONSerializationPack
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import play.api.http.Status._
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 @ImplementedBy(classOf[HtsReminderMongoRepository])
@@ -52,7 +51,7 @@ trait HtsReminderRepository {
   def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int]
 }
 
-class HtsReminderMongoRepository @Inject()(mongo: ReactiveMongoComponent)
+class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(implicit val ec: ExecutionContext)
     extends ReactiveRepository[HtsUserSchedule, BSONObjectID](
       collectionName = "help-to-save-reminder",
       mongo = mongo.mongoConnector.db,

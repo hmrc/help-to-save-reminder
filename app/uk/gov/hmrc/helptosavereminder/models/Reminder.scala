@@ -33,7 +33,8 @@ case class HtsUserSchedule(
   optInStatus: Boolean = false,
   daysToReceive: Seq[Int] = Seq(),
   nextSendDate: LocalDate = LocalDate.now(),
-  callBackUrlRef: String = "")
+  callBackUrlRef: String = ""
+)
 
 case class UpdateCallBackRef(reminder: HtsUserScheduleMsg, callBackRefUrl: String)
 

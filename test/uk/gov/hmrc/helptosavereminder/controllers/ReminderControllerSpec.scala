@@ -55,7 +55,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
       "logger.play"        -> "ERROR",
       "logger.root"        -> "ERROR",
       "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR")
+      "com.codahale"       -> "ERROR"
+    )
 
   val mockRepository = mock[HtsReminderRepository]
 
@@ -271,7 +272,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
           updateEmailInput.nino.value,
           updateEmailInput.firstName,
           updateEmailInput.lastName,
-          updateEmailInput.email)(OK)
+          updateEmailInput.email
+        )(OK)
       }
 
       val result = controller.updateEmail()(fakeRequest.withJsonBody(Json.toJson(htsReminderUser)))
@@ -294,7 +296,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
           updateEmailInput.nino.value,
           updateEmailInput.firstName,
           updateEmailInput.lastName,
-          updateEmailInput.email)(NOT_MODIFIED)
+          updateEmailInput.email
+        )(NOT_MODIFIED)
 
       }
 
@@ -319,7 +322,8 @@ class HtsUserUpdateControllerSpec extends AuthSupport with TestSupport {
           updateEmailInput.nino.value,
           updateEmailInput.firstName,
           updateEmailInput.lastName,
-          updateEmailInput.email)(NOT_FOUND)
+          updateEmailInput.email
+        )(NOT_FOUND)
       }
 
       val result = controller.updateEmail()(fakeRequest.withJsonBody(Json.toJson(htsReminderUser)))

@@ -23,7 +23,7 @@ import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 import scala.concurrent.Future
 
 @Singleton
-class TestService @Inject()(htsReminderRepository: HtsReminderRepository) {
+class TestService @Inject() (htsReminderRepository: HtsReminderRepository) {
 
   def generateAndInsertReminder(emailPrefix: String, daysToReceive: Seq[Int]): Future[Boolean] =
     htsReminderRepository.updateReminderUser(ReminderGenerator.nextReminder(emailPrefix, daysToReceive))

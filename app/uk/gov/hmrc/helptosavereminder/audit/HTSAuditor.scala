@@ -25,7 +25,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 @Singleton
-class HTSAuditor @Inject()(val auditConnector: AuditConnector) extends Logging {
+class HTSAuditor @Inject() (val auditConnector: AuditConnector) extends Logging {
 
   def sendEvent(event: HTSEvent)(implicit ec: ExecutionContext): Unit = {
     val checkEventResult = auditConnector.sendExtendedEvent(event.value)
