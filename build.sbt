@@ -68,6 +68,7 @@ lazy val microservice = {
   )
   .settings(publishingSettings: _*)
   .configs(IntegrationTest)
+  .settings(Compile / doc / sources := Seq.empty)
   .settings(integrationTestSettings(): _*)
   .settings(scalaVersion := "2.12.13")
   .settings(PlayKeys.playDefaultPort := 7008)
