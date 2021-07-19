@@ -30,3 +30,21 @@ case class SendTemplatedEmailRequest(
 object SendTemplatedEmailRequest {
   implicit val format: OFormat[SendTemplatedEmailRequest] = Json.format[SendTemplatedEmailRequest]
 }
+
+object HtsReminderTemplate {
+  def apply(email: String, name: String, callBackUrlRef: String, monthName: String): HtsReminderTemplate = {
+    def format(fullName: String) =
+      try {
+        fullName
+          .split(" ")
+          .map(name => name(0).toUpper + name.substring(1).toLowerCase)
+          .mkString(" ")
+          .split("-")
+          .map(name => name(0).toUpper + name.substring(1))
+          .mkString("-")
+      } catch {
+        case _: Throwable => fullName
+      }
+    new HtsReminderTemplate(email, format(name), callBackUrlRef, monthName)
+  }
+}
