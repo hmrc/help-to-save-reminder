@@ -65,7 +65,12 @@ class EmailSenderActor @Inject() (
       val monthName = successReminder.reminder.currentDate.getMonth.toString.toLowerCase.capitalize
 
       val ref = successReminder.callBackRefUrl
-      val template = HtsReminderTemplate(reminder.email, reminder.firstName + " " + reminder.lastName, ref, monthName)
+      val template = {
+
+        def format(name: String) = name.toLowerCase.capitalize
+
+        HtsReminderTemplate(reminder.email, format(reminder.firstName) + " " + format(reminder.lastName), ref, monthName)
+      }
 
       logger.info(s"Sending reminder for $ref")
       sendReceivedTemplatedEmail(template).map({
