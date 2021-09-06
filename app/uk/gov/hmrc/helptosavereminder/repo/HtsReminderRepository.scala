@@ -23,7 +23,7 @@ import javax.inject.Inject
 import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.collections.GenericCollection
-import reactivemongo.api.commands.{UpdateWriteResult, WriteResult}
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.api.{Cursor, ReadPreference}
 import reactivemongo.bson.BSONObjectID
@@ -202,7 +202,7 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
 
   }
 
-  def statusCheck(errorMsg: String, status: UpdateWriteResult): Boolean =
+  def statusCheck(errorMsg: String, status: WriteResult): Boolean =
     status.n match {
       case 0 => {
         logger.warn(errorMsg)

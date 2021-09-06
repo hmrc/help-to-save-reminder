@@ -1,34 +1,31 @@
 import play.core.PlayVersion.current
-import play.sbt.PlayImport._
-import sbt.Keys.libraryDependencies
 import sbt._
 
 object AppDependencies {
 
+  private val playVersion = "play-28"
+
   val compile = Seq(
-    "uk.gov.hmrc"             %% "simple-reactivemongo"      % "8.0.0-play-28",
-    "org.reactivemongo"       %% "reactivemongo-iteratees"   % "0.18.8", /* fix at 0.18.8 because that is what simple-reactivemongo 7.31.0-play-27 uses*/
-    "org.reactivemongo"       %% "play2-reactivemongo"       % "0.18.8-play27", /* see above */
-    "uk.gov.hmrc"             %% "bootstrap-backend-play-28" % "5.2.0",
-    "uk.gov.hmrc"             %% "domain"                    % "5.11.0-play-27",
-    "uk.gov.hmrc"             %% "mongo-lock"                % "7.0.0-play-28",
+    "uk.gov.hmrc"             %% "simple-reactivemongo"      % s"8.0.0-$playVersion",
+    "uk.gov.hmrc"             %% s"bootstrap-backend-$playVersion" % "5.12.0",
+    "uk.gov.hmrc"             %% "domain"                    % s"6.2.0-$playVersion",
+    "uk.gov.hmrc"             %% "mongo-lock"                % s"7.0.0-$playVersion",
     "org.typelevel"           %% "cats-core"                 % "2.6.0",
     "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x",
-    compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.1" cross CrossVersion.full),
-    "com.github.ghik" % "silencer-lib" % "1.7.1" % Provided cross CrossVersion.full
+    compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.5" cross CrossVersion.full),
+    "com.github.ghik" % "silencer-lib" % "1.7.5" % Provided cross CrossVersion.full
   )
 
-
   val test = Seq(
-    "uk.gov.hmrc"             %% "hmrctest"                 % "3.10.0-play-26"        % "test, it",
-    "uk.gov.hmrc"             %% "reactivemongo-test"       % "5.0.0-play-28"        % "test, it",
+    "uk.gov.hmrc"             %% "reactivemongo-test"       % s"5.0.0-$playVersion"   % "test, it",
     "org.mockito"             %  "mockito-all"              % "1.10.19"               % "test, it",
-    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.10"                % "test, it",
+    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.14"                % "test, it",
     "com.typesafe.play"       %% "play-test"                % current                 % "test",
-    "org.pegdown"             %  "pegdown"                  % "1.6.0"                 % "test, it",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.0.0"                 % "test, it",
-    "org.scalatest"           %% "scalatest"                % "3.0.9"                 % "test, it",
-    "org.scalamock"           %% "scalamock"                % "5.1.0"                 % "test, it"
+    "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0"                 % "test, it",
+    "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2"              % "test, it",
+    "org.scalatest"           %% "scalatest"                % "3.2.9"                 % "test, it",
+    "org.scalamock"           %% "scalamock"                % "5.1.0"                 % "test, it",
+    "com.vladsch.flexmark"    % "flexmark-all"              % "0.35.10"               % "test, it"
   )
 
 }

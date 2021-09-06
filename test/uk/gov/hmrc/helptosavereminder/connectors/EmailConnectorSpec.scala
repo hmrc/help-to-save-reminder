@@ -19,24 +19,18 @@ package uk.gov.hmrc.helptosavereminder.connectors
 import org.mockito.Matchers.any
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
+import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
-import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.{HttpClient, HttpResponse}
 import uk.gov.hmrc.mongo.MongoSpecSupport
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.play.test.UnitSpec
-import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
-class EmailConnectorSpec(implicit ec: ExecutionContext)
-    extends UnitSpec with MongoSpecSupport with GuiceOneAppPerSuite with MockitoSugar {
+class EmailConnectorSpec extends BaseSpec with MongoSpecSupport with MockitoSugar {
 
   val mockHttp: HttpClient = mock[HttpClient]
 
   lazy val emailConnector = new EmailConnector(mockHttp)
-
-  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "The EmailConnector" should {
     "return true if it can successfully send the email and get 202 response" in {
@@ -49,11 +43,7 @@ class EmailConnectorSpec(implicit ec: ExecutionContext)
         .thenReturn(Future.successful(HttpResponse(202, "")))
       val result = emailConnector.sendEmail(sendTemplatedEmailRequest, url)
 
-      await(result) match {
-        case x => {
-          x shouldBe true
-        }
-      }
+      result.futureValue shouldBe true
     }
 
     "return false if it can successfully send the email and get 202 response" in {
@@ -66,11 +56,7 @@ class EmailConnectorSpec(implicit ec: ExecutionContext)
         .thenReturn(Future.successful(HttpResponse(300, "")))
       val result = emailConnector.sendEmail(sendTemplatedEmailRequest, url)
 
-      await(result) match {
-        case x => {
-          x shouldBe false
-        }
-      }
+      result.futureValue shouldBe false
     }
 
     "successfully unblock an email if submit is successful" in {
@@ -81,11 +67,7 @@ class EmailConnectorSpec(implicit ec: ExecutionContext)
         .thenReturn(Future.successful(HttpResponse(200, "")))
       val result = emailConnector.unBlockEmail(url)
 
-      await(result) match {
-        case x => {
-          x shouldBe x
-        }
-      }
+      result.futureValue shouldBe true
     }
 
     "successfully return with failed future if submit is not-successful" in {
@@ -96,13 +78,8 @@ class EmailConnectorSpec(implicit ec: ExecutionContext)
         .thenReturn(Future.successful(HttpResponse(400, "")))
       val result = emailConnector.unBlockEmail(url)
 
-      await(result) match {
-        case x => {
-          x shouldBe x
-        }
-      }
+      result.futureValue shouldBe false
     }
-
   }
 
 }

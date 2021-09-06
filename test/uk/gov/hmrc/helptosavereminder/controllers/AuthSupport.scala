@@ -17,18 +17,19 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import org.scalamock.handlers.CallHandler4
+import org.scalamock.scalatest.MockFactory
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
 import uk.gov.hmrc.auth.core.retrieve._
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.helptosave.util._
-import uk.gov.hmrc.helptosavereminder.utils.TestSupport
+import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-trait AuthSupport extends TestSupport {
+trait AuthSupport extends BaseSpec with MockFactory {
 
   val nino = "AE123456C"
 
