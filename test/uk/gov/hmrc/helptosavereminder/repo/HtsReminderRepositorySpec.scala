@@ -16,34 +16,25 @@
 
 package uk.gov.hmrc.helptosavereminder.repo
 
-import java.time.LocalDate
-import java.util.UUID
-
-import org.scalatest.BeforeAndAfterAll
-import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Configuration
+import org.scalamock.scalatest.MockFactory
 import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.mongo.MongoSpecSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.time.LocalDate
+import java.util.UUID
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec
-    extends UnitSpec with MockitoSugar with MongoSpecSupport with GuiceOneAppPerSuite with BeforeAndAfterAll {
+class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with MockFactory {
 
-  val config = app.injector.instanceOf[Configuration]
-  implicit val ec = app.injector.instanceOf[ExecutionContext]
-  implicit val hc = HeaderCarrier()
   val env = mock[play.api.Environment]
 
-  val servicesConfig = mock[ServicesConfig]
+  override val servicesConfig = mock[ServicesConfig]
 
   implicit val reactiveMongoComponent = new ReactiveMongoComponent {
     override def mongoConnector = mongoConnectorForTest
@@ -58,17 +49,14 @@ class HtsReminderRepositorySpec
 
       val result: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(reminderValue)
 
-      await(result) match {
-        case x => x shouldBe true
-      }
+      result.futureValue shouldBe true
 
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.value, callBackRef)
 
-      await(nextSendDate) shouldBe true
-
+      nextSendDate.futureValue shouldBe true
     }
 
     "should not update the userSchedule if daysToReceive field is Empty" in {
@@ -76,9 +64,7 @@ class HtsReminderRepositorySpec
       val reminderValue = ReminderGenerator.nextReminder
       val result: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue.copy(daysToReceive = Seq.empty))
-      await(result) match {
-        case x => x shouldBe false
-      }
+      result.futureValue shouldBe false
     }
   }
 
@@ -86,18 +72,17 @@ class HtsReminderRepositorySpec
 
     val reminderValue = (ReminderGenerator.nextReminder)
     val result: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(reminderValue)
-    await(result) match {
-      case x => x shouldBe true
-    }
+    result.futureValue shouldBe true
     val now = LocalDate.now
     htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.value, LocalDate.now())
     "should successfully find that user" in {
 
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
-      await(usersToProcess) match {
-        case Some(x) => {
-          x.size shouldBe >=(1)
-          x.map(s => s.nextSendDate.isAfter(now) shouldBe false)
+
+      usersToProcess.futureValue match {
+        case Some(list) => {
+          list.size shouldBe >=(1)
+          list.map(s => s.nextSendDate.isAfter(now) shouldBe false)
         }
         case None =>
       }
@@ -105,9 +90,11 @@ class HtsReminderRepositorySpec
 
     "should fail find that user" in {
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
-      await(usersToProcess) match {
-        case Some(x) => {
-          x.map(s => s.nextSendDate.isAfter(now) shouldBe false)
+
+      usersToProcess.futureValue match {
+        case Some(list) => {
+          list.size shouldBe >=(1)
+          list.map(s => s.nextSendDate.isAfter(now) shouldBe false)
         }
         case None =>
       }
@@ -122,12 +109,12 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.value, LocalDate.now())
 
-      await(nextSendDate) shouldBe true
+      nextSendDate.futureValue shouldBe true
 
     }
   }
@@ -141,12 +128,12 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.value, callBackRef)
 
-      await(nextSendDate) shouldBe true
+      nextSendDate.futureValue shouldBe true
 
     }
   }
@@ -162,14 +149,14 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(modifiedReminder)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
-      await(nextSendDate) shouldBe true
+      nextSendDate.futureValue shouldBe true
 
     }
   }
@@ -185,14 +172,14 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(modifiedReminder)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
-      await(nextSendDate) shouldBe true
+      nextSendDate.futureValue shouldBe true
 
     }
   }
@@ -205,15 +192,13 @@ class HtsReminderRepositorySpec
       val result: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue.copy(nino = Nino("SK798383D")))
 
-      result onComplete ({
-        case Success(x) => {
-          val htsUserOption: Option[HtsUserSchedule] =
-            htsReminderMongoRepository.findByNino("SK798383D")
+      result onComplete {
+        case Success(_) =>
+          val htsUserOption = htsReminderMongoRepository.findByNino("SK798383D")
 
-          await(htsUserOption).get.nino.value shouldBe "SK798383D"
-        }
+          htsUserOption.futureValue.get.nino.value shouldBe "SK798383D"
         case Failure(exception) => new Exception(s"Attempt at finding user by their nino failed because: $exception")
-      })
+      }
 
     }
   }
@@ -230,9 +215,8 @@ class HtsReminderRepositorySpec
 
       result onComplete {
         case Success(_) => {
-          val htsUserOption: Option[HtsUserSchedule] =
-            htsReminderMongoRepository.findByCallBackUrlRef(callBackRef)
-          await(htsUserOption).get.nino.value shouldBe "SK798383D"
+          val htsUserOption = htsReminderMongoRepository.findByCallBackUrlRef(callBackRef)
+          htsUserOption.futureValue.get.nino.value shouldBe "SK798383D"
         }
         case Failure(e) => {
           throw new Exception(s"Failed to update user because: $e")
@@ -250,12 +234,12 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val result =
         htsReminderMongoRepository.deleteHtsUser("AE373528D")
 
-      await(result) shouldBe Left("Could not find htsUser to delete")
+      result.futureValue shouldBe Left("Could not find htsUser to delete")
 
     }
 
@@ -266,12 +250,12 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue)
 
-      await(updateStatus) shouldBe true
+      updateStatus.futureValue shouldBe true
 
       val result =
         htsReminderMongoRepository.deleteHtsUser(reminderValue.nino.toString())
 
-      await(result) shouldBe Right(())
+      result.futureValue shouldBe Right(())
 
     }
   }
@@ -283,12 +267,12 @@ class HtsReminderRepositorySpec
       val nextSendDate: Future[Boolean] =
         htsReminderMongoRepository.updateCallBackRef("SK798383D", callBackRef)
 
-      await(nextSendDate) shouldBe true
+      nextSendDate.futureValue shouldBe true
 
       val result =
         htsReminderMongoRepository.deleteHtsUserByCallBack("SK798383D", callBackRef)
 
-      await(result) shouldBe Right(())
+      result.futureValue shouldBe Right(())
 
     }
     "should not successfully delete the user " in {
@@ -297,7 +281,7 @@ class HtsReminderRepositorySpec
       val result =
         htsReminderMongoRepository.deleteHtsUserByCallBack("SK798384B", callBackRef)
 
-      await(result) shouldBe Left("Could not find htsUser to delete by callBackUrlRef")
+      result.futureValue shouldBe Left("Could not find htsUser to delete by callBackUrlRef")
 
     }
   }
@@ -308,7 +292,7 @@ class HtsReminderRepositorySpec
       val updateStatus: Future[Int] =
         htsReminderMongoRepository.updateEmail("SK798383D", "James", "Tinder", "modifiedReminder@test.com")
 
-      await(updateStatus) shouldBe 404
+      updateStatus.futureValue shouldBe 404
 
     }
   }

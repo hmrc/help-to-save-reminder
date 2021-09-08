@@ -69,7 +69,12 @@ class EmailSenderActor @Inject() (
 
         def format(name: String) = name.toLowerCase.capitalize
 
-        HtsReminderTemplate(reminder.email, format(reminder.firstName) + " " + format(reminder.lastName), ref, monthName)
+        HtsReminderTemplate(
+          reminder.email,
+          format(reminder.firstName) + " " + format(reminder.lastName),
+          ref,
+          monthName
+        )
       }
 
       logger.info(s"Sending reminder for $ref")

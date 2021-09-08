@@ -16,18 +16,12 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{LocalDate, ZoneId}
 import akka.actor.{ActorSystem, Props}
 import akka.testkit._
-import com.kenshoo.play.metrics.PlayModule
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import play.api.{Application, Mode}
-import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
@@ -35,32 +29,14 @@ import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.lock.LockRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.time.{LocalDate, ZoneId}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 
-class ReminderSchedulerSpec(implicit ec: ExecutionContext)
-    extends TestKit(ActorSystem("TestProcessingSystem")) with UnitSpec with MockitoSugar with GuiceOneAppPerSuite
-    with BeforeAndAfterAll with DefaultTimeout with ImplicitSender {
-
-  def additionalConfiguration: Map[String, String] =
-    Map(
-      "logger.application" -> "ERROR",
-      "logger.play"        -> "ERROR",
-      "logger.root"        -> "ERROR",
-      "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR"
-    )
-  private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
-
-  implicit override lazy val app: Application = new GuiceApplicationBuilder()
-    .configure(additionalConfiguration)
-    .bindings(bindModules: _*)
-    .in(Mode.Test)
-    .build()
-
-  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
+class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
+    extends TestKit(ActorSystem("TestProcessingSystem")) with BaseSpec with DefaultTimeout with ImplicitSender
+    with MockitoSugar {
 
   val mockLockRepo = mock[LockRepository]
 
@@ -68,7 +44,7 @@ class ReminderSchedulerSpec(implicit ec: ExecutionContext)
 
   val env = mock[play.api.Environment]
 
-  val servicesConfig = mock[ServicesConfig]
+  override val servicesConfig = mock[ServicesConfig]
 
   val emailConnector = mock[EmailConnector]
 
@@ -77,7 +53,7 @@ class ReminderSchedulerSpec(implicit ec: ExecutionContext)
   lazy val mockRepository = mock[HtsReminderMongoRepository]
 
   override def beforeAll =
-    when(mockLockRepo lock (anyString, anyString, any())) thenReturn true
+    when(mockLockRepo lock (anyString, anyString, any())) thenReturn Future.successful(true)
 
   //override def afterAll: Unit =
   //  shutdown()
