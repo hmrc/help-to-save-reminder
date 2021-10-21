@@ -59,6 +59,8 @@ class ProcessingSupervisor @Inject() (
 
   lazy val repoLockPeriod: Int = appConfig.repoLockPeriod
 
+  val scheduleTake = appConfig.scheduleTake
+
   val lockKeeper = new LockKeeper {
 
     override def repo: LockRepository = lockrepo //The repo created before
@@ -174,7 +176,10 @@ class ProcessingSupervisor @Inject() (
             case Some(requests) if requests.nonEmpty => {
               logger.info(s"[ProcessingSupervisor][receive] took ${requests.size} requests)")
 
-              for (request <- requests) {
+              val take = requests.take(scheduleTake)
+              logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
+
+              for (request <- take) {
 
                 emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
 

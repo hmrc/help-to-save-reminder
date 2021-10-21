@@ -47,4 +47,7 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
 
   val repoLockPeriod: Int = config.getOptional[Int](s"mongodb.repoLockPeriod").getOrElse(defaultRepoLockPeriod)
 
+  val defaultScheduleTake: Int = 500
+
+  val scheduleTake: Int = config.getOptional[Int](s"scheduleTake").getOrElse(defaultScheduleTake)
 }
