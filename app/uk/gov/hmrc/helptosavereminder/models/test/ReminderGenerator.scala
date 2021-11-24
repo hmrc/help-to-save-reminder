@@ -39,11 +39,33 @@ object ReminderGenerator {
     getNextSendDate(Seq(1, 25), LocalDate.now(ZoneId.of("Europe/London"))) //scalastyle:ignore magic.number
       .getOrElse(LocalDate.now(ZoneId.of("Europe/London")))
   private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
+  private def accountClosingDate: Option[LocalDate] =
+    Some(LocalDate.now(ZoneId.of("Europe/London")).plusMonths(6)) //scalastyle:ignore magic.number
 
   def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule =
-    HtsUserSchedule(nino, email(emailPrefix), firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
+    HtsUserSchedule(
+      nino,
+      email(emailPrefix),
+      firstName,
+      lastName,
+      true,
+      daysToReceive,
+      nextSendDate,
+      callBackUrlRef,
+      accountClosingDate
+    )
 
   def nextReminder: HtsUserSchedule =
-    HtsUserSchedule(nino, email, firstName, lastName, true, daysToReceive, nextSendDate, callBackUrlRef)
+    HtsUserSchedule(
+      nino,
+      email,
+      firstName,
+      lastName,
+      true,
+      daysToReceive,
+      nextSendDate,
+      callBackUrlRef,
+      accountClosingDate
+    )
 
 }
