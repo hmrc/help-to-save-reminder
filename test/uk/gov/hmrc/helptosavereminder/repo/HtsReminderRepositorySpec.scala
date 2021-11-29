@@ -121,7 +121,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with Mock
 
     }
 
-    "should successfully update NextSendDate " in {
+    "should successfully update accountClosingDate field" in {
 
       val reminderValue = ReminderGenerator.nextReminder
 
