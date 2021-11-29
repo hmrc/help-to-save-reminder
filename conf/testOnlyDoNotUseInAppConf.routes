@@ -16,3 +16,5 @@
 GET     /help-to-save-reminder/test-only/populate-reminders/:noUsers/:emailPrefix/daysToReceive        uk.gov.hmrc.helptosavereminder.controllers.test.TestController.populateReminders(noUsers: Int, emailPrefix: String, day: List[Int])
 
 GET     /help-to-save-reminder/test-only/gethtsuser/:nino                                              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
+
+POST    /help-to-save-reminder/test-only/gethtsuser/:nino/:accountClosingDate                          uk.gov.hmrc.helptosavereminder.controllers.test.TestController.updateAccountClosingDate(nino: String, accountClosingDate: String)

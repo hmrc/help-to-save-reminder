@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers.test
 
+import java.time.LocalDate
+
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.helptosavereminder.services.test.TestService
@@ -45,4 +47,16 @@ class TestController @Inject() (
       case None          => NotFound
     }
   }
+
+  def updateAccountClosingDate(nino: String, closingDate: String): Action[AnyContent] = Action.async {
+    val accClosingDate: LocalDate = LocalDate.parse(closingDate)
+    repository.findByNino(nino).map {
+      case Some(user) =>
+        val updatedHtsUser = user.copy(accountClosingDate = accClosingDate)
+        repository.updateReminderUser(updatedHtsUser)
+        Ok(Json.toJson(updatedHtsUser))
+      case None => NotFound
+    }
+  }
+
 }
