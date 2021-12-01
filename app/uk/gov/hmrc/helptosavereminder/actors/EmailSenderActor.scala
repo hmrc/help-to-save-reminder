@@ -34,12 +34,12 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailSenderActor @Inject()(
-                                  servicesConfig: ServicesConfig,
-                                  repository: HtsReminderMongoRepository,
-                                  emailConnector: EmailConnector
-                                )(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
-  extends Actor with Logging {
+class EmailSenderActor @Inject() (
+  servicesConfig: ServicesConfig,
+  repository: HtsReminderMongoRepository,
+  emailConnector: EmailConnector
+)(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
+    extends Actor with Logging {
 
   implicit lazy val hc = HeaderCarrier()
   lazy val htsUserUpdateActor: ActorRef =
@@ -49,7 +49,6 @@ class EmailSenderActor @Inject()(
   val nameParam = appConfig.nameParam
   val monthParam = appConfig.monthParam
   val callBackUrlParam = appConfig.callBackUrlParam
-
 
   override def receive: Receive = {
 
@@ -64,7 +63,7 @@ class EmailSenderActor @Inject()(
 
       val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
         case Some(closingDate) => closingDate.isAfter(nextReminder.nextSendDate)
-        case _ => true
+        case _                 => true
       }
 
       if (shouldSendReminder) {
@@ -103,7 +102,14 @@ class EmailSenderActor @Inject()(
         })
 
       } else {
-        logger.info("Not sending update for []")
+        val nino = successReminder.reminder.htsUserSchedule.nino.toString
+        logger.info(s"Not sending reminder for [$nino]")
+        repository.deleteHtsUser(nino) map {
+          case Right(()) => {
+            logger.info(s"Successfully deleted nino: [$nino]")
+          }
+          case Left(_) => logger.error(s"Failed to delete nino: [$nino]")
+        }
       }
     }
 
@@ -133,7 +139,7 @@ class EmailSenderActor @Inject()(
     emailConnector.sendEmail(request, url) map { response =>
       response match {
         case true => logger.debug(s"[EmailSenderActor] Email sent: $request"); true
-        case _ => logger.debug(s"[EmailSenderActor] Email not sent: $request"); false
+        case _    => logger.debug(s"[EmailSenderActor] Email not sent: $request"); false
       }
     }
   }
