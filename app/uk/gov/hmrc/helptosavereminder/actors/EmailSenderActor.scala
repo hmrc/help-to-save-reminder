@@ -17,13 +17,14 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.util.UUID
-
 import akka.actor._
 import com.google.inject.Inject
+
 import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
+import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator.nextReminder
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -54,46 +55,62 @@ class EmailSenderActor @Inject() (
     case htsUserReminderMsg: HtsUserScheduleMsg => {
 
       val callBackRef = UUID.randomUUID().toString
-      logger.info(s"New callBackRef $callBackRef")
+      logger.info(s"New callBackRef [$callBackRef]")
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
-
     }
 
     case successReminder: UpdateCallBackSuccess => {
 
-      val reminder = successReminder.reminder.htsUserSchedule
-      val monthName = successReminder.reminder.currentDate.getMonth.toString.toLowerCase.capitalize
-
-      val ref = successReminder.callBackRefUrl
-      val template = {
-
-        def format(name: String) = name.toLowerCase.capitalize
-
-        HtsReminderTemplate(
-          reminder.email,
-          format(reminder.firstName) + " " + format(reminder.lastName),
-          ref,
-          monthName
-        )
+      val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
+        case Some(closingDate) => closingDate.isAfter(nextReminder.nextSendDate)
+        case _                 => true
       }
 
-      logger.info(s"Sending reminder for $ref")
-      sendReceivedTemplatedEmail(template).map({
-        case true => {
-          logger.info(s"Sent reminder for $ref")
-          val nextSendDate =
-            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
-          nextSendDate match {
-            case Some(x) =>
-              val updatedReminder = reminder.copy(nextSendDate = x)
-              htsUserUpdateActor ! updatedReminder
-            case None =>
-          }
-        }
-        case false =>
-          logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
-      })
+      if (shouldSendReminder) {
+        logger.info("It should shouldSendReminder")
+        val reminder = successReminder.reminder.htsUserSchedule
+        val monthName = successReminder.reminder.currentDate.getMonth.toString.toLowerCase.capitalize
 
+        val ref = successReminder.callBackRefUrl
+        val template = {
+
+          def format(name: String) = name.toLowerCase.capitalize
+
+          HtsReminderTemplate(
+            reminder.email,
+            format(reminder.firstName) + " " + format(reminder.lastName),
+            ref,
+            monthName
+          )
+        }
+
+        logger.info(s"Sending reminder for $ref")
+        sendReceivedTemplatedEmail(template).map({
+          case true => {
+            logger.info(s"Sent reminder for $ref")
+            val nextSendDate =
+              DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
+            nextSendDate match {
+              case Some(x) =>
+                val updatedReminder = reminder.copy(nextSendDate = x)
+                htsUserUpdateActor ! updatedReminder
+              case None =>
+            }
+          }
+          case false =>
+            logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
+        })
+
+      } else {
+        val nino = successReminder.reminder.htsUserSchedule.nino.toString
+        logger.info(s"Not sending reminder for [$nino]")
+        repository.deleteHtsUser(nino) map {
+          case Right(()) => {
+            logger.info(s"Successfully deleted nino: [$nino]")
+          }
+          case Left(_) => logger.error(s"Failed to delete nino: [$nino]")
+        }
+      }
     }
 
   }

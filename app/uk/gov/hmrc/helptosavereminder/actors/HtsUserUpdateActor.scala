@@ -32,7 +32,7 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
     case htsUserSchedule: HtsUserSchedule => {
       repository.updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate).map {
         case true => {
-          logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
+          logger.info(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
         }
         case _ => {
           logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
@@ -46,8 +46,8 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
         .updateCallBackRef(updateReminder.reminder.htsUserSchedule.nino.value, updateReminder.callBackRefUrl)
         .map {
           case true => {
-            logger.debug(
-              s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}"
+            logger.info(
+              s"Updated the User callBackRef for [${updateReminder.reminder.htsUserSchedule.nino.value}] with value [${updateReminder.callBackRefUrl}]"
             )
             origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
           }
