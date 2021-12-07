@@ -109,7 +109,7 @@ class EmailSenderActor @Inject() (
         logger.info(s"Not sending reminder for [$nino]")
         repository.deleteHtsUser(nino) map {
           case Right(()) => {
-            logger.info(s"Successfully deleted nino: [$nino]")
+            logger.info(s"Deleted reminder schedule for nino: [$nino]")
           }
           case Left(_) => logger.error(s"Failed to delete nino: [$nino]")
         }
