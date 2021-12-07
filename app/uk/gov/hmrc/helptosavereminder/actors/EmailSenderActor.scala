@@ -24,7 +24,6 @@ import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator.nextReminder
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -63,8 +62,10 @@ class EmailSenderActor @Inject() (
 
       val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
         case Some(closingDate) =>
+          logger.info(s"nextReminder.nextSendDate: [${successReminder.reminder.htsUserSchedule.nextSendDate}]")
           logger.info(s"accountClosingDate: [$closingDate]")
-          closingDate.isAfter(nextReminder.nextSendDate)
+          logger.info(s"closingDate.isAfter(nextReminder.nextSendDate): [${closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)}]")
+          closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)
         case _                 => true
       }
 
