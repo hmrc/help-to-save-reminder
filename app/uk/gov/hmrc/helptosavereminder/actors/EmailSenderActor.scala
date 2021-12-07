@@ -62,7 +62,9 @@ class EmailSenderActor @Inject() (
     case successReminder: UpdateCallBackSuccess => {
 
       val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
-        case Some(closingDate) => closingDate.isAfter(nextReminder.nextSendDate)
+        case Some(closingDate) =>
+          logger.info(s"accountClosingDate: [$closingDate]")
+          closingDate.isAfter(nextReminder.nextSendDate)
         case _                 => true
       }
 
