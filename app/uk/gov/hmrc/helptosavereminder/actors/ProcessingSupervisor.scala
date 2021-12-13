@@ -200,11 +200,15 @@ class ProcessingSupervisor @Inject() (
           case _ => {
             logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
           }
-        }
+        }.recover {
+        case e =>
+          logger.error("START failed", e)
+      }
 
       logger.info("Exiting START message processor by ProcessingSupervisor")
 
     }
+
   }
 
 }
