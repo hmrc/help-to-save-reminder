@@ -160,12 +160,11 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
       Future.successful(false)
     } else {
       val modifierJson = Json.obj(
-        "optInStatus"        -> JsBoolean(htsReminder.optInStatus),
-        "email"              -> htsReminder.email,
-        "firstName"          -> htsReminder.firstName,
-        "lastName"           -> htsReminder.lastName,
-        "daysToReceive"      -> htsReminder.daysToReceive,
-        "accountClosingDate" -> htsReminder.accountClosingDate
+        "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
+        "email"         -> htsReminder.email,
+        "firstName"     -> htsReminder.firstName,
+        "lastName"      -> htsReminder.lastName,
+        "daysToReceive" -> htsReminder.daysToReceive
       )
 
       val updatedModifierJsonCallBackRef =
