@@ -71,20 +71,20 @@ class EmailSenderActorSpec
 
       val requestCaptor = ArgumentCaptor.forClass(classOf[SendTemplatedEmailRequest])
 
-//      when(
-//        httpClient.POST[SendTemplatedEmailRequest, HttpResponse](
-//          anyString,
-//          requestCaptor.capture(),
-//          any[Seq[(String, String)]]
-//        )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
-//      ).thenReturn(Future.successful(HttpResponse(202, "")))
-//
-//      //TO test the update is correct you could use a UUID generator passed into
-//      when(mockRepository.updateNextSendDate(any(), any()))
-//        .thenReturn(Future.successful(true))
-//
-//      when(mockRepository.updateCallBackRef(any(), any()))
-//        .thenReturn(Future.successful(true))
+      when(
+        httpClient.POST[SendTemplatedEmailRequest, HttpResponse](
+          anyString,
+          requestCaptor.capture(),
+          any[Seq[(String, String)]]
+        )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
+      ).thenReturn(Future.successful(HttpResponse(202, "")))
+
+      //TO test the update is correct you could use a UUID generator passed into
+      when(mockRepository.updateNextSendDate(any(), any()))
+        .thenReturn(Future.successful(true))
+
+      when(mockRepository.updateCallBackRef(any(), any()))
+        .thenReturn(Future.successful(true))
 
       within(5 seconds) {
 
