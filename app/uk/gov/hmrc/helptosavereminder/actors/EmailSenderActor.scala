@@ -24,6 +24,7 @@ import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
+import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator.nextReminder
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -61,11 +62,7 @@ class EmailSenderActor @Inject() (
     case successReminder: UpdateCallBackSuccess => {
 
       val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
-        case Some(closingDate) =>
-          logger.info(s"nextReminder.nextSendDate: [${successReminder.reminder.htsUserSchedule.nextSendDate}]")
-          logger.info(s"accountClosingDate: [$closingDate]")
-          logger.info(s"closingDate.isAfter(nextReminder.nextSendDate): [${closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)}]")
-          closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)
+        case Some(closingDate) => closingDate.isAfter(nextReminder.nextSendDate)
         case _                 => true
       }
 
@@ -109,7 +106,7 @@ class EmailSenderActor @Inject() (
         logger.info(s"Not sending reminder for [$nino]")
         repository.deleteHtsUser(nino) map {
           case Right(()) => {
-            logger.info(s"Deleted reminder schedule for nino: [$nino]")
+            logger.info(s"Successfully deleted nino: [$nino]")
           }
           case Left(_) => logger.error(s"Failed to delete nino: [$nino]")
         }
