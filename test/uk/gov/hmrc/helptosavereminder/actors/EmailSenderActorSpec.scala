@@ -59,10 +59,9 @@ class EmailSenderActorSpec
   "Email Sender Actor" must {
 
     "should send an Hts object to DB for saving" in {
-
       val emailSenderActor = TestActorRef(
         Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {}),
-        "email-sender-actor-1"
+        "email-sender-actor"
       )
 
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
@@ -79,7 +78,6 @@ class EmailSenderActorSpec
         )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
       ).thenReturn(Future.successful(HttpResponse(202, "")))
 
-      //TO test the update is correct you could use a UUID generator passed into
       when(mockRepository.updateNextSendDate(any(), any()))
         .thenReturn(Future.successful(true))
 
@@ -90,53 +88,11 @@ class EmailSenderActorSpec
 
         emailSenderActor ! mockObject
 
-//        emailSenderActor ! UpdateCallBackSuccess(mockObject, "callBackSampleRef")
+        emailSenderActor ! UpdateCallBackSuccess(mockObject, "callBackSampleRef")
 
       }
 
     }
-//
-//    "ignore should send an email if reminder before closing date" in {
-//
-//      val emailSenderActor = TestActorRef(
-//        Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {}),
-//        "email-sender-actor-2"
-//      )
-//
-//      val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
-//
-////      val mockObject = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate)
-//      val reminder = ???
-//      val sendDate = ???
-//      val htsUserScheduleMsg = HtsUserScheduleMsg(reminder,sendDate )
-//      val mockObject = UpdateCallBackSuccess(htsUserScheduleMsg, "callbackRef")
-//
-//      val requestCaptor = ArgumentCaptor.forClass(classOf[SendTemplatedEmailRequest])
-//
-//      when(
-//        httpClient.POST[SendTemplatedEmailRequest, HttpResponse](
-//          anyString,
-//          requestCaptor.capture(),
-//          any[Seq[(String, String)]]
-//        )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
-//      ).thenReturn(Future.successful(HttpResponse(202, "")))
-//
-//      when(mockRepository.updateNextSendDate(any(), any()))
-//        .thenReturn(Future.successful(true))
-//
-//      when(mockRepository.updateCallBackRef(any(), any()))
-//        .thenReturn(Future.successful(true))
-//
-//      within(5 seconds) {
-//
-//        emailSenderActor ! mockObject
-//
-//        // if should send and email.
-//        // htsUserUpdateActor ! updatedReminder
-//
-//      }
-//
-//    }
 
   }
 
