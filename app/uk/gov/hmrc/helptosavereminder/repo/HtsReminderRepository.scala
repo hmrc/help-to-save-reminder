@@ -164,7 +164,8 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
         "email"         -> htsReminder.email,
         "firstName"     -> htsReminder.firstName,
         "lastName"      -> htsReminder.lastName,
-        "daysToReceive" -> htsReminder.daysToReceive
+        "daysToReceive" -> htsReminder.daysToReceive,
+        "endDate"       -> htsReminder.endDate
       )
 
       val updatedModifierJsonCallBackRef =
