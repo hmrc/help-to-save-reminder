@@ -17,9 +17,9 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.util.UUID
+
 import akka.actor._
 import com.google.inject.Inject
-
 import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
@@ -54,66 +54,46 @@ class EmailSenderActor @Inject() (
     case htsUserReminderMsg: HtsUserScheduleMsg => {
 
       val callBackRef = UUID.randomUUID().toString
-      logger.info(s"New callBackRef [$callBackRef]")
+      logger.info(s"New callBackRef $callBackRef")
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
+
     }
 
     case successReminder: UpdateCallBackSuccess => {
 
-      val shouldSendReminder = successReminder.reminder.htsUserSchedule.accountClosingDate match {
-        case Some(closingDate) =>
-          logger.info(s"nextReminder.nextSendDate: [${successReminder.reminder.htsUserSchedule.nextSendDate}]")
-          logger.info(s"accountClosingDate: [$closingDate]")
-          logger.info(s"closingDate.isAfter(nextReminder.nextSendDate): [${closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)}]")
-          closingDate.isAfter(successReminder.reminder.htsUserSchedule.nextSendDate)
-        case _                 => true
+      val reminder = successReminder.reminder.htsUserSchedule
+      val monthName = successReminder.reminder.currentDate.getMonth.toString.toLowerCase.capitalize
+
+      val ref = successReminder.callBackRefUrl
+      val template = {
+
+        def format(name: String) = name.toLowerCase.capitalize
+
+        HtsReminderTemplate(
+          reminder.email,
+          format(reminder.firstName) + " " + format(reminder.lastName),
+          ref,
+          monthName
+        )
       }
 
-      if (shouldSendReminder) {
-        logger.info("It should shouldSendReminder")
-        val reminder = successReminder.reminder.htsUserSchedule
-        val monthName = successReminder.reminder.currentDate.getMonth.toString.toLowerCase.capitalize
-
-        val ref = successReminder.callBackRefUrl
-        val template = {
-
-          def format(name: String) = name.toLowerCase.capitalize
-
-          HtsReminderTemplate(
-            reminder.email,
-            format(reminder.firstName) + " " + format(reminder.lastName),
-            ref,
-            monthName
-          )
-        }
-
-        logger.info(s"Sending reminder for $ref")
-        sendReceivedTemplatedEmail(template).map({
-          case true => {
-            logger.info(s"Sent reminder for $ref")
-            val nextSendDate =
-              DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
-            nextSendDate match {
-              case Some(x) =>
-                val updatedReminder = reminder.copy(nextSendDate = x)
-                htsUserUpdateActor ! updatedReminder
-              case None =>
-            }
+      logger.info(s"Sending reminder for $ref")
+      sendReceivedTemplatedEmail(template).map({
+        case true => {
+          logger.info(s"Sent reminder for $ref")
+          val nextSendDate =
+            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
+          nextSendDate match {
+            case Some(x) =>
+              val updatedReminder = reminder.copy(nextSendDate = x)
+              htsUserUpdateActor ! updatedReminder
+            case None =>
           }
-          case false =>
-            logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
-        })
-
-      } else {
-        val nino = successReminder.reminder.htsUserSchedule.nino.toString
-        logger.info(s"Not sending reminder for [$nino]")
-        repository.deleteHtsUser(nino) map {
-          case Right(()) => {
-            logger.info(s"Deleted reminder schedule for nino: [$nino]")
-          }
-          case Left(_) => logger.error(s"Failed to delete nino: [$nino]")
         }
-      }
+        case false =>
+          logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
+      })
+
     }
 
   }
