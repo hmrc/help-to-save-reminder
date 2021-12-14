@@ -78,21 +78,27 @@ class EmailSenderActor @Inject() (
       }
 
       logger.info(s"Sending reminder for $ref")
-      sendReceivedTemplatedEmail(template).map({
-        case true => {
-          logger.info(s"Sent reminder for $ref")
-          val nextSendDate =
-            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
-          nextSendDate match {
-            case Some(x) =>
-              val updatedReminder = reminder.copy(nextSendDate = x)
-              htsUserUpdateActor ! updatedReminder
-            case None =>
+      val nino = reminder.nino.value
+      sendReceivedTemplatedEmail(template)
+        .map({
+          case true => {
+            logger.info(s"Sent reminder for $ref")
+            val nextSendDate =
+              DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
+            nextSendDate match {
+              case Some(x) =>
+                val updatedReminder = reminder.copy(nextSendDate = x)
+                htsUserUpdateActor ! updatedReminder
+              case None =>
+            }
           }
+          case false =>
+            logger.warn(s"Failed to send reminder for $nino $ref")
+        })
+        .recover {
+          case t =>
+            logger.error(s"EmailSenderActor UpdateCallBackSuccess $nino $ref failed", t)
         }
-        case false =>
-          logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
-      })
 
     }
 

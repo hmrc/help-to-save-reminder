@@ -30,31 +30,44 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
 
   override def receive: Receive = {
     case htsUserSchedule: HtsUserSchedule => {
-      repository.updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate).map {
-        case true => {
-          logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
+      repository
+        .updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate)
+        .map {
+          case true => {
+            logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
+          }
+          case _ => {
+            logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
+          }
         }
-        case _ => {
-          logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
+        .recover {
+          case t =>
+            logger.error(s"HtsUserUpdateActor HtsUserSchedule failed [${htsUserSchedule.nino}]", t)
         }
-      }
     }
 
     case updateReminder: UpdateCallBackRef => {
       val origSender = sender
+      val reminder = updateReminder.reminder
+      val url = updateReminder.callBackRefUrl
+      val nino = reminder.htsUserSchedule.nino.value
       repository
-        .updateCallBackRef(updateReminder.reminder.htsUserSchedule.nino.value, updateReminder.callBackRefUrl)
+        .updateCallBackRef(nino, url)
         .map {
           case true => {
             logger.debug(
-              s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}"
+              s"Updated the User callBackRef for $nino with value : $url"
             )
-            origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
+            origSender ! UpdateCallBackSuccess(reminder, url)
           }
           case _ =>
             logger.warn(
-              s"Failed to update CallbackRef for the User: ${updateReminder.reminder.htsUserSchedule.nino.value}"
+              s"Failed to update CallbackRef for the User: $nino"
             )
+        }
+        .recover {
+          case t =>
+            logger.error(s"HtsUserUpdateActor UpdateCallBackRef [$nino] with value [$url] failed", t)
         }
     }
   }
