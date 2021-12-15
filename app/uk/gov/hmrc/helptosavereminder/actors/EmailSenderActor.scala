@@ -52,11 +52,29 @@ class EmailSenderActor @Inject() (
   override def receive: Receive = {
 
     case htsUserReminderMsg: HtsUserScheduleMsg => {
+      val schedule = htsUserReminderMsg.htsUserSchedule
+      val nextSendDate = schedule.nextSendDate
 
-      val callBackRef = UUID.randomUUID().toString
-      logger.info(s"New callBackRef $callBackRef")
-      htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
-
+      schedule.endDate match {
+        case Some(closingDate) if nextSendDate.isAfter(closingDate) =>
+          val nino = schedule.nino.toString
+          repository
+            .deleteHtsUser(nino)
+            .map {
+              case Right(()) => {
+                logger.info(s"Deleted reminder schedule for nino: [$nino] [$closingDate]")
+              }
+              case Left(_) => logger.error(s"Failed to delete nino: [$nino] [$closingDate]")
+            }
+            .recover {
+              case t =>
+                logger.error(s"EmailSenderActor HtsUserScheduleMsg [$nino] [$closingDate] failed", t)
+            }
+        case _ =>
+          val callBackRef = UUID.randomUUID().toString
+          logger.info(s"New callBackRef $callBackRef")
+          htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
+      }
     }
 
     case successReminder: UpdateCallBackSuccess => {
