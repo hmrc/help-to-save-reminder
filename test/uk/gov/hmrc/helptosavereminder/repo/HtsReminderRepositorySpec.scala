@@ -75,7 +75,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with Mock
     result.futureValue shouldBe true
     val now = LocalDate.now
     htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.value, LocalDate.now())
-    htsReminderMongoRepository.updateAccountClosingDate(reminderValue.nino.value, LocalDate.now())
+    htsReminderMongoRepository.updateEndDate(reminderValue.nino.value, LocalDate.now())
 
     "should successfully find that user" in {
 
@@ -121,7 +121,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with Mock
 
     }
 
-    "should successfully update accountClosingDate field" in {
+    "should successfully update endDate field" in {
 
       val reminderValue = ReminderGenerator.nextReminder
 
@@ -130,10 +130,10 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with Mock
 
       updateStatus.futureValue shouldBe true
 
-      val accountClosingDate: Future[Boolean] =
-        htsReminderMongoRepository.updateAccountClosingDate(reminderValue.nino.value, LocalDate.now())
+      val endDate: Future[Boolean] =
+        htsReminderMongoRepository.updateEndDate(reminderValue.nino.value, LocalDate.now())
 
-      accountClosingDate.futureValue shouldBe true
+      endDate.futureValue shouldBe true
 
     }
 

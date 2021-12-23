@@ -48,11 +48,10 @@ class TestController @Inject() (
     }
   }
 
-  def updateAccountClosingDate(nino: String, closingDate: String): Action[AnyContent] = Action.async {
-    val accClosingDate: LocalDate = LocalDate.parse(closingDate)
+  def updateEndDate(nino: String, endDate: String): Action[AnyContent] = Action.async {
     repository.findByNino(nino).map {
       case Some(user) =>
-        val updatedHtsUser = user.copy(accountClosingDate = Some(accClosingDate))
+        val updatedHtsUser = user.copy(endDate = Some(LocalDate.parse(endDate)))
         repository.updateReminderUser(updatedHtsUser)
         Ok(Json.toJson(updatedHtsUser))
       case None => NotFound

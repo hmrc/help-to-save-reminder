@@ -49,7 +49,7 @@ trait HtsReminderRepository {
   def deleteHtsUser(nino: String): Future[Either[String, Unit]]
   def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]]
   def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int]
-  def updateAccountClosingDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
+  def updateEndDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
 }
 
 class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(implicit val ec: ExecutionContext)
@@ -105,15 +105,15 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
       }
   }
 
-  override def updateAccountClosingDate(nino: String, accountClosingDate: LocalDate): Future[Boolean] = {
+  override def updateEndDate(nino: String, endDate: LocalDate): Future[Boolean] = {
     val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("accountClosingDate" -> accountClosingDate))
+    val modifier = Json.obj("$set" -> Json.obj("endDate" -> endDate))
     val result = proxyCollection.update(ordered = false).one(selector, modifier)
 
     result
       .map { status =>
-        logger.debug(s"[HtsReminderMongoRepository][updateAccountClosingDate] updated:, result : $status ")
-        statusCheck("Failed to update HtsUser AccountClosingDate, No Matches Found", status)
+        logger.debug(s"[HtsReminderMongoRepository][updateEndDate] updated:, result : $status ")
+        statusCheck("Failed to update HtsUser EndDatev, No Matches Found", status)
       }
       .recover {
         case e =>
@@ -181,7 +181,8 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
         "email"         -> htsReminder.email,
         "firstName"     -> htsReminder.firstName,
         "lastName"      -> htsReminder.lastName,
-        "daysToReceive" -> htsReminder.daysToReceive
+        "daysToReceive" -> htsReminder.daysToReceive,
+        "endDate"       -> htsReminder.endDate
       )
 
       val updatedModifierJsonCallBackRef =
