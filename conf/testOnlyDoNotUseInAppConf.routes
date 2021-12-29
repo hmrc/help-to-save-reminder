@@ -17,4 +17,4 @@ GET     /help-to-save-reminder/test-only/populate-reminders/:noUsers/:emailPrefi
 
 GET     /help-to-save-reminder/test-only/gethtsuser/:nino                                              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
 
-POST    /help-to-save-reminder/test-only/gethtsuser/:nino/:endDate                                     uk.gov.hmrc.helptosavereminder.controllers.test.TestController.updateEndDate(nino: String, endDate: String)
+GET     /help-to-save-reminder/test-only/updatehtsuser/:nino/:endDate                                  uk.gov.hmrc.helptosavereminder.controllers.test.TestController.updateEndDate(nino: String, endDate: String)
