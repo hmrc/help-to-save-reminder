@@ -176,14 +176,25 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
       logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
       Future.successful(false)
     } else {
-      val modifierJson = Json.obj(
-        "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
-        "email"         -> htsReminder.email,
-        "firstName"     -> htsReminder.firstName,
-        "lastName"      -> htsReminder.lastName,
-        "daysToReceive" -> htsReminder.daysToReceive,
-        "endDate"       -> htsReminder.endDate
-      )
+      val modifierJson =
+        if (htsReminder.endDate.nonEmpty) {
+          Json.obj(
+            "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
+            "email"         -> htsReminder.email,
+            "firstName"     -> htsReminder.firstName,
+            "lastName"      -> htsReminder.lastName,
+            "daysToReceive" -> htsReminder.daysToReceive,
+            "endDate"       -> htsReminder.endDate
+          )
+        } else {
+          Json.obj(
+            "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
+            "email"         -> htsReminder.email,
+            "firstName"     -> htsReminder.firstName,
+            "lastName"      -> htsReminder.lastName,
+            "daysToReceive" -> htsReminder.daysToReceive
+          )
+        }
 
       val updatedModifierJsonCallBackRef =
         if (htsReminder.callBackUrlRef.isEmpty)
