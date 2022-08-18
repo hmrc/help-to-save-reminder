@@ -6,10 +6,9 @@ object AppDependencies {
   private val playVersion = "play-28"
 
   val compile = Seq(
-    "uk.gov.hmrc"             %% "simple-reactivemongo"      % s"8.0.0-$playVersion",
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"      % s"0.70.0",
     "uk.gov.hmrc"             %% s"bootstrap-backend-$playVersion" % "5.12.0",
     "uk.gov.hmrc"             %% "domain"                    % s"6.2.0-$playVersion",
-    "uk.gov.hmrc"             %% "mongo-lock"                % s"7.0.0-$playVersion",
     "org.typelevel"           %% "cats-core"                 % "2.6.0",
     "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x",
     compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.5" cross CrossVersion.full),
@@ -17,7 +16,7 @@ object AppDependencies {
   )
 
   val test = Seq(
-    "uk.gov.hmrc"             %% "reactivemongo-test"       % s"5.0.0-$playVersion"   % "test, it",
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"  % "0.70.0"               % "test, it",
     "org.mockito"             %  "mockito-all"              % "1.10.19"               % "test, it",
     "com.typesafe.akka"       %% "akka-testkit"             % "2.6.14"                % "test, it",
     "com.typesafe.play"       %% "play-test"                % current                 % "test",

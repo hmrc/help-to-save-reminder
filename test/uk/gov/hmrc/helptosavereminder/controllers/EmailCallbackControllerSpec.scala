@@ -23,7 +23,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
-import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
@@ -32,20 +31,18 @@ import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.{HttpClient, HttpResponse}
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.mongo.test.MongoSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDateTime
 import java.util.UUID
 import scala.concurrent.Future
 
-class EmailCallbackControllerSpec extends BaseSpec with MongoSpecSupport with MockitoSugar {
+class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with MockitoSugar {
 
-  implicit val reactiveMongoComponent = new ReactiveMongoComponent {
-    override def mongoConnector = mongoConnectorForTest
-  }
+  implicit val mongo = mongoComponent
 
-  val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
 
   implicit val sys = ActorSystem("MyTest")
 

@@ -27,7 +27,8 @@ import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.lock.{LockRepository, MongoLockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.{LocalDate, ZoneId}
@@ -48,12 +49,14 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
 
   val emailConnector = mock[EmailConnector]
 
-  val mongoApi = app.injector.instanceOf[play.modules.reactivemongo.ReactiveMongoComponent]
+  val lockRepo = mock[MongoLockRepository]
+
+  val mongoApi = app.injector.instanceOf[MongoComponent]
 
   lazy val mockRepository = mock[HtsReminderMongoRepository]
 
   override def beforeAll =
-    when(mockLockRepo lock (anyString, anyString, any())) thenReturn Future.successful(true)
+    when(mockLockRepo takeLock (anyString, anyString, any())) thenReturn Future.successful(true)
 
   //override def afterAll: Unit =
   //  shutdown()
@@ -65,10 +68,9 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
       val emailSenderActorProbe = TestProbe()
 
       val processingSupervisor = TestActorRef(
-        Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector) {
+        Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
           override lazy val emailSenderActor = emailSenderActorProbe.ref
           override lazy val repository = mockRepository
-          override val lockrepo = mockLockRepo
         }),
         "process-supervisor1"
       )

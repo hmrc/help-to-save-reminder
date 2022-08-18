@@ -28,7 +28,8 @@ import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
-import uk.gov.hmrc.lock.LockRepository
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.lock.LockRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.{LocalDate, ZoneId}
@@ -49,12 +50,12 @@ class EmailSenderActorSpec
 
   val emailConnector = mock[EmailConnector]
 
-  val mongoApi = app.injector.instanceOf[play.modules.reactivemongo.ReactiveMongoComponent]
+  val mongoApi = app.injector.instanceOf[MongoComponent]
 
   lazy val mockRepository = mock[HtsReminderMongoRepository]
 
   override def beforeAll =
-    when(mockLockRepo.lock(anyString, anyString, any())) thenReturn Future.successful(true)
+    when(mockLockRepo.takeLock(anyString, anyString, any())) thenReturn Future.successful(true)
 
   "Email Sender Actor" must {
 

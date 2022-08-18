@@ -16,14 +16,13 @@
 
 package uk.gov.hmrc.helptosavereminder.models
 
-import java.time.{LocalDate, LocalDateTime}
-
-import org.joda.time.DateTime
+import org.mongodb.scala.bson.ObjectId
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{Format, JsPath, JsString, Json, Reads, Writes}
-import reactivemongo.bson.BSONObjectID
+import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.play.json.formats.{MongoFormats, MongoJavatimeFormats}
+
+import java.time.{LocalDate, LocalDateTime}
 
 case class HtsUserSchedule(
   nino: Nino,
@@ -46,8 +45,8 @@ case class CancelHtsUserReminder(nino: String)
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
 
 object HtsUserSchedule {
-  implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats
-  implicit val idFormat: Format[BSONObjectID] = ReactiveMongoFormats.objectIdFormats
+  implicit val dateFormat: Format[LocalDate] = MongoJavatimeFormats.localDateFormat
+  implicit val idFormat: Format[ObjectId] = MongoFormats.objectIdFormat
   implicit val htsUserFormat: Format[HtsUserSchedule] = Json.format[HtsUserSchedule]
   implicit val writes: Writes[HtsUserSchedule] = Writes[HtsUserSchedule](s ⇒ JsString(s.toString))
 

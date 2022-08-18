@@ -17,12 +17,11 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import org.scalamock.scalatest.MockFactory
-import play.modules.reactivemongo.ReactiveMongoComponent
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.mongo.test.MongoSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
@@ -30,20 +29,18 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with MockFactory {
+class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with MockFactory {
 
   val env = mock[play.api.Environment]
 
   override val servicesConfig = mock[ServicesConfig]
 
-  implicit val reactiveMongoComponent = new ReactiveMongoComponent {
-    override def mongoConnector = mongoConnectorForTest
-  }
+  implicit val mongo = mongoComponent
 
-  val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
 
   "Calls to create Reminder a HtsReminder repository" should {
-    "should successfully create that reminder" in {
+    "successfully create that reminder" in {
 
       val reminderValue = ReminderGenerator.nextReminder
 

@@ -22,11 +22,11 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
 import uk.gov.hmrc.http.{HttpClient, HttpResponse}
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.mongo.test.MongoSupport
 
 import scala.concurrent.Future
 
-class EmailConnectorSpec extends BaseSpec with MongoSpecSupport with MockitoSugar {
+class EmailConnectorSpec extends BaseSpec with MongoSupport with MockitoSugar {
 
   val mockHttp: HttpClient = mock[HttpClient]
 

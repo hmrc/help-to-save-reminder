@@ -16,25 +16,20 @@
 
 package uk.gov.hmrc.helptosavereminder.repo
 
-import java.time.{LocalDate, ZoneId}
 import com.google.inject.ImplementedBy
-
-import javax.inject.Inject
-import play.api.libs.json.{JsBoolean, JsObject, JsString, Json}
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.collections.GenericCollection
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.api.{Cursor, ReadPreference}
-import reactivemongo.bson.BSONObjectID
-import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
-import reactivemongo.play.json.ImplicitBSONHandlers._
-import reactivemongo.play.json.JSONSerializationPack
-import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
+import org.mongodb.scala.model.Filters.{and, equal, lte, regex}
+import org.mongodb.scala.model.Indexes.ascending
+import org.mongodb.scala.model.{Filters, IndexModel, UpdateOptions, Updates}
+import play.api.Logging
 import play.api.http.Status._
+import play.api.libs.json.{JsBoolean, Json}
+import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
+import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import java.time.{LocalDate, ZoneId}
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -52,26 +47,20 @@ trait HtsReminderRepository {
   def updateEndDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
 }
 
-class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(implicit val ec: ExecutionContext)
-    extends ReactiveRepository[HtsUserSchedule, BSONObjectID](
+class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val ec: ExecutionContext)
+    extends PlayMongoRepository[HtsUserSchedule](
+      mongoComponent = mongo,
       collectionName = "help-to-save-reminder",
-      mongo = mongo.mongoConnector.db,
-      HtsUserSchedule.htsUserFormat,
-      ReactiveMongoFormats.objectIdFormats
-    ) with HtsReminderRepository {
-
-  lazy val proxyCollection: GenericCollection[JSONSerializationPack.type] = collection
+      domainFormat = HtsUserSchedule.htsUserFormat,
+      indexes = Seq(IndexModel(ascending("nino", "callBackUrlRef")))
+    ) with HtsReminderRepository with Logging {
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUserSchedule]]] = {
     logger.debug("findHtsUsersToProcess is about to fetch records")
     val now = LocalDate.now()
     logger.info(s"time for HtsUsersToProcess $now")
     val testResult = Try {
-      proxyCollection
-        .find(Json.obj("nextSendDate" -> Map("$lte" -> now)), Option.empty[JsObject])
-        .sort(Json.obj("nino" -> 1))
-        .cursor[HtsUserSchedule](ReadPreference.primary)
-        .collect[List](-1, Cursor.FailOnError[List[HtsUserSchedule]]())
+      collection.find(lte("nextSendDate", now)).sort(equal("nino", 1)).toFuture().map(_.toList)
     }
 
     testResult match {
@@ -89,14 +78,18 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
   }
 
   override def updateNextSendDate(nino: String, nextSendDate: LocalDate): Future[Boolean] = {
-    val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("nextSendDate" -> nextSendDate))
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
+    val result = collection
+      .updateOne(filter = equal("nino", nino), update = Updates.set("nextSendDate", nextSendDate))
+      .toFuture()
 
     result
       .map { status =>
-        logger.debug(s"[HtsReminderMongoRepository][updateNextSendDate] updated:, result : $status ")
-        statusCheck("Failed to update HtsUser NextSendDate, No Matches Found", status)
+        logger.debug(s"[HtsReminderMongoRepository][updateNextSendDate] updated:, result : $status")
+        if (status.wasAcknowledged()) true
+        else {
+          logger.warn(s"Failed to update HtsUser NextSendDate, No Matches Found $status")
+          false
+        }
       }
       .recover {
         case e =>
@@ -106,14 +99,18 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
   }
 
   override def updateEndDate(nino: String, endDate: LocalDate): Future[Boolean] = {
-    val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("endDate" -> endDate))
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
+    val result = collection
+      .updateOne(filter = equal("nino", nino), update = Updates.set("endDate", endDate))
+      .toFuture()
 
     result
       .map { status =>
         logger.debug(s"[HtsReminderMongoRepository][updateEndDate] updated:, result : $status ")
-        statusCheck("Failed to update HtsUser EndDatev, No Matches Found", status)
+        if (status.wasAcknowledged()) true
+        else {
+          logger.warn(s"Failed to update HtsUser EndDatev, No Matches Found: $status")
+          false
+        }
       }
       .recover {
         case e =>
@@ -123,104 +120,89 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
   }
 
   override def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int] = {
-    val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("email" -> email, "firstName" -> firstName, "lastName" -> lastName))
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
+    val result = collection
+      .updateOne(
+        filter = equal("nino", nino),
+        update = Updates
+          .combine(Updates.set("email", email), Updates.set("firstName", firstName), Updates.set("lastName", lastName))
+      )
+      .toFuture()
 
     result
-      .map { status =>
-        logger.debug(s"[HtsReminderMongoRepository][updateEmail] updated:, result : $status ")
-
-        (status.n, status.nModified) match {
-          case (0, _) => {
-            logger.warn("Failed to update HtsUser Email, No Matches Found")
-            NOT_FOUND
+      .map { updateResult =>
+        if (!updateResult.wasAcknowledged()) {
+          logger.warn("Failed to update HtsUser Email")
+          NOT_FOUND
+        } else {
+          (updateResult.getMatchedCount, updateResult.getModifiedCount) match {
+            case (0, _) =>
+              logger.warn("Failed to update HtsUser Email, No Matches Found")
+              NOT_FOUND
+            case (_, 0) => NOT_MODIFIED
+            case (_, _) => OK
           }
-          case (_, 0) => NOT_MODIFIED
-          case (_, _) => OK
         }
-
       }
       .recover {
         case e =>
           logger.warn("Failed to update HtsUser Email", e)
           NOT_FOUND
       }
-
   }
 
   override def updateCallBackRef(nino: String, callBackRef: String): Future[Boolean] = {
-    val selector = Json.obj("nino" -> nino)
-    val modifier = Json.obj("$set" -> Json.obj("callBackUrlRef" -> callBackRef))
-
-    val result = proxyCollection.update(ordered = false).one(selector, modifier)
+    val result = collection
+      .updateOne(filter = equal("nino", nino), update = Updates.set("callBackUrlRef", callBackRef))
+      .toFuture()
 
     result
       .map { status =>
         logger.debug(s"[HtsReminderMongoRepository][updateCallBackRef] updated:, result : $status ")
-        statusCheck("Failed to update HtsUser CallbackRef, No Matches Found", status)
+        if (status.wasAcknowledged()) true
+        else {
+          logger.warn(s"Failed to update HtsUser CallbackRef, No Matches Found $status")
+          false
+        }
       }
       .recover {
         case e =>
           logger.error("Failed to update HtsUser", e)
           false
       }
-
   }
 
-  override def updateReminderUser(htsReminder: HtsUserSchedule): Future[Boolean] = {
-
-    val selector = Json.obj("nino" -> htsReminder.nino.value)
-
+  override def updateReminderUser(htsReminder: HtsUserSchedule): Future[Boolean] =
     if (htsReminder.daysToReceive.length <= 0) {
       logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
       Future.successful(false)
     } else {
-      val modifierJson =
-        if (htsReminder.endDate.nonEmpty) {
-          Json.obj(
-            "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
-            "email"         -> htsReminder.email,
-            "firstName"     -> htsReminder.firstName,
-            "lastName"      -> htsReminder.lastName,
-            "daysToReceive" -> htsReminder.daysToReceive,
-            "endDate"       -> htsReminder.endDate
-          )
-        } else {
-          Json.obj(
-            "optInStatus"   -> JsBoolean(htsReminder.optInStatus),
-            "email"         -> htsReminder.email,
-            "firstName"     -> htsReminder.firstName,
-            "lastName"      -> htsReminder.lastName,
-            "daysToReceive" -> htsReminder.daysToReceive
-          )
-        }
-
-      val updatedModifierJsonCallBackRef =
-        if (htsReminder.callBackUrlRef.isEmpty)
-          modifierJson ++ Json.obj("callBackUrlRef"    -> "")
-        else modifierJson ++ Json.obj("callBackUrlRef" -> htsReminder.callBackUrlRef)
-
       val updatedNextSendDate: Option[LocalDate] =
         getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
 
-      val finalModifiedJson = updatedNextSendDate match {
-        case Some(localDate) => updatedModifierJsonCallBackRef ++ Json.obj("nextSendDate" -> localDate)
-        case None =>
-          logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
-          updatedModifierJsonCallBackRef
-      }
+      val filter = Filters.equal("nino", htsReminder.nino.value)
 
-      val modifier = Json.obj(
-        "$set" -> finalModifiedJson
+      val update = Updates.combine(
+        Updates.set("optInStatus", htsReminder.optInStatus),
+        Updates.set("email", htsReminder.email),
+        Updates.set("firstName", htsReminder.firstName),
+        Updates.set("lastName", htsReminder.lastName),
+        Updates.set("daysToReceive", htsReminder.daysToReceive),
+        Updates.set("endDate", htsReminder.endDate.getOrElse(null)),
+        Updates.set("callBackUrlRef", htsReminder.callBackUrlRef),
+        Updates.set("nextSendDate", updatedNextSendDate.getOrElse(null))
       )
+      val options = UpdateOptions().upsert(true)
 
-      val result = proxyCollection.update(ordered = false).one(selector, modifier, upsert = true)
+      val result = collection.updateOne(filter, update, options).toFuture()
 
       result
         .map { status =>
           logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status")
-          statusCheck("Failed to update Hts ReminderUser, No Matches Found", status)
+          if (status.wasAcknowledged()) true
+          else {
+            logger.warn(s"Failed to update Hts ReminderUser, No Matches Found $status")
+            false
+          }
         }
         .recover {
           case e =>
@@ -229,37 +211,15 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
         }
     }
 
-  }
-
-  def statusCheck(errorMsg: String, status: WriteResult): Boolean =
-    status.n match {
-      case 0 => {
-        logger.warn(errorMsg)
-        false
-      }
-      case _ => status.ok
-    }
-
-  def statusCheck(status: WriteResult): Boolean = {
-    logger.debug("debug Status: " + status.toString)
-    status.n match {
-      case 0 => false
-      case _ => status.ok
-    }
-  }
-
   override def deleteHtsUser(nino: String): Future[Either[String, Unit]] = {
     logger.debug(nino)
-    remove("nino" → Json.obj("$regex" → JsString(nino)))
-      .map[Either[String, Unit]] { res ⇒
-        if (res.writeErrors.nonEmpty) {
-          Left(s"Could not delete htsUser: ${res.writeErrors.mkString(";")}")
-        } else {
-          if (statusCheck(res)) {
-            Right(())
-          } else {
-            Left(s"Could not find htsUser to delete")
-          }
+    collection
+      .deleteOne(regex("nino", nino))
+      .toFuture()
+      .map[Either[String, Unit]] { res =>
+        if (res.getDeletedCount > 0) Right(())
+        else {
+          Left(s"Could not find htsUser to delete")
         }
       }
       .recover {
@@ -269,16 +229,13 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
   }
 
   override def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]] =
-    remove("nino" → Json.obj("$regex" → JsString(nino), "callBackUrlRef" -> callBackUrlRef))
-      .map[Either[String, Unit]] { res ⇒
-        if (res.writeErrors.nonEmpty) {
-          Left(s"Could not delete htsUser by callBackUrlRef: ${res.writeErrors.mkString(";")}")
-        } else {
-          if (statusCheck(res)) {
-            Right(())
-          } else {
-            Left(s"Could not find htsUser to delete by callBackUrlRef")
-          }
+    collection
+      .deleteOne(and(regex("nino", nino), equal("callBackUrlRef", callBackUrlRef)))
+      .toFuture()
+      .map[Either[String, Unit]] { res =>
+        if (res.getDeletedCount > 0) Right(())
+        else {
+          Left(s"Could not find htsUser to delete by callBackUrlRef")
         }
       }
       .recover {
@@ -286,51 +243,10 @@ class HtsReminderMongoRepository @Inject() (mongo: ReactiveMongoComponent)(impli
           Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
 
-  override def findByNino(nino: String): Future[Option[HtsUserSchedule]] = {
+  override def findByNino(nino: String): Future[Option[HtsUserSchedule]] =
+    collection.find(Filters.eq("nino", nino)).toFuture().map(_.headOption)
 
-    val tryResult = Try {
-      proxyCollection
-        .find(Json.obj("nino" -> nino), Option.empty[JsObject])
-        .cursor[HtsUserSchedule](ReadPreference.primary)
-        .collect[List](maxDocs = 1, err = Cursor.FailOnError[List[HtsUserSchedule]]())
-    }
-
-    tryResult match {
-      case Success(s) => {
-        s.map { x =>
-          x.headOption
-        }
-      }
-      case Failure(f) => {
-        Future.successful(None)
-      }
-    }
-  }
-
-  override def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]] = {
-
-    val tryResult = Try {
-      proxyCollection
-        .find(Json.obj("callBackUrlRef" -> callBackUrlRef), Option.empty[JsObject])
-        .cursor[HtsUserSchedule](ReadPreference.primary)
-        .collect[List](maxDocs = 1, err = Cursor.FailOnError[List[HtsUserSchedule]]())
-    }
-
-    tryResult match {
-      case Success(s) => {
-        s.map { x =>
-          x.headOption
-        }
-      }
-      case Failure(f) => {
-        Future.successful(None)
-      }
-    }
-  }
-
-  override def indexes: Seq[Index] = Seq(
-    Index(Seq("nino"           -> IndexType.Ascending), Some("nino"), background = true),
-    Index(Seq("callBackUrlRef" -> IndexType.Ascending), Some("callBackUrlRef"), background = true)
-  )
+  override def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]] =
+    collection.find(Filters.eq("callBackUrlRef", callBackUrlRef)).toFuture().map(_.headOption)
 
 }
