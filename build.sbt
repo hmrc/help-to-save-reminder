@@ -54,7 +54,7 @@ lazy val wartRemoverSettings = {
 
 lazy val scoverageSettings = Seq(
   ScoverageKeys.coverageExcludedPackages := "<empty>;app.*;test.*;config.*;metrics.*;testOnlyDoNotUseInAppConf.*;views.html.*;prod.*;uk.gov.hmrc.helptosavereminder.controllers.test.*;uk.gov.hmrc.helptosavereminder.actors.*;uk.gov.hmrc.helptosavereminder.models.test.*;uk.gov.hmrc.helptosavereminder.services.test.*",
-  ScoverageKeys.coverageMinimumStmtTotal := 79,
+  ScoverageKeys.coverageMinimumStmtTotal := 80,
   ScoverageKeys.coverageFailOnMinimum := true,
   ScoverageKeys.coverageHighlighting := true
 )
