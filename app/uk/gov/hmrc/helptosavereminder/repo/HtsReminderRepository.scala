@@ -176,24 +176,49 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
       Future.successful(false)
     } else {
+      val modifiedJson = if (htsReminder.endDate.nonEmpty) {
+        List(
+          Updates.set("optInStatus", htsReminder.optInStatus),
+          Updates.set("email", htsReminder.email),
+          Updates.set("firstName", htsReminder.firstName),
+          Updates.set("lastName", htsReminder.lastName),
+          Updates.set("daysToReceive", htsReminder.daysToReceive),
+          Updates.set("endDate", htsReminder.endDate.get)
+        )
+      } else {
+        List(
+          Updates.set("optInStatus", htsReminder.optInStatus),
+          Updates.set("email", htsReminder.email),
+          Updates.set("firstName", htsReminder.firstName),
+          Updates.set("lastName", htsReminder.lastName),
+          Updates.set("daysToReceive", htsReminder.daysToReceive)
+        )
+      }
+
+      val updatedModifierJsonCallBackRef = if (htsReminder.callBackUrlRef.isEmpty) {
+        modifiedJson ::: List(Updates.set("callBackUrlRef", ""))
+      } else {
+        modifiedJson ::: List(Updates.set("callBackUrlRef", htsReminder.callBackUrlRef))
+      }
+
       val updatedNextSendDate: Option[LocalDate] =
         getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
 
-      val filter = Filters.equal("nino", htsReminder.nino.value)
+      val finalModifiedJson = updatedNextSendDate match {
+        case Some(localDate) => updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", localDate))
+        case None => {
+          logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
+          updatedModifierJsonCallBackRef
+        }
+      }
 
-      val update = Updates.combine(
-        Updates.set("optInStatus", htsReminder.optInStatus),
-        Updates.set("email", htsReminder.email),
-        Updates.set("firstName", htsReminder.firstName),
-        Updates.set("lastName", htsReminder.lastName),
-        Updates.set("daysToReceive", htsReminder.daysToReceive),
-        Updates.set("endDate", htsReminder.endDate.getOrElse(null)),
-        Updates.set("callBackUrlRef", htsReminder.callBackUrlRef),
-        Updates.set("nextSendDate", updatedNextSendDate.getOrElse(null))
-      )
+      val selector = Filters.equal("nino", htsReminder.nino.value)
+
+      val modifier = Updates.combine(finalModifiedJson.map(update => update): _*)
+
       val options = UpdateOptions().upsert(true)
 
-      val result = collection.updateOne(filter, update, options).toFuture()
+      val result = collection.updateOne(selector, modifier, options).toFuture()
 
       result
         .map { status =>
