@@ -200,7 +200,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
         getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
 
       val finalModifiedJson = updatedNextSendDate match {
-        case Some(localDate) => updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", localDate))
+        case Some(localDate) => updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", localDate.get))
         case None => {
           logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
           updatedModifierJsonCallBackRef
@@ -218,8 +218,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       result
         .map { status =>
           logger.debug(s"[HtsReminderMongoRepository][updateReminderUser] updated:, result : $status")
-          if (status.wasAcknowledged()) true
-          else {
+          if (status.wasAcknowledged()) {
+            true
+          } else {
             logger.warn(s"Failed to update Hts ReminderUser, No Matches Found $status")
             false
           }
