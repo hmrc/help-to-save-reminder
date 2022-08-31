@@ -199,12 +199,11 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       val updatedNextSendDate: Option[LocalDate] =
         getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
 
-      val finalModifiedJson = updatedNextSendDate match {
-        case Some(localDate) => updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", localDate.get))
-        case None => {
-          logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
-          updatedModifierJsonCallBackRef
-        }
+      val finalModifiedJson = if (updatedNextSendDate.nonEmpty) {
+        updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", updatedNextSendDate.get))
+      } else {
+        logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
+        updatedModifierJsonCallBackRef
       }
 
       val selector = Filters.equal("nino", htsReminder.nino.value)
