@@ -45,7 +45,11 @@ case class CancelHtsUserReminder(nino: String)
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
 
 object HtsUserSchedule {
-  implicit val dateFormat: Format[LocalDate] = MongoJavatimeFormats.localDateFormat
+  implicit val dateFormat: Format[LocalDate] = new Format[LocalDate] {
+    override def reads(json: JsValue): JsResult[LocalDate] = json.validate[String].map(LocalDate.parse)
+
+    override def writes(ldate: LocalDate) = Json.toJson(ldate.toString)
+  }
   implicit val idFormat: Format[ObjectId] = MongoFormats.objectIdFormat
   implicit val htsUserFormat: Format[HtsUserSchedule] = Json.format[HtsUserSchedule]
   implicit val writes: Writes[HtsUserSchedule] = Writes[HtsUserSchedule](s ⇒ JsString(s.toString))
