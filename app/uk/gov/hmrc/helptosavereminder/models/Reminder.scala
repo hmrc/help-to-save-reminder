@@ -22,7 +22,9 @@ import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mongo.play.json.formats.{MongoFormats, MongoJavatimeFormats}
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime}
+import java.time.format.DateTimeFormatter
+import scala.util.{Failure, Success, Try}
 
 case class HtsUserSchedule(
   nino: Nino,
@@ -46,13 +48,23 @@ case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: S
 
 object HtsUserSchedule {
   implicit val dateFormat: Format[LocalDate] = new Format[LocalDate] {
-    override def reads(json: JsValue): JsResult[LocalDate] = json.validate[String].map(LocalDate.parse)
+    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-    override def writes(ldate: LocalDate) = Json.toJson(ldate.toString)
+    override def writes(ldate: LocalDate) = Json.toJson(ldate.format(formatter))
+
+    override def reads(json: JsValue): JsResult[LocalDate] = json match {
+      case JsString(s) ⇒
+        Try(LocalDate.parse(s, formatter)) match {
+          case Success(date) ⇒ {
+            println(s"this is the date: $date")
+            JsSuccess(date)
+          }
+          case Failure(error) ⇒ JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
+        }
+    }
   }
   implicit val idFormat: Format[ObjectId] = MongoFormats.objectIdFormat
   implicit val htsUserFormat: Format[HtsUserSchedule] = Json.format[HtsUserSchedule]
-  implicit val writes: Writes[HtsUserSchedule] = Writes[HtsUserSchedule](s ⇒ JsString(s.toString))
 
   implicit val reads: Reads[HtsUserSchedule] = (
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(Nino.apply(_)) and

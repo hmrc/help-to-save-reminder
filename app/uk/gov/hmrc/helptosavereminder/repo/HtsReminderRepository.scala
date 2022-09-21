@@ -22,12 +22,13 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, UpdateOptions, Updates}
 import play.api.Logging
 import play.api.http.Status._
-import play.api.libs.json.{JsBoolean, Json}
+import play.api.libs.json.{Format, JsBoolean, JsError, JsResult, JsString, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneId}
 import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
@@ -57,7 +58,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUserSchedule]]] = {
     logger.debug("findHtsUsersToProcess is about to fetch records")
-    val now = LocalDate.now()
+    val now = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     logger.info(s"time for HtsUsersToProcess $now")
     val testResult = Try {
       collection.find(lte("nextSendDate", now)).sort(equal("nino", 1)).toFuture().map(_.toList)
@@ -79,7 +80,11 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
 
   override def updateNextSendDate(nino: String, nextSendDate: LocalDate): Future[Boolean] = {
     val result = collection
-      .updateOne(filter = equal("nino", nino), update = Updates.set("nextSendDate", nextSendDate))
+      .updateOne(
+        filter = equal("nino", nino),
+        update =
+          Updates.set("nextSendDate", Codecs.toBson(nextSendDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+      )
       .toFuture()
 
     result
@@ -100,7 +105,10 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
 
   override def updateEndDate(nino: String, endDate: LocalDate): Future[Boolean] = {
     val result = collection
-      .updateOne(filter = equal("nino", nino), update = Updates.set("endDate", endDate))
+      .updateOne(
+        filter = equal("nino", nino),
+        update = Updates.set("endDate", Codecs.toBson(endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+      )
       .toFuture()
 
     result
@@ -269,4 +277,20 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
   override def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("callBackUrlRef", callBackUrlRef)).toFuture().map(_.headOption)
 
+  implicit val dateFormat: Format[LocalDate] = new Format[LocalDate] {
+    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
+    override def writes(ldate: LocalDate) = Json.toJson(ldate.format(formatter))
+
+    override def reads(json: JsValue): JsResult[LocalDate] = json match {
+      case JsString(s) ⇒
+        Try(LocalDate.parse(s, formatter)) match {
+          case Success(date) ⇒ {
+            println(s"this is the date: $date")
+            JsSuccess(date)
+          }
+          case Failure(error) ⇒ JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
+        }
+    }
+  }
 }
