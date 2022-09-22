@@ -277,20 +277,4 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
   override def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("callBackUrlRef", callBackUrlRef)).toFuture().map(_.headOption)
 
-  implicit val dateFormat: Format[LocalDate] = new Format[LocalDate] {
-    val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
-    override def writes(ldate: LocalDate) = Json.toJson(ldate.format(formatter))
-
-    override def reads(json: JsValue): JsResult[LocalDate] = json match {
-      case JsString(s) ⇒
-        Try(LocalDate.parse(s, formatter)) match {
-          case Success(date) ⇒ {
-            println(s"this is the date: $date")
-            JsSuccess(date)
-          }
-          case Failure(error) ⇒ JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
-        }
-    }
-  }
 }

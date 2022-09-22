@@ -17,6 +17,8 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import org.scalamock.scalatest.MockFactory
+import org.scalatest.BeforeAndAfterAll
+import play.api.Application
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
@@ -30,7 +32,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with MockFactory {
+class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll with MockFactory {
 
   val env = mock[play.api.Environment]
 
@@ -39,6 +41,10 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with MockFact
   implicit val mongo = mongoComponent
 
   val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
+  override def afterAll(): Unit = {
+    dropDatabase()
+    super.beforeAll()
+  }
 
   "Calls to create Reminder a HtsReminder repository" should {
     "successfully create that reminder" in {
@@ -89,6 +95,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with MockFact
     }
 
     "should fail find that user" in {
+
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
 
       usersToProcess.futureValue match {
