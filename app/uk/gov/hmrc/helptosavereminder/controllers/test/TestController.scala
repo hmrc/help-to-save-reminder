@@ -17,7 +17,6 @@
 package uk.gov.hmrc.helptosavereminder.controllers.test
 
 import java.time.LocalDate
-
 import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.helptosavereminder.services.test.TestService
@@ -25,6 +24,7 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import play.api.libs.json.Json
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 
+import java.time.format.DateTimeFormatter
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -51,7 +51,8 @@ class TestController @Inject() (
   def updateEndDate(nino: String, endDate: String): Action[AnyContent] = Action.async {
     repository.findByNino(nino).map {
       case Some(user) =>
-        val updatedHtsUser = user.copy(endDate = Some(LocalDate.parse(endDate)))
+        val updatedHtsUser =
+          user.copy(endDate = Some(LocalDate.parse(endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))))
         repository.updateReminderUser(updatedHtsUser)
         Ok(Json.toJson(updatedHtsUser))
       case None => NotFound
