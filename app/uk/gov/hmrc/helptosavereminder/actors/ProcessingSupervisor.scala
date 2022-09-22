@@ -16,12 +16,8 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.time.{LocalDate, ZoneId}
-import java.util.TimeZone
-
 import akka.actor.{Actor, ActorRef, Props}
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
-import javax.inject.{Inject, Singleton}
 import org.quartz.CronExpression
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
@@ -29,15 +25,21 @@ import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.lock.{LockKeeper, LockMongoRepository, LockRepository}
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.lock.{MongoLockRepository, TimePeriodLockService}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.time.{LocalDate, ZoneId}
+import java.util.TimeZone
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.Duration
 @Singleton
 class ProcessingSupervisor @Inject() (
-  mongoApi: play.modules.reactivemongo.ReactiveMongoComponent,
+  mongoApi: MongoComponent,
   servicesConfig: ServicesConfig,
-  emailConnector: EmailConnector
+  emailConnector: EmailConnector,
+  lockrepo: MongoLockRepository
 )(implicit ec: ExecutionContext, appConfig: AppConfig)
     extends Actor with Logging {
 
@@ -49,8 +51,6 @@ class ProcessingSupervisor @Inject() (
       "emailSender-actor"
     )
 
-  val lockrepo = LockMongoRepository(mongoApi.mongoConnector.db)
-
   lazy val isUserScheduleEnabled: Boolean = appConfig.isUserScheduleEnabled
 
   lazy val userScheduleCronExpression: String = appConfig.userScheduleCronExpression.replace('|', ' ')
@@ -61,37 +61,11 @@ class ProcessingSupervisor @Inject() (
 
   val scheduleTake = appConfig.scheduleTake
 
-  val lockKeeper = new LockKeeper {
-
-    override def repo: LockRepository = lockrepo //The repo created before
-
-    override def lockId: String = "emailProcessing"
-
-    override val forceLockReleaseAfter: org.joda.time.Duration = org.joda.time.Duration.standardMinutes(repoLockPeriod)
-
-    // $COVERAGE-OFF$
-    override def tryLock[T](body: => Future[T])(implicit ec: ExecutionContext): Future[Option[T]] =
-      repo
-        .lock(lockId, serverId, forceLockReleaseAfter)
-        .flatMap { acquired =>
-          if (acquired) {
-            body.map {
-              case x => Some(x)
-            }
-          } else {
-            Future.successful(None)
-          }
-        }
-        .recoverWith { case ex => repo.releaseLock(lockId, serverId).flatMap(_ => Future.failed(ex)) }
-    // $COVERAGE-ON$
-  }
+  val lockId: String = "emailProcessing"
+  val lockDuration = Duration.fromNanos(repoLockPeriod)
+  val lockKeeper: TimePeriodLockService = TimePeriodLockService(lockrepo, lockId, lockDuration)
 
   override def receive: Receive = {
-
-    case STOP => {
-      logger.info("[ProcessingSupervisor] received while not processing: STOP received")
-      lockrepo.releaseLock(lockKeeper.lockId, lockKeeper.serverId)
-    }
 
     case BOOTSTRAP => {
 
@@ -100,7 +74,7 @@ class ProcessingSupervisor @Inject() (
       val scheduler = QuartzSchedulerExtension(context.system)
       val isExpressionValid = CronExpression.isValidExpression(userScheduleCronExpression)
 
-      repository.findAll().map {
+      repository.collection.find().toFuture().map {
         case requests if requests.nonEmpty => {
           val nextScheduledDates = requests.map(request => request.nextSendDate).toSet
           val daysToRecieve = requests.map(request => request.daysToReceive).toSet
@@ -170,7 +144,7 @@ class ProcessingSupervisor @Inject() (
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
 
       lockKeeper
-        .tryLock {
+        .withRenewedLock {
 
           repository.findHtsUsersToProcess().map {
             case Some(requests) if requests.nonEmpty => {

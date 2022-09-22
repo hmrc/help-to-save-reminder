@@ -17,33 +17,37 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import org.scalamock.scalatest.MockFactory
-import play.modules.reactivemongo.ReactiveMongoComponent
+import org.scalatest.BeforeAndAfterAll
+import play.api.Application
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.mongo.MongoSpecSupport
+import uk.gov.hmrc.mongo.test.MongoSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with MockFactory {
+class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll with MockFactory {
 
   val env = mock[play.api.Environment]
 
   override val servicesConfig = mock[ServicesConfig]
 
-  implicit val reactiveMongoComponent = new ReactiveMongoComponent {
-    override def mongoConnector = mongoConnectorForTest
+  implicit val mongo = mongoComponent
+
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
+  override def afterAll(): Unit = {
+    dropDatabase()
+    super.beforeAll()
   }
 
-  val htsReminderMongoRepository = new HtsReminderMongoRepository(reactiveMongoComponent)
-
   "Calls to create Reminder a HtsReminder repository" should {
-    "should successfully create that reminder" in {
+    "successfully create that reminder" in {
 
       val reminderValue = ReminderGenerator.nextReminder
 
@@ -91,6 +95,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSpecSupport with Mock
     }
 
     "should fail find that user" in {
+
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
 
       usersToProcess.futureValue match {
