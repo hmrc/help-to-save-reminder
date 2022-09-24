@@ -19,7 +19,7 @@ package uk.gov.hmrc.helptosavereminder.repo
 import com.google.inject.ImplementedBy
 import org.mongodb.scala.model.Filters.{and, equal, lte, regex}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model.{Filters, IndexModel, UpdateOptions, Updates}
+import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, UpdateOptions, Updates}
 import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json.{Format, JsBoolean, JsError, JsResult, JsString, JsSuccess, JsValue, Json}
@@ -53,7 +53,20 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       mongoComponent = mongo,
       collectionName = "help-to-save-reminder",
       domainFormat = HtsUserSchedule.htsUserFormat,
-      indexes = Seq(IndexModel(ascending("nino", "callBackUrlRef")))
+      indexes = Seq(
+        IndexModel(
+          ascending("nino"),
+          IndexOptions()
+            .name("nino")
+            .background(true)
+        ),
+        IndexModel(
+          ascending("callBackUrlRef"),
+          IndexOptions()
+            .name("callBackUrlRef")
+            .background(true)
+        )
+      )
     ) with HtsReminderRepository with Logging {
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUserSchedule]]] = {
@@ -82,8 +95,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     val result = collection
       .updateOne(
         filter = equal("nino", nino),
-        update =
-          Updates.set("nextSendDate", Codecs.toBson(nextSendDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+        update = Updates.set("nextSendDate", nextSendDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
       )
       .toFuture()
 
@@ -107,7 +119,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     val result = collection
       .updateOne(
         filter = equal("nino", nino),
-        update = Updates.set("endDate", Codecs.toBson(endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))))
+        update = Updates.set("endDate", endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
       )
       .toFuture()
 
@@ -193,7 +205,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       )
 
       val modifiedJson = if (htsReminder.endDate.nonEmpty) {
-        listOfUpdates ::: List(Updates.set("endDate", htsReminder.endDate.get))
+        listOfUpdates ::: List(
+          Updates.set("endDate", htsReminder.endDate.get.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        )
       } else {
         listOfUpdates
       }
@@ -208,7 +222,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
         getNextSendDate(htsReminder.daysToReceive, LocalDate.now(ZoneId.of("Europe/London")))
 
       val finalModifiedJson = if (updatedNextSendDate.nonEmpty) {
-        updatedModifierJsonCallBackRef ::: List(Updates.set("nextSendDate", updatedNextSendDate.get))
+        updatedModifierJsonCallBackRef ::: List(
+          Updates.set("nextSendDate", updatedNextSendDate.get.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+        )
       } else {
         logger.warn(s"nextSendDate for User: ${htsReminder.nino} cannot be updated.")
         updatedModifierJsonCallBackRef
@@ -270,7 +286,6 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
         case e ⇒
           Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
-
   override def findByNino(nino: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("nino", nino)).toFuture().map(_.headOption)
 
