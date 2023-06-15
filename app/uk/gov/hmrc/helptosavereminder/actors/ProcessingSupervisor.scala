@@ -90,19 +90,17 @@ class ProcessingSupervisor @Inject() (
           )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${nextScheduledDates.mkString(", ")} [nextSendDates]")
-          nextScheduledDates.foreach(
-            date =>
-              logger.info(
-                s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
-              )
-          )
+          for (date <- nextScheduledDates) {
+            logger.info(
+              s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
+            )
+          }
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${daysToRecieve.mkString(", ")} [daysToReceive]")
-          daysToRecieve.foreach(
-            days =>
-              logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
-                .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
-          )
+          for (days <- daysToRecieve) {
+            logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
+              .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
+          }
         }
 
         case _ => {

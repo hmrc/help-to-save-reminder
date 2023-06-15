@@ -72,11 +72,10 @@ class HelpToSaveAuthSpec extends AuthSupport {
           "unknown-blah"                -> Status.INTERNAL_SERVER_ERROR
         )
 
-        exceptions.foreach {
-          case (error, expectedStatus) =>
-            mockAuthWith(error)
-            val result = callAuth(FakeRequest())
-            result.futureValue.header.status shouldBe expectedStatus
+        for ((error, expectedStatus) <- exceptions) {
+          mockAuthWith(error)
+          val result = callAuth(FakeRequest())
+          result.futureValue.header.status shouldBe expectedStatus
         }
       }
     }
@@ -178,7 +177,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
       "handling requests from other AuthProviders" must {
 
         "return a Forbidden" in {
-          List[LegacyCredentials](VerifyPid(""), OneTimeLogin).foreach { cred =>
+          for (cred <- List(VerifyPid(""), OneTimeLogin)) {
             mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(cred))
             val result = callAuth(None)(FakeRequest())
             result.futureValue.header.status shouldBe Status.FORBIDDEN
