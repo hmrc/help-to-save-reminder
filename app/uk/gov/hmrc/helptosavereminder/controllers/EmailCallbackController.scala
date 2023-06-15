@@ -22,11 +22,11 @@ import cats.syntax.eq._
 import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsError, JsSuccess}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Results}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent}
+import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsUserSchedule}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -48,42 +48,45 @@ class EmailCallbackController @Inject() (
       case Some(JsSuccess(eventsMap, _)) ⇒ {
         if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
           logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
-          repository.findByCallBackUrlRef(callBackReference).flatMap {
-            case Some(htsUserSchedule) =>
-              val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUserSchedule.email}"
-              logger.debug(s"The URL to request email deletion is $url")
-              (for {
-                _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
-                      logger.warn(
-                        s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
-                      )
-                      Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference")
-                    })
-                _ = {
-                  val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
-                  auditor.sendEvent(
-                    HtsReminderUserDeletedEvent(
-                      HtsReminderUserDeleted(htsUserSchedule.nino.value, htsUserSchedule.email),
-                      path
+          (for {
+            htsUserSchedule <- EitherT[Future, Result, HtsUserSchedule](
+                                repository.findByCallBackUrlRef(callBackReference).map {
+                                  case None                  => throw new Exception("No Hts Schedule found")
+                                  case Some(htsUserSchedule) => Right(htsUserSchedule)
+                                }
+                              )
+            val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUserSchedule.email}"
+            _ = logger.debug(s"The URL to request email deletion is $url")
+            _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference))
+                  .leftMap(error => {
+                    logger.warn(
+                      s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
                     )
-                  )
-                  logger.debug(
-                    s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
-                  )
-                }
-                _ = for {
-                  wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
-                } yield
-                  if (wasUnblocked) {
-                    logger.debug(s"Email successfully unblocked for request : $url")
-                    logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
-                  } else {
-                    logger.debug(s"A request to unblock for Email is returned with error for $url")
-                    logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
-                  }
-              } yield Ok).fold(identity, identity)
-            case None => Future.failed(new Exception("No Hts Schedule found"))
-          }
+                    Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference")
+                  })
+            _ = {
+              val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
+              auditor.sendEvent(
+                HtsReminderUserDeletedEvent(
+                  HtsReminderUserDeleted(htsUserSchedule.nino.value, htsUserSchedule.email),
+                  path
+                )
+              )
+              logger.debug(
+                s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
+              )
+            }
+            _ = for {
+              wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
+            } yield
+              if (wasUnblocked) {
+                logger.debug(s"Email successfully unblocked for request : $url")
+                logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
+              } else {
+                logger.debug(s"A request to unblock for Email is returned with error for $url")
+                logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
+              }
+          } yield Ok).fold(identity(_), identity(_))
         } else {
           logger.debug(
             s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
