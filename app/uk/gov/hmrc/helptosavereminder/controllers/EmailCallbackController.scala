@@ -45,32 +45,28 @@ class EmailCallbackController @Inject() (
 
   def handleCallBack(callBackReference: String): Action[AnyContent] = Action.async { implicit request =>
     (for {
-      eventsMap <- request.body.asJson.map(_.validate[EventsMap]) match {
-                    case Some(error: JsError) =>
-                      val errorString = error.prettyPrint()
-                      logger.debug(s"Unable to parse Events List for CallBackRequest = $errorString")
-                      logger.warn(s"Unable to parse Events List for callBackReference = $callBackReference")
-                      EitherT.leftT[Future, EventsMap](
-                        BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString")
-                      )
+      _ <- request.body.asJson.map(_.validate[EventsMap]) match {
+            case Some(error: JsError) =>
+              val errorString = error.prettyPrint()
+              logger.debug(s"Unable to parse Events List for CallBackRequest = $errorString")
+              logger.warn(s"Unable to parse Events List for callBackReference = $callBackReference")
+              EitherT.leftT[Future, Unit](BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString"))
 
-                    case None =>
-                      logger.warn(
-                        s"No JSON body found in request for callBackReference = $callBackReference"
-                      )
-                      EitherT.leftT[Future, EventsMap](BadRequest(s"No JSON body found in request"))
+            case None =>
+              logger.warn(s"No JSON body found in request for callBackReference = $callBackReference")
+              EitherT.leftT[Future, Unit](BadRequest(s"No JSON body found in request"))
 
-                    case Some(JsSuccess(eventsMap, _)) => EitherT.rightT[Future, Result](eventsMap)
-                  }
-      _ <- if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
-            logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
-            EitherT.fromEither[Future](Right())
-          } else {
-            logger.debug(
-              s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-                s"eventsList received from Email Service = ${eventsMap.events}"
-            )
-            EitherT.fromEither[Future](Left(Ok))
+            case Some(JsSuccess(eventsMap, _)) =>
+              if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
+                logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
+                EitherT.rightT[Future, Result]()
+              } else {
+                logger.debug(
+                  s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
+                    s"eventsList received from Email Service = ${eventsMap.events}"
+                )
+                EitherT.leftT[Future, Unit](Ok)
+              }
           }
       htsUserSchedule <- EitherT[Future, Result, HtsUserSchedule](
                           repository.findByCallBackUrlRef(callBackReference).map {
@@ -78,7 +74,8 @@ class EmailCallbackController @Inject() (
                             case Some(htsUserSchedule) => Right(htsUserSchedule)
                           }
                         )
-      val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUserSchedule.email}"
+      val email = servicesConfig.baseUrl("email")
+      val url = s"$email/hmrc/bounces/${htsUserSchedule.email}"
       _ = logger.debug(s"The URL to request email deletion is $url")
       _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
             logger.warn(
