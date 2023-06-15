@@ -72,21 +72,17 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     logger.debug("findHtsUsersToProcess is about to fetch records")
     val now = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     logger.info(s"time for HtsUsersToProcess $now")
-    val testResult = Try {
-      collection.find(lte("nextSendDate", now)).sort(equal("nino", 1)).toFuture().map(_.toList)
-    }
-
-    testResult match {
-      case Success(usersList) => {
-        usersList.map(x => {
-          logger.info(s"Number of scheduled users fetched = ${x.length}")
-          Some(x)
-        })
+    try {
+      for {
+        usersList <- collection.find(lte("nextSendDate", now)).sort(equal("nino", 1)).toFuture().map(_.toList)
+      } yield {
+        logger.info(s"Number of scheduled users fetched = ${usersList.length}")
+        Some(usersList)
       }
-      case Failure(f) => {
+    } catch {
+      case f: Throwable =>
         logger.error(s"findHtsUsersToProcess : Exception occurred while fetching users $f ::  ${f.fillInStackTrace()}")
         Future.successful(None)
-      }
     }
   }
 
