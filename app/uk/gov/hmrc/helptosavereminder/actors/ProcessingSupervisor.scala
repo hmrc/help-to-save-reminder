@@ -143,41 +143,26 @@ class ProcessingSupervisor @Inject() (
 
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
 
-      lockKeeper
+      (lockKeeper
         .withRenewedLock {
-
-          repository.findHtsUsersToProcess().map {
+          for {
+            response <- repository.findHtsUsersToProcess()
+          } yield response match {
             case Some(requests) if requests.nonEmpty => {
               logger.info(s"[ProcessingSupervisor][receive] took ${requests.size} requests)")
-
               val take = requests.take(scheduleTake)
               logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
-
               for (request <- take) {
-
                 emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
-
               }
-
             }
-            case _ => {
-              logger.info(s"[ProcessingSupervisor][receive] no requests pending")
-            }
+            case _ => logger.info(s"[ProcessingSupervisor][receive] no requests pending")
           }
-        }
+        })
         .map {
-          case Some(thing) => {
-
-            logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-
-          }
-          case _ => {
-            logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
-          }
+          case Some(_) => logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
+          case None    => logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
         }
-
-      logger.info("Exiting START message processor by ProcessingSupervisor")
-
     }
   }
 
