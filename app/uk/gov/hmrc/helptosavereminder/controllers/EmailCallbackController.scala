@@ -50,20 +50,17 @@ class EmailCallbackController @Inject() (
                       val errorString = error.prettyPrint()
                       logger.debug(s"Unable to parse Events List for CallBackRequest = $errorString")
                       logger.warn(s"Unable to parse Events List for callBackReference = $callBackReference")
-                      EitherT[Future, Result, EventsMap](
-                        Future.successful(
-                          Left(BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString"))
-                        )
+                      EitherT.leftT[Future, EventsMap](
+                        BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString")
                       )
 
                     case None =>
-                      logger.warn(s"No JSON body found in request for callBackReference = $callBackReference")
-                      EitherT[Future, Result, EventsMap](
-                        Future.successful(Left(BadRequest(s"No JSON body found in request")))
+                      logger.warn(
+                        s"No JSON body found in request for callBackReference = $callBackReference"
                       )
+                      EitherT.leftT[Future, EventsMap](BadRequest(s"No JSON body found in request"))
 
-                    case Some(JsSuccess(eventsMap, _)) =>
-                      EitherT[Future, Result, EventsMap](Future.successful(Right(eventsMap)))
+                    case Some(JsSuccess(eventsMap, _)) => EitherT.rightT[Future, Result](eventsMap)
                   }
       _ <- if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
             logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
@@ -111,6 +108,6 @@ class EmailCallbackController @Inject() (
           logger.debug(s"A request to unblock for Email is returned with error for $url")
           logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
         }
-    } yield Ok).fold(identity, identity)
+    } yield Ok).fold(identity(_), identity(_))
   }
 }
