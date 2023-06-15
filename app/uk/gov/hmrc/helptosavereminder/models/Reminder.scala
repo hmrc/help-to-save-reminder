@@ -53,10 +53,10 @@ object HtsUserSchedule {
     override def writes(ldate: LocalDate) = Json.toJson(ldate.format(formatter))
 
     override def reads(json: JsValue): JsResult[LocalDate] = json match {
-      case JsString(s) ⇒
+      case JsString(s) =>
         Try(LocalDate.parse(s, formatter)) match {
-          case Success(date) ⇒ JsSuccess(date)
-          case Failure(error) ⇒ JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
+          case Success(date) => JsSuccess(date)
+          case Failure(error) => JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
         }
       case _ => JsError(s"Could not parse date")
     }
@@ -90,7 +90,7 @@ object CancelHtsUserReminder {
 
   implicit val htsUserCancelFormat: Format[CancelHtsUserReminder] = Json.format[CancelHtsUserReminder]
 
-  implicit val writes: Writes[CancelHtsUserReminder] = Writes[CancelHtsUserReminder](s ⇒ JsString(s.toString))
+  implicit val writes: Writes[CancelHtsUserReminder] = Writes[CancelHtsUserReminder](s => JsString(s.toString))
 
   implicit val reads: Reads[CancelHtsUserReminder] = (
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(CancelHtsUserReminder.apply(_))
@@ -101,7 +101,7 @@ object UpdateEmail {
 
   implicit val htsUpdateEmailFormat: Format[UpdateEmail] = Json.format[UpdateEmail]
 
-  implicit val writes: Writes[UpdateEmail] = Writes[UpdateEmail](s ⇒ JsString(s.toString))
+  implicit val writes: Writes[UpdateEmail] = Writes[UpdateEmail](s => JsString(s.toString))
 
   implicit val reads: Reads[UpdateEmail] = (
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(Nino.apply(_)) and
@@ -118,7 +118,7 @@ object EventsMap {
 
   implicit val eventsMapFormat: Format[EventsMap] = Json.format[EventsMap]
 
-  implicit val writes: Writes[EventsMap] = Writes[EventsMap](s ⇒ JsString(s.toString))
+  implicit val writes: Writes[EventsMap] = Writes[EventsMap](s => JsString(s.toString))
 
   implicit val reads: Reads[EventsMap] = Json.reads[EventsMap]
 
@@ -130,7 +130,7 @@ object EventItem {
 
   implicit val eventFormat: Format[EventItem] = Json.format[EventItem]
 
-  implicit val writes: Writes[EventItem] = Writes[EventItem](s ⇒ JsString(s.toString))
+  implicit val writes: Writes[EventItem] = Writes[EventItem](s => JsString(s.toString))
 
   implicit val reads: Reads[EventItem] = (
     (JsPath \ "event").read[String] and

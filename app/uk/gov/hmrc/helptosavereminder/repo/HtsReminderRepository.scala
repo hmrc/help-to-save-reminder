@@ -270,7 +270,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
         }
       }
       .recover {
-        case e ⇒
+        case e =>
           Left(s"Could not delete htsUser: ${e.getMessage}")
       }
   }
@@ -286,7 +286,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
         }
       }
       .recover {
-        case e ⇒
+        case e =>
           Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
   override def findByNino(nino: String): Future[Option[HtsUserSchedule]] =
