@@ -18,7 +18,6 @@ package uk.gov.hmrc.helptosavereminder.repo
 
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.BeforeAndAfterAll
-import play.api.Application
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
@@ -27,7 +26,6 @@ import uk.gov.hmrc.mongo.test.MongoSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

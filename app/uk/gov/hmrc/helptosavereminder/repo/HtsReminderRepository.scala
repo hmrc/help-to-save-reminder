@@ -19,16 +19,13 @@ package uk.gov.hmrc.helptosavereminder.repo
 import com.google.inject.ImplementedBy
 import org.mongodb.scala.model.Filters.{and, equal, lte, regex}
 import org.mongodb.scala.model.Indexes.ascending
-
-import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, UpdateOptions, Updates}
-
+import org.mongodb.scala.model._
 import play.api.Logging
 import play.api.http.Status._
-import play.api.libs.json.{Format, JsBoolean, JsError, JsResult, JsString, JsSuccess, JsValue, Json}
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneId}
@@ -55,7 +52,6 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
       mongoComponent = mongo,
       collectionName = "help-to-save-reminder",
       domainFormat = HtsUserSchedule.htsUserFormat,
-
       indexes = Seq(
         IndexModel(
           ascending("nino"),
@@ -70,7 +66,6 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
             .background(true)
         )
       )
-
     ) with HtsReminderRepository with Logging {
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUserSchedule]]] = {
@@ -99,9 +94,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     val result = collection
       .updateOne(
         filter = equal("nino", nino),
-
         update = Updates.set("nextSendDate", nextSendDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-
       )
       .toFuture()
 
@@ -125,9 +118,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     val result = collection
       .updateOne(
         filter = equal("nino", nino),
-
         update = Updates.set("endDate", endDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
-
       )
       .toFuture()
 

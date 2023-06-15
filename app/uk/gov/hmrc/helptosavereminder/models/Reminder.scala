@@ -20,9 +20,9 @@ import org.mongodb.scala.bson.ObjectId
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mongo.play.json.formats.{MongoFormats, MongoJavatimeFormats}
+import uk.gov.hmrc.mongo.play.json.formats.MongoFormats
 
-import java.time.{Instant, LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import scala.util.{Failure, Success, Try}
 
@@ -55,12 +55,10 @@ object HtsUserSchedule {
     override def reads(json: JsValue): JsResult[LocalDate] = json match {
       case JsString(s) ⇒
         Try(LocalDate.parse(s, formatter)) match {
-          case Success(date) ⇒ {
-            println(s"this is the date: $date")
-            JsSuccess(date)
-          }
+          case Success(date) ⇒ JsSuccess(date)
           case Failure(error) ⇒ JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
         }
+      case _ => JsError(s"Could not parse date")
     }
   }
   implicit val idFormat: Format[ObjectId] = MongoFormats.objectIdFormat
