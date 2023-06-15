@@ -25,10 +25,15 @@ import uk.gov.hmrc.auth.core.retrieve._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{authProviderId => v2AuthProviderId, nino => v2Nino}
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
+import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.Future
 
 class HelpToSaveAuthSpec extends AuthSupport {
+
+  // mockAuth takes a while
+  implicit val defaultPatience: PatienceConfig =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   val htsAuth = new HtsReminderAuth(mockAuthConnector, testCC)
 
