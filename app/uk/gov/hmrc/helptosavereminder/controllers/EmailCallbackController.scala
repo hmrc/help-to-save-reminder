@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
+import cats.data.EitherT
 import cats.instances.string._
 import cats.syntax.eq._
 import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsError, JsSuccess}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Results}
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
@@ -51,14 +52,14 @@ class EmailCallbackController @Inject() (
             case Some(htsUserSchedule) =>
               val url = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/${htsUserSchedule.email}"
               logger.debug(s"The URL to request email deletion is $url")
-              repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference).flatMap {
-                case Left(error) => {
-                  logger.warn(
-                    s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
-                  )
-                  Future.successful(Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference"))
-                }
-                case Right(()) => {
+              (for {
+                _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
+                      logger.warn(
+                        s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
+                      )
+                      Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference")
+                    })
+                _ = {
                   val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
                   auditor.sendEvent(
                     HtsReminderUserDeletedEvent(
@@ -69,20 +70,18 @@ class EmailCallbackController @Inject() (
                   logger.debug(
                     s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
                   )
-
-                  for {
-                    wasUnblocked <- emailConnector.unBlockEmail(url)
-                  } yield
-                    if (wasUnblocked) {
-                      logger.debug(s"Email successfully unblocked for request : $url")
-                      logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
-                    } else {
-                      logger.debug(s"A request to unblock for Email is returned with error for $url")
-                      logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
-                    }
-                  Future.successful(Ok)
                 }
-              }
+                _ = for {
+                  wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
+                } yield
+                  if (wasUnblocked) {
+                    logger.debug(s"Email successfully unblocked for request : $url")
+                    logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
+                  } else {
+                    logger.debug(s"A request to unblock for Email is returned with error for $url")
+                    logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
+                  }
+              } yield Ok).fold(identity, identity)
             case None => Future.failed(new Exception("No Hts Schedule found"))
           }
         } else {
