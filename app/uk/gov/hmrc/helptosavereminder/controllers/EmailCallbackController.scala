@@ -22,7 +22,7 @@ import cats.syntax.eq._
 import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsError, JsSuccess}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result, Results}
 import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
@@ -56,17 +56,16 @@ class EmailCallbackController @Inject() (
               logger.warn(s"No JSON body found in request for callBackReference = $callBackReference")
               EitherT.leftT[Future, Unit](BadRequest(s"No JSON body found in request"))
 
-            case Some(JsSuccess(eventsMap, _)) =>
-              if (eventsMap.events.exists(x => (x.event === "PermanentBounce"))) {
-                logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
-                EitherT.rightT[Future, Result]()
-              } else {
-                logger.debug(
-                  s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-                    s"eventsList received from Email Service = ${eventsMap.events}"
-                )
-                EitherT.leftT[Future, Unit](Ok)
-              }
+            case Some(JsSuccess(eventsMap, _)) if !eventsMap.events.exists(_.event === "PermanentBounce") =>
+              logger.debug(
+                s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
+                  s"eventsList received from Email Service = ${eventsMap.events}"
+              )
+              EitherT.leftT[Future, Unit](Ok)
+
+            case Some(_) =>
+              logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
+              EitherT.rightT[Future, Result]()
           }
       htsUserSchedule <- EitherT[Future, Result, HtsUserSchedule](
                           repository.findByCallBackUrlRef(callBackReference).map {
