@@ -55,7 +55,7 @@ object HtsUserSchedule {
     override def reads(json: JsValue): JsResult[LocalDate] = json match {
       case JsString(s) =>
         Try(LocalDate.parse(s, formatter)) match {
-          case Success(date) => JsSuccess(date)
+          case Success(date)  => JsSuccess(date)
           case Failure(error) => JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
         }
       case _ => JsError(s"Could not parse date")

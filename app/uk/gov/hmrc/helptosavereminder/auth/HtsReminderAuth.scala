@@ -55,11 +55,11 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
   def ggAuthorisedWithNino(action: HtsActionWithNINO)(implicit ec: ExecutionContext): Action[AnyContent] =
     Action.async { implicit request =>
       authorised(AuthWithCL200)
-        .retrieve(v2Nino) { mayBeNino =>
-          mayBeNino.fold[Future[Result]] {
+        .retrieve(v2Nino) {
+          case None =>
             logger.warn("Could not find NINO for logged in user")
             Forbidden
-          }(nino => action(request)(nino))
+          case Some(nino) => action(request)(nino)
         }
         .recover {
           handleFailure()
@@ -103,10 +103,12 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
             }
 
           case PAClientId(_) =>
-            nino.fold[Future[Result]] {
-              logger.warn("NINO not given for privileged request")
-              BadRequest
-            }(n => action(request)(n))
+            nino match {
+              case None =>
+                logger.warn("NINO not given for privileged request")
+                BadRequest
+              case Some(n) => action(request)(n)
+            }
 
           case other =>
             logger.warn(s"Recevied request from unsupported authProvider: ${other.getClass.getSimpleName}")

@@ -43,7 +43,10 @@ trait AuthSupport extends BaseSpec with MockFactory {
     (mockAuthConnector
       .authorise(_: Predicate, _: Retrieval[A])(_: HeaderCarrier, _: ExecutionContext))
       .expects(predicate, retrieval, *, *)
-      .returning(result.fold(e => Future.failed[A](e), r => Future.successful(r)))
+      .returning(result match {
+        case Left(e)  => Future.failed[A](e)
+        case Right(r) => Future.successful(r)
+      })
 
   def mockAuth[A](
     retrieval: Retrieval[A]
@@ -51,7 +54,10 @@ trait AuthSupport extends BaseSpec with MockFactory {
     (mockAuthConnector
       .authorise(_: Predicate, _: Retrieval[A])(_: HeaderCarrier, _: ExecutionContext))
       .expects(*, retrieval, *, *)
-      .returning(result.fold(e => Future.failed[A](e), r => Future.successful(r)))
+      .returning(result match {
+        case Left(e)  => Future.failed[A](e)
+        case Right(r) => Future.successful(r)
+      })
 
   def testWithGGAndPrivilegedAccess(f: (() => Unit) => Unit): Unit = {
     withClue("For GG access: ") {
