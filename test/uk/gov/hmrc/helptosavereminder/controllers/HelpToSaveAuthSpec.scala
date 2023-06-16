@@ -25,10 +25,15 @@ import uk.gov.hmrc.auth.core.retrieve._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{authProviderId => v2AuthProviderId, nino => v2Nino}
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
+import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.Future
 
 class HelpToSaveAuthSpec extends AuthSupport {
+
+  // mockAuth takes a while
+  implicit val defaultPatience: PatienceConfig =
+    PatienceConfig(timeout = Span(5, Seconds), interval = Span(500, Millis))
 
   val htsAuth = new HtsReminderAuth(mockAuthConnector, testCC)
 
@@ -36,7 +41,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
     "handling ggAuthorisedWithNINO" must {
 
-      def callAuth = htsAuth.ggAuthorisedWithNino { _ ⇒ _ ⇒
+      def callAuth = htsAuth.ggAuthorisedWithNino { _ => _ =>
         Future.successful(Ok(s"authSuccess"))
       }
 
@@ -59,31 +64,30 @@ class HelpToSaveAuthSpec extends AuthSupport {
         def mockAuthWith(error: String): Unit = mockAuth(AuthWithCL200, v2Nino)(Left(fromString(error)))
 
         val exceptions = List(
-          "InsufficientConfidenceLevel" → Status.FORBIDDEN,
-          "InsufficientEnrolments" → Status.FORBIDDEN,
-          "UnsupportedAffinityGroup" → Status.FORBIDDEN,
-          "UnsupportedCredentialRole" → Status.FORBIDDEN,
-          "UnsupportedAuthProvider" → Status.FORBIDDEN,
-          "BearerTokenExpired" → Status.UNAUTHORIZED,
-          "MissingBearerToken" → Status.UNAUTHORIZED,
-          "InvalidBearerToken" → Status.UNAUTHORIZED,
-          "SessionRecordNotFound" → Status.UNAUTHORIZED,
-          "IncorrectCredentialStrength" → Status.FORBIDDEN,
-          "unknown-blah" → Status.INTERNAL_SERVER_ERROR
+          "InsufficientConfidenceLevel" -> Status.FORBIDDEN,
+          "InsufficientEnrolments"      -> Status.FORBIDDEN,
+          "UnsupportedAffinityGroup"    -> Status.FORBIDDEN,
+          "UnsupportedCredentialRole"   -> Status.FORBIDDEN,
+          "UnsupportedAuthProvider"     -> Status.FORBIDDEN,
+          "BearerTokenExpired"          -> Status.UNAUTHORIZED,
+          "MissingBearerToken"          -> Status.UNAUTHORIZED,
+          "InvalidBearerToken"          -> Status.UNAUTHORIZED,
+          "SessionRecordNotFound"       -> Status.UNAUTHORIZED,
+          "IncorrectCredentialStrength" -> Status.FORBIDDEN,
+          "unknown-blah"                -> Status.INTERNAL_SERVER_ERROR
         )
 
-        exceptions.foreach {
-          case (error, expectedStatus) ⇒
-            mockAuthWith(error)
-            val result = callAuth(FakeRequest())
-            result.futureValue.header.status shouldBe expectedStatus
+        for ((error, expectedStatus) <- exceptions) {
+          mockAuthWith(error)
+          val result = callAuth(FakeRequest())
+          result.futureValue.header.status shouldBe expectedStatus
         }
       }
     }
 
     "handling ggOrPrivilegedAuthorised" must {
 
-      def callAuthNoRetrievals = htsAuth.ggOrPrivilegedAuthorised { _ ⇒
+      def callAuthNoRetrievals = htsAuth.ggOrPrivilegedAuthorised { _ =>
         Future.successful(Ok("authSuccess"))
       }
 
@@ -98,7 +102,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
     "handling ggOrPrivilegedAuthorisedWithNINO" when {
 
-      def callAuth(nino: Option[String]) = htsAuth.ggOrPrivilegedAuthorisedWithNINO(nino) { _ ⇒ _ ⇒
+      def callAuth(nino: Option[String]) = htsAuth.ggOrPrivilegedAuthorisedWithNINO(nino) { _ => _ =>
         Future.successful(Ok("authSuccess"))
       }
 
@@ -178,7 +182,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
       "handling requests from other AuthProviders" must {
 
         "return a Forbidden" in {
-          List[LegacyCredentials](VerifyPid(""), OneTimeLogin).foreach { cred ⇒
+          for (cred <- List(VerifyPid(""), OneTimeLogin)) {
             mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(cred))
             val result = callAuth(None)(FakeRequest())
             result.futureValue.header.status shouldBe Status.FORBIDDEN

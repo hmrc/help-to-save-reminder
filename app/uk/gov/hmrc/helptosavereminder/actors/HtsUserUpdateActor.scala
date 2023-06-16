@@ -29,33 +29,30 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
     extends Actor with Logging {
 
   override def receive: Receive = {
-    case htsUserSchedule: HtsUserSchedule => {
-      repository.updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate).map {
-        case true => {
-          logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
-        }
-        case _ => {
-          logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
-        }
-      }
-    }
+    case htsUserSchedule: HtsUserSchedule =>
+      for {
+        updated <- repository.updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate)
+      } yield
+        if (updated) logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
+        else logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
 
-    case updateReminder: UpdateCallBackRef => {
-      val origSender = sender
-      repository
-        .updateCallBackRef(updateReminder.reminder.htsUserSchedule.nino.value, updateReminder.callBackRefUrl)
-        .map {
-          case true => {
-            logger.debug(
-              s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}"
-            )
-            origSender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
-          }
-          case _ =>
-            logger.warn(
-              s"Failed to update CallbackRef for the User: ${updateReminder.reminder.htsUserSchedule.nino.value}"
-            )
+    case updateReminder: UpdateCallBackRef =>
+      for {
+        updated <- repository
+                    .updateCallBackRef(
+                      updateReminder.reminder.htsUserSchedule.nino.value,
+                      updateReminder.callBackRefUrl
+                    )
+      } yield
+        if (updated) {
+          logger.debug(
+            s"Updated the User callBackRef for ${updateReminder.reminder.htsUserSchedule.nino.value} with value : ${updateReminder.callBackRefUrl}"
+          )
+          sender ! UpdateCallBackSuccess(updateReminder.reminder, updateReminder.callBackRefUrl)
+        } else {
+          logger.warn(
+            s"Failed to update CallbackRef for the User: ${updateReminder.reminder.htsUserSchedule.nino.value}"
+          )
         }
-    }
   }
 }

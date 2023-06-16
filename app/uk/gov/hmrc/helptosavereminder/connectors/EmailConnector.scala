@@ -35,21 +35,26 @@ class EmailConnector @Inject() (http: HttpClient) extends Logging {
     request: SendTemplatedEmailRequest,
     url: String
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec) map { response =>
-      response.status match {
-        case ACCEPTED =>
-          logger.debug(s"[EmailSenderActor] Email sent: ${response.body}"); true
-        case _ => logger.error(s"[EmailSenderActor] Email not sent: ${response.status}"); false
-      }
+    for {
+      response <- http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec)
+    } yield response.status match {
+      case ACCEPTED =>
+        logger.debug(s"[EmailSenderActor] Email sent: ${response.body}")
+        true
+      case _ =>
+        logger.error(s"[EmailSenderActor] Email not sent: ${response.status}")
+        false
     }
 
   def unBlockEmail(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.DELETE(url, Seq(("Content-Type", "application/json")))(readRaw, hc, ec) map { response =>
-      response.status match {
-        case x if x === OK || x === ACCEPTED =>
-          logger.debug(s"Email is successfully unblocked: ${response.body}"); true
-        case _ =>
-          logger.warn(s"[EmailSenderActor] Email not unblocked: ${response.status}"); false
-      }
+    for {
+      response <- http.DELETE(url, Seq(("Content-Type", "application/json")))(readRaw, hc, ec)
+    } yield response.status match {
+      case x if x === OK || x === ACCEPTED =>
+        logger.debug(s"Email is successfully unblocked: ${response.body}")
+        true
+      case _ =>
+        logger.warn(s"[EmailSenderActor] Email not unblocked: ${response.status}")
+        false
     }
 }
