@@ -89,7 +89,7 @@ class EmailCallbackController @Inject() (
         } else {
           logger.debug(
             s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-              s"eventsList received from Email Service = ${eventsMap.events}"
+              s"eventsList received from Email Service =  ${eventsMap.events}"
           )
           Future.successful(Ok)
         }
