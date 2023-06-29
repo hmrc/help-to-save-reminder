@@ -59,7 +59,7 @@ class EmailCallbackController @Inject() (
             case Some(JsSuccess(eventsMap, _)) if !eventsMap.events.exists(_.event === "PermanentBounce") =>
               logger.debug(
                 s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-                  s"eventsList received from Email Service = ${eventsMap.events}"
+                  s"eventsList received from Email Service =  ${eventsMap.events}"
               )
               EitherT.leftT[Future, Unit](Ok)
 
