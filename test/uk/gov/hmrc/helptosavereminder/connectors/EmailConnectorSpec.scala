@@ -37,7 +37,7 @@ class EmailConnectorSpec extends BaseSpec with MongoSupport with MockitoSugar {
 
       val url = "GET /sendEmail"
       val sendTemplatedEmailRequest =
-        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
+        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
       when(mockHttp.POST[SendTemplatedEmailRequest, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(202, "")))
@@ -50,7 +50,7 @@ class EmailConnectorSpec extends BaseSpec with MongoSupport with MockitoSugar {
 
       val url = "GET /sendEmail"
       val sendTemplatedEmailRequest =
-        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
+        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
       when(mockHttp.POST[SendTemplatedEmailRequest, HttpResponse](any(), any(), any())(any(), any(), any(), any()))
         .thenReturn(Future.successful(HttpResponse(300, "")))
