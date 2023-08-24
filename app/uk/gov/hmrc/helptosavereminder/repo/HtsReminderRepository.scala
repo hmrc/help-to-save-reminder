@@ -29,9 +29,8 @@ import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneId}
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 @ImplementedBy(classOf[HtsReminderMongoRepository])
 trait HtsReminderRepository {
@@ -47,6 +46,7 @@ trait HtsReminderRepository {
   def updateEndDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
 }
 
+@Singleton
 class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val ec: ExecutionContext)
     extends PlayMongoRepository[HtsUserSchedule](
       mongoComponent = mongo,
