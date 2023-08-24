@@ -1,5 +1,4 @@
 import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin.publishingSettings
 import wartremover.{Wart, Warts}
 import wartremover.WartRemover.autoImport.{wartremoverErrors,wartremoverExcluded}
 
@@ -57,7 +56,6 @@ lazy val microservice = {
     majorVersion := 0,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
   )
-  .settings(publishingSettings: _*)
   .settings(Compile / doc / sources := Seq.empty)
   .settings(scalaVersion := "2.12.13")
   .settings(PlayKeys.playDefaultPort := 7008)
