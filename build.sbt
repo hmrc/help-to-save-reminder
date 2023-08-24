@@ -1,4 +1,3 @@
-import uk.gov.hmrc.DefaultBuildSettings.integrationTestSettings
 import wartremover.{Wart, Warts}
 import wartremover.WartRemover.autoImport.{wartremoverErrors,wartremoverExcluded}
 
@@ -18,7 +17,6 @@ lazy val wartRemoverSettings = {
     Wart.ToString,
     Wart.Var
   )
-
 
   Seq(
     Compile / compile / wartremoverErrors ++= Warts.allBut(excludedWarts: _*),
@@ -54,9 +52,8 @@ lazy val microservice = {
   .enablePlugins(play.sbt.PlayScala, SbtAutoBuildPlugin, SbtDistributablesPlugin)
   .settings(
     majorVersion := 0,
-    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test()
   )
-  .settings(Compile / doc / sources := Seq.empty)
   .settings(scalaVersion := "2.12.13")
   .settings(PlayKeys.playDefaultPort := 7008)
   .settings(wartRemoverSettings)
@@ -65,5 +62,3 @@ lazy val microservice = {
   .settings(scalacOptions += "-Wconf:src=routes/.*:s")
   .settings(scalacOptions += "-P:wartremover:only-warn-traverser:org.wartremover.warts.Unsafe")
 }
-import play.sbt.routes.RoutesKeys
-RoutesKeys.routesImport := Seq.empty
