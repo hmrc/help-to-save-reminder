@@ -14,14 +14,14 @@ object AppDependencies {
   )
 
   val test = Seq(
-    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"  % "0.70.0"                % "test, it",
-    "org.mockito"             %  "mockito-all"              % "1.10.19"               % "test, it",
-    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.19"                % "test, it",
+    "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"  % "0.70.0"                % "test",
+    "org.mockito"             %  "mockito-all"              % "1.10.19"               % "test",
+    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.19"                % "test",
     "com.typesafe.play"       %% "play-test"                % current                 % "test",
-    "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0"                 % "test, it",
-    "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2"              % "test, it",
-    "org.scalatest"           %% "scalatest"                % "3.2.9"                 % "test, it",
-    "org.scalamock"           %% "scalamock"                % "5.1.0"                 % "test, it",
-    "com.vladsch.flexmark"    % "flexmark-all"              % "0.35.10"               % "test, it"
+    "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0"                 % "test",
+    "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2"              % "test",
+    "org.scalatest"           %% "scalatest"                % "3.2.9"                 % "test",
+    "org.scalamock"           %% "scalamock"                % "5.1.0"                 % "test",
+    "com.vladsch.flexmark"    % "flexmark-all"              % "0.35.10"               % "test"
   )
 }
