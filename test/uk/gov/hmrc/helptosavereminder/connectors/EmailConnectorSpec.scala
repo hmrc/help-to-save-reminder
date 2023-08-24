@@ -35,7 +35,7 @@ class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockit
     "return true if it can successfully send the email and get 202 response" in {
       val url = "GET /sendEmail"
       val sendTemplatedEmailRequest =
-        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
+        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
       mockHttp
         .POST[SendTemplatedEmailRequest, HttpResponse](*, *, *)(*, *, *, *)
@@ -48,7 +48,7 @@ class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockit
     "return false if it can successfully send the email and get 202 response" in {
       val url = "GET /sendEmail"
       val sendTemplatedEmailRequest =
-        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, "eventUrl")
+        SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
       mockHttp
         .POST[SendTemplatedEmailRequest, HttpResponse](*, *, *)(*, *, *, *)

@@ -24,6 +24,7 @@ case class SendTemplatedEmailRequest(
   to: List[String],
   templateId: String,
   parameters: Map[String, String],
+  force: Boolean,
   eventUrl: String
 )
 
