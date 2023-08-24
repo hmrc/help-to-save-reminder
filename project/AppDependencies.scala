@@ -15,13 +15,10 @@ object AppDependencies {
 
   def test(scope: String = "test"): Seq[ModuleID] = Seq(
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"  % "0.70.0"                % scope,
-    "org.mockito"             %  "mockito-all"              % "1.10.19"               % scope,
     "com.typesafe.akka"       %% "akka-testkit"             % "2.6.19"                % scope,
-    "com.typesafe.play"       %% "play-test"                % current                 % scope,
     "org.scalatestplus.play"  %% "scalatestplus-play"       % "5.1.0"                 % scope,
     "org.scalatestplus"       %% "scalatestplus-mockito"    % "1.0.0-M2"              % scope,
     "org.scalatest"           %% "scalatest"                % "3.2.9"                 % scope,
     "org.scalamock"           %% "scalamock"                % "5.1.0"                 % scope,
-    "com.vladsch.flexmark"    % "flexmark-all"              % "0.35.10"               % scope
   )
 }
