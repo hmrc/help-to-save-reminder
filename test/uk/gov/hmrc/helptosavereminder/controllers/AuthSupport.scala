@@ -16,45 +16,43 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
-import org.scalamock.handlers.CallHandler4
-import org.scalamock.scalatest.MockFactory
+import org.mockito.ArgumentMatchersSugar.*
+import org.mockito.IdiomaticMockito
+import org.mockito.stubbing.ScalaOngoingStubbing
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
 import uk.gov.hmrc.auth.core.retrieve._
-import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
-import uk.gov.hmrc.http._
 import uk.gov.hmrc.helptosave.util._
+import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait AuthSupport extends BaseSpec with MockFactory {
+trait AuthSupport extends BaseSpec with IdiomaticMockito {
 
   val nino = "AE123456C"
 
-  val mockedNinoRetrieval = Some(nino)
+  val mockedNinoRetrieval: Option[NINO] = Some(nino)
 
   val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
   def mockAuth[A](predicate: Predicate, retrieval: Retrieval[A])(
     result: Either[Exception, A]
-  ): CallHandler4[Predicate, Retrieval[A], HeaderCarrier, ExecutionContext, Future[A]] =
-    (mockAuthConnector
-      .authorise(_: Predicate, _: Retrieval[A])(_: HeaderCarrier, _: ExecutionContext))
-      .expects(predicate, retrieval, *, *)
-      .returning(result match {
+  ): ScalaOngoingStubbing[Future[A]] =
+    mockAuthConnector
+      .authorise(predicate, retrieval)(*, *)
+      .returns(result match {
         case Left(e)  => Future.failed[A](e)
         case Right(r) => Future.successful(r)
       })
 
   def mockAuth[A](
     retrieval: Retrieval[A]
-  )(result: Either[Exception, A]): CallHandler4[Predicate, Retrieval[A], HeaderCarrier, ExecutionContext, Future[A]] =
-    (mockAuthConnector
-      .authorise(_: Predicate, _: Retrieval[A])(_: HeaderCarrier, _: ExecutionContext))
-      .expects(*, retrieval, *, *)
-      .returning(result match {
+  )(result: Either[Exception, A]): Any =
+    mockAuthConnector
+      .authorise(*, retrieval)(*, *)
+      .returns(result match {
         case Left(e)  => Future.failed[A](e)
         case Right(r) => Future.successful(r)
       })
@@ -62,10 +60,8 @@ trait AuthSupport extends BaseSpec with MockFactory {
   def testWithGGAndPrivilegedAccess(f: (() => Unit) => Unit): Unit = {
     withClue("For GG access: ") {
       f { () =>
-        inSequence {
-          mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(GGCredId("id")))
-          mockAuth(EmptyPredicate, v2.Retrievals.nino)(Right(Some(nino)))
-        }
+        mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(GGCredId("id")))
+        mockAuth(EmptyPredicate, v2.Retrievals.nino)(Right(Some(nino)))
       }
     }
 
@@ -78,7 +74,6 @@ trait AuthSupport extends BaseSpec with MockFactory {
 
   "Calls to maskNino on util package" should {
     "return appropriate strings" in {
-
       maskNino("SK614711A") shouldBe "<NINO>"
       maskNino("") shouldBe ""
 
@@ -86,8 +81,6 @@ trait AuthSupport extends BaseSpec with MockFactory {
         case Success(value)     => value shouldBe "FutureString"
         case Failure(exception) => new Exception(s"Call to maskNino failed because of $exception")
       })
-
     }
   }
-
 }
