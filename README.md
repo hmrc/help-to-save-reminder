@@ -2,7 +2,6 @@ help-to-save-reminder
 =====================
 Backend service for Help to Save Reminder.
 
-
 Table of Contents
 =================
 
@@ -59,8 +58,6 @@ an option to cancel their subscription to the reminders service any time.
 The scheduler is based on Quartz Scheduler and the actual schedule times are managed by Quartz Cron expression that can be defined to run at 
 a particular date and time of any day of the week, month or year.
 
-
-
 Product Repos
 -------------
 The suite of repos connected with this Product are as follows:  
@@ -102,7 +99,7 @@ This diagram shows a general picture of how the different services are connected
             |                                  |              |                    |            |                               
             |                          +-------+--------------+   +----------+----------------+ |
             |                          |                      |   |                           | |
- HoDs ------+--------------------------+    help-to-save |    |   |   help-to-save-reminder   | |    
+ HoDs ------+--------------------------+    help-to-save      |   |   help-to-save-reminder   | |    
             |                          |                      |   |                           | |
             |                          +-------+--------------+   +-------+-------------------+ |
             |                                  |        |                                       |
@@ -125,20 +122,18 @@ This diagram shows a general picture of how the different services are connected
                               from third-parties                    services                                                                       
 ```
 
-
-
 Running and Testing
 ===================
 
 Running
 -------
 
-Run `sbt run` on the terminal to start the service. The service runs on port 7004 by default.
+Run `sbt run` on the terminal to start the service standalone. The service runs on port 7004 by default.
+Run `sm2 --start HTS_ALL` to start up all dependant services
 
 Unit tests
 ----------
 Run `sbt test` on the terminal to run the unit tests.
-
 
 Endpoints
 =========
@@ -162,5 +157,3 @@ http://localhost:7008/help-to-save-reminder/test-only/populate-reminders/5/johnd
 License 
 =======
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html")
-
-
