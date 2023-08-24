@@ -66,21 +66,7 @@ class EmailCallbackController @Inject() (
                       path
                     )
                   )
-                  logger.debug(
-                    s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
-                  )
-
-                  emailConnector
-                    .unBlockEmail(url) map {
-                    case true =>
-                      logger.debug(s"Email successfully unblocked for request : $url")
-                      logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
-                      Future.successful(Ok)
-                    case _ =>
-                      logger.debug(s"A request to unblock for Email is returned with error for $url")
-                      logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
-                      Future.successful(NOT_FOUND)
-                  }
+                  logger.info(s"mail deleted from HtsReminder Repository for ${htsUserSchedule.nino.value}")
                   Future.successful(Ok)
                 }
               }

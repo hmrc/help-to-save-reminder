@@ -108,6 +108,7 @@ class EmailSenderActor @Inject() (
       List(template.email),
       sendEmailTemplateId,
       Map(nameParam -> template.name, monthParam -> template.monthName),
+      force = true,
       callBackUrl
     )
 
