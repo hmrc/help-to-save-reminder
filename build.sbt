@@ -66,6 +66,7 @@ lazy val microservice = {
   .settings(wartRemoverSettings)
   .settings(CodeCoverageSettings.settings *)
   .settings(scalafmtOnCompile := true)
+  .settings(scalacOptions += "-Wconf:src=routes/.*:s")
   .settings(scalacOptions += "-P:wartremover:only-warn-traverser:org.wartremover.warts.Unsafe")
 }
 import play.sbt.routes.RoutesKeys

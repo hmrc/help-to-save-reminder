@@ -10,9 +10,7 @@ object AppDependencies {
     "uk.gov.hmrc"             %% s"bootstrap-backend-$playVersion" % "5.25.0",
     "uk.gov.hmrc"             %% "domain"                    % s"6.2.0-$playVersion",
     "org.typelevel"           %% "cats-core"                 % "2.6.0",
-    "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x",
-    compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.5" cross CrossVersion.full),
-    "com.github.ghik" % "silencer-lib" % "1.7.5" % Provided cross CrossVersion.full
+    "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x"
   )
 
   val test = Seq(
@@ -26,5 +24,4 @@ object AppDependencies {
     "org.scalamock"           %% "scalamock"                % "5.1.0"                 % "test, it",
     "com.vladsch.flexmark"    % "flexmark-all"              % "0.35.10"               % "test, it"
   )
-
 }
