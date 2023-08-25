@@ -13,3 +13,5 @@ lazy val microservice = {
   .settings(scalafmtOnCompile := true)
   .settings(scalacOptions += "-Wconf:src=routes/.*:s")
 }
+
+libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
