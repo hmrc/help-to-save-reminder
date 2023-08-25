@@ -8,7 +8,7 @@ object AppDependencies {
   val compile: Seq[ModuleID] = Seq(
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-play-28"      % s"0.70.0",
     "uk.gov.hmrc"             %% s"bootstrap-backend-$playVersion" % hmrcBootstrapVersion,
-    "uk.gov.hmrc"             %% "domain"                    % s"6.2.0-$playVersion",
+    "uk.gov.hmrc"             %% "domain"                    % s"8.3.0-$playVersion",
     "org.typelevel"           %% "cats-core"                 % "2.6.0",
     "com.enragedginger"       %% "akka-quartz-scheduler"     % "1.9.0-akka-2.6.x"
   )
