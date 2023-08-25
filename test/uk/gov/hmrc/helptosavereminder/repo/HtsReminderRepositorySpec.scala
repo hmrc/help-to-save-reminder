@@ -16,27 +16,23 @@
 
 package uk.gov.hmrc.helptosavereminder.repo
 
-import org.scalamock.scalatest.MockFactory
+import org.mockito.IdiomaticMockito
 import org.scalatest.BeforeAndAfterAll
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
+import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.MongoSupport
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
 import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll with MockFactory {
+class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll with IdiomaticMockito {
 
-  val env = mock[play.api.Environment]
-
-  override val servicesConfig = mock[ServicesConfig]
-
-  implicit val mongo = mongoComponent
+  implicit val mongo: MongoComponent = mongoComponent
 
   val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
   override def afterAll(): Unit = {
@@ -46,7 +42,6 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
 
   "Calls to create Reminder a HtsReminder repository" should {
     "successfully create that reminder" in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val result: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(reminderValue)
@@ -62,7 +57,6 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
     }
 
     "should not update the userSchedule if daysToReceive field is Empty" in {
-
       val reminderValue = ReminderGenerator.nextReminder
       val result: Future[Boolean] =
         htsReminderMongoRepository.updateReminderUser(reminderValue.copy(daysToReceive = Seq.empty))
@@ -71,8 +65,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
   }
 
   "Calls to findHtsUsersToProcess a HtsReminder repository" should {
-
-    val reminderValue = (ReminderGenerator.nextReminder)
+    val reminderValue = ReminderGenerator.nextReminder
     val result: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(reminderValue)
     result.futureValue shouldBe true
     val now = LocalDate.now
@@ -80,36 +73,30 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
     htsReminderMongoRepository.updateEndDate(reminderValue.nino.value, LocalDate.now())
 
     "should successfully find that user" in {
-
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
 
       usersToProcess.futureValue match {
-        case Some(list) => {
+        case Some(list) =>
           list.size shouldBe >=(1)
           list.map(s => s.nextSendDate.isAfter(now) shouldBe false)
-        }
         case None =>
       }
     }
 
     "should fail find that user" in {
-
       val usersToProcess: Future[Option[List[HtsUserSchedule]]] = htsReminderMongoRepository.findHtsUsersToProcess()
 
       usersToProcess.futureValue match {
-        case Some(list) => {
+        case Some(list) =>
           list.size shouldBe >=(1)
           list.map(s => s.nextSendDate.isAfter(now) shouldBe false)
-        }
         case None =>
       }
     }
   }
 
   "Calls to updateNextSendDate a Hts Reminder repository" should {
-
     "should successfully update NextSendDate " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val updateStatus: Future[Boolean] =
@@ -121,11 +108,9 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateNextSendDate(reminderValue.nino.value, LocalDate.now())
 
       nextSendDate.futureValue shouldBe true
-
     }
 
     "should successfully update endDate field" in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val updateStatus: Future[Boolean] =
@@ -137,14 +122,11 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateEndDate(reminderValue.nino.value, LocalDate.now())
 
       endDate.futureValue shouldBe true
-
     }
-
   }
 
   "Calls to updateCallBackRef a Hts Reminder repository" should {
     "should successfully update CallBackRef " in {
-
       val reminderValue = ReminderGenerator.nextReminder
       val callBackRef = System.currentTimeMillis().toString + reminderValue.nino
 
@@ -157,13 +139,11 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateCallBackRef(reminderValue.nino.value, callBackRef)
 
       nextSendDate.futureValue shouldBe true
-
     }
   }
 
   "Calls to updateReminderUser on Hts Reminder repository" should {
     "should successfully update the user " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val modifiedReminder =
@@ -180,13 +160,11 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
       nextSendDate.futureValue shouldBe true
-
     }
   }
 
   "Calls to updateReminderUser on Hts Reminder repository" should {
     "should successfully create the user if update fails " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val modifiedReminder =
@@ -203,13 +181,11 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateCallBackRef(modifiedReminder.nino.value, callBackRef)
 
       nextSendDate.futureValue shouldBe true
-
     }
   }
 
   "Calls to findByNino on Hts Reminder repository" should {
     "should successfully find the user " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val result: Future[Boolean] =
@@ -222,13 +198,11 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
           htsUserOption.futureValue.get.nino.value shouldBe "SK798383D"
         case Failure(exception) => new Exception(s"Attempt at finding user by their nino failed because: $exception")
       }
-
     }
   }
 
   "Calls to findByCallBackRef on Hts Reminder repository" should {
     "should successfully find the user " in {
-
       val callBackRef = UUID.randomUUID().toString
 
       val reminderValue = ReminderGenerator.nextReminder.copy(callBackUrlRef = callBackRef)
@@ -237,21 +211,17 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateReminderUser(reminderValue.copy(nino = Nino("SK798383D")))
 
       result onComplete {
-        case Success(_) => {
+        case Success(_) =>
           val htsUserOption = htsReminderMongoRepository.findByCallBackUrlRef(callBackRef)
           htsUserOption.futureValue.get.nino.value shouldBe "SK798383D"
-        }
-        case Failure(e) => {
+        case Failure(e) =>
           throw new Exception(s"Failed to update user because: $e")
-        }
       }
-
     }
   }
 
   "Calls to deleteHtsUser on Hts Reminder repository" should {
     "should not successfully delete the user " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val updateStatus: Future[Boolean] =
@@ -263,11 +233,9 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.deleteHtsUser("AE373528D")
 
       result.futureValue shouldBe Left("Could not find htsUser to delete")
-
     }
 
     "should successfully delete the user " in {
-
       val reminderValue = ReminderGenerator.nextReminder
 
       val updateStatus: Future[Boolean] =
@@ -279,7 +247,6 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.deleteHtsUser(reminderValue.nino.toString())
 
       result.futureValue shouldBe Right(())
-
     }
   }
 
@@ -296,8 +263,8 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.deleteHtsUserByCallBack("SK798383D", callBackRef)
 
       result.futureValue shouldBe Right(())
-
     }
+
     "should not successfully delete the user " in {
       val callBackRef = System.currentTimeMillis().toString + "SK798384A"
 
@@ -305,7 +272,6 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.deleteHtsUserByCallBack("SK798384B", callBackRef)
 
       result.futureValue shouldBe Left("Could not find htsUser to delete by callBackUrlRef")
-
     }
   }
 
@@ -316,8 +282,6 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
         htsReminderMongoRepository.updateEmail("SK798383D", "James", "Tinder", "modifiedReminder@test.com")
 
       updateStatus.futureValue shouldBe 404
-
     }
   }
-
 }

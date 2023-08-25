@@ -18,47 +18,40 @@ package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit._
-import org.mockito.ArgumentCaptor
-import org.mockito.Matchers._
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchersSugar.*
+import org.mockito.{ArgumentCaptor, IdiomaticMockito}
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse}
-import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.http.{HttpClient, HttpResponse}
 import uk.gov.hmrc.mongo.lock.LockRepository
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.{LocalDate, ZoneId}
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
 
 class EmailSenderActorSpec
     extends TestKit(ActorSystem("TestProcessingSystem")) with BaseSpec with DefaultTimeout with ImplicitSender
-    with MockitoSugar {
+    with IdiomaticMockito {
 
-  val mockLockRepo = mock[LockRepository]
+  private val mockLockRepo = mock[LockRepository]
 
-  val httpClient = mock[HttpClient]
+  private val httpClient = mock[HttpClient]
 
-  val env = mock[play.api.Environment]
+  override val servicesConfig: ServicesConfig = mock[ServicesConfig]
 
-  override val servicesConfig = mock[ServicesConfig]
+  private val emailConnector = mock[EmailConnector]
 
-  val emailConnector = mock[EmailConnector]
+  private lazy val mockRepository = mock[HtsReminderMongoRepository]
 
-  val mongoApi = app.injector.instanceOf[MongoComponent]
-
-  lazy val mockRepository = mock[HtsReminderMongoRepository]
-
-  override def beforeAll =
-    when(mockLockRepo.takeLock(anyString, anyString, any())) thenReturn Future.successful(true)
+  override def beforeAll: Unit =
+    mockLockRepo.takeLock(*, *, *) returns Future.successful(true)
 
   "Email Sender Actor" must {
-
     "should send an Hts object to DB for saving" in {
       val emailSenderActor = TestActorRef(
         Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {}),
@@ -71,19 +64,13 @@ class EmailSenderActorSpec
 
       val requestCaptor = ArgumentCaptor.forClass(classOf[SendTemplatedEmailRequest])
 
-      when(
-        httpClient.POST[SendTemplatedEmailRequest, HttpResponse](
-          anyString,
-          requestCaptor.capture(),
-          any[Seq[(String, String)]]
-        )(any(), any(), any[HeaderCarrier], any[ExecutionContext])
-      ).thenReturn(Future.successful(HttpResponse(202, "")))
+      httpClient
+        .POST[SendTemplatedEmailRequest, HttpResponse](*, requestCaptor.capture(), *)(*, *, *, *)
+        .returns(Future.successful(HttpResponse(202, "")))
 
-      when(mockRepository.updateNextSendDate(any(), any()))
-        .thenReturn(Future.successful(true))
+      mockRepository.updateNextSendDate(*, *).returns(Future.successful(true))
 
-      when(mockRepository.updateCallBackRef(any(), any()))
-        .thenReturn(Future.successful(true))
+      mockRepository.updateCallBackRef(*, *).returns(Future.successful(true))
 
       within(5 seconds) {
 
