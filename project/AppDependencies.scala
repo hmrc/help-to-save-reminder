@@ -17,6 +17,6 @@ object AppDependencies {
     "uk.gov.hmrc" %% "bootstrap-test-play-28" % hmrcBootstrapVersion % scope,
     "uk.gov.hmrc.mongo"       %% "hmrc-mongo-test-play-28"  % "0.70.0"                % scope,
     "org.mockito" %% "mockito-scala"          % "1.17.12"  % scope,
-    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.19"                % scope
+    "com.typesafe.akka"       %% "akka-testkit"             % "2.6.20"                % scope
   )
 }
