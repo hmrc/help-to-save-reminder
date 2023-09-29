@@ -122,10 +122,10 @@ class EmailSenderActor @Inject() (
       response <- emailConnector.sendEmail(request, url)
     } yield
       if (response) {
-        logger.debug(s"[EmailSenderActor] Email sent: $request")
+        logger.debug("[EmailSenderActor] Email sent")
         true
       } else {
-        logger.debug(s"[EmailSenderActor] Email not sent: $request")
+        logger.debug("[EmailSenderActor] Email not sent")
         false
       }
   }
