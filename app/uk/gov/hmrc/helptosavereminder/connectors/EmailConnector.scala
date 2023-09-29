@@ -39,7 +39,7 @@ class EmailConnector @Inject() (http: HttpClient) extends Logging {
       response <- http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec)
     } yield response.status match {
       case ACCEPTED =>
-        logger.debug(s"[EmailSenderActor] Email sent: ${response.body}")
+        logger.debug("[EmailSenderActor] Email sent")
         true
       case _ =>
         logger.error(s"[EmailSenderActor] Email not sent: ${response.status}")
