@@ -51,7 +51,7 @@ class EmailConnector @Inject() (http: HttpClient) extends Logging {
       response <- http.DELETE(url, Seq(("Content-Type", "application/json")))(readRaw, hc, ec)
     } yield response.status match {
       case x if x === OK || x === ACCEPTED =>
-        logger.debug(s"Email is successfully unblocked: ${response.body}")
+        logger.debug("Email is successfully unblocked")
         true
       case _ =>
         logger.warn(s"[EmailSenderActor] Email not unblocked: ${response.status}")
