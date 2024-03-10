@@ -57,7 +57,7 @@ trait AuthSupport extends BaseSpec with IdiomaticMockito {
         case Right(r) => Future.successful(r)
       })
 
-  def testWithGGAndPrivilegedAccess(f: (() => Unit) => Unit): Unit = {
+  def testWithGGAndPrivilegedAccess(f: (() ⇒ Unit) ⇒ Unit): Unit = {
     withClue("For GG access: ") {
       f { () =>
         mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(GGCredId("id")))
@@ -66,7 +66,7 @@ trait AuthSupport extends BaseSpec with IdiomaticMockito {
     }
 
     withClue("For privileged access: ") {
-      f { () =>
+      f { () ⇒
         mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(PAClientId("id")))
       }
     }

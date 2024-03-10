@@ -76,13 +76,13 @@ class ProcessingSupervisor @Inject() (
 
       repository.collection.find().toFuture().map {
         case requests if requests.nonEmpty => {
-          val nextScheduledDates = requests.map(_.nextSendDate).toSet
-          val daysToRecieve = requests.map(_.daysToReceive).toSet
+          val nextScheduledDates = requests.map(request => request.nextSendDate).toSet
+          val daysToRecieve = requests.map(request => request.daysToReceive).toSet
           val emailDuplicateOccurrencesSet = requests.groupBy(_.email).mapValues(_.size).groupBy(_._2).mapValues(_.size)
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.size} requests")
           logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(_.email).toSet.size} unique emails"
+            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(request => request.email).toSet.size} unique emails"
           )
 
           logger.info(
@@ -90,17 +90,19 @@ class ProcessingSupervisor @Inject() (
           )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${nextScheduledDates.mkString(", ")} [nextSendDates]")
-          for (date <- nextScheduledDates) {
-            logger.info(
-              s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(_.nextSendDate == date)} [nextSendDate : $date]"
-            )
-          }
+          nextScheduledDates.foreach(
+            date =>
+              logger.info(
+                s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
+              )
+          )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${daysToRecieve.mkString(", ")} [daysToReceive]")
-          for (days <- daysToRecieve) {
-            val count = requests.count(_.daysToReceive == days)
-            logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found $count Set to ${days.mkString(", ")}")
-          }
+          daysToRecieve.foreach(
+            days =>
+              logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
+                .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
+          )
         }
 
         case _ => {
@@ -141,26 +143,41 @@ class ProcessingSupervisor @Inject() (
 
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
 
-      (lockKeeper
+      lockKeeper
         .withRenewedLock {
-          for {
-            response <- repository.findHtsUsersToProcess()
-          } yield response match {
+
+          repository.findHtsUsersToProcess().map {
             case Some(requests) if requests.nonEmpty => {
               logger.info(s"[ProcessingSupervisor][receive] took ${requests.size} requests)")
+
               val take = requests.take(scheduleTake)
               logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
+
               for (request <- take) {
+
                 emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
+
               }
+
             }
-            case _ => logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+            case _ => {
+              logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+            }
           }
-        })
-        .map {
-          case Some(_) => logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-          case None    => logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
         }
+        .map {
+          case Some(thing) => {
+
+            logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
+
+          }
+          case _ => {
+            logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
+          }
+        }
+
+      logger.info("Exiting START message processor by ProcessingSupervisor")
+
     }
   }
 

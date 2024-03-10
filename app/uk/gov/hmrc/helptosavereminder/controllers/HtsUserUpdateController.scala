@@ -41,24 +41,26 @@ class HtsUserUpdateController @Inject() (
   val notAllowedThisNino: Future[Result] =
     Future.successful(Forbidden("You can't access a Nino that isn't associated with the one you're logged in with"))
 
-  def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino =>
+  def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
     request.body.asJson.map(_.validate[HtsUserSchedule]) match {
-      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino =>
+      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino ⇒ {
         logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.value}")
-        for {
-          updated <- repository.updateReminderUser(htsUser)
-        } yield
-          if (updated) Ok(Json.toJson(htsUser))
-          else NotModified
+        repository.updateReminderUser(htsUser).map {
+          case true => {
+            Ok(Json.toJson(htsUser))
+          }
+          case false => NotModified
+        }
+      }
 
       case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino =!= nino => notAllowedThisNino
 
-      case Some(error: JsError) =>
+      case Some(error: JsError) ⇒
         val errorString = error.prettyPrint()
         logger.warn(s"Could not parse HtsUser JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse HtsUser JSON in request body: $errorString"))
 
-      case None =>
+      case None ⇒
         logger.warn("No JSON body found in request")
         Future.successful(BadRequest(s"No JSON body found in request"))
 
@@ -76,27 +78,29 @@ class HtsUserUpdateController @Inject() (
 
   def deleteHtsUser(): Action[AnyContent] = Action.async { implicit request =>
     request.body.asJson.map(_.validate[CancelHtsUserReminder]) match {
-      case Some(JsSuccess(userReminder, _)) => {
+      case Some(JsSuccess(userReminder, _)) ⇒ {
         logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino}")
         repository.deleteHtsUser(userReminder.nino).map {
-          case Right(()) => Ok
-          case Left(_)   => NotModified
+          case Right(()) => {
+            Ok
+          }
+          case Left(_) => NotModified
         }
       }
-      case Some(error: JsError) =>
+      case Some(error: JsError) ⇒
         val errorString = error.prettyPrint()
         logger.warn(s"Could not parse CancelHtsUserReminder JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse CancelHtsUserReminder JSON in request body: $errorString"))
 
-      case None =>
+      case None ⇒
         logger.warn("No JSON body found in request")
         Future.successful(BadRequest(s"No JSON body found in request"))
     }
   }
 
-  def updateEmail(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino =>
+  def updateEmail(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino ⇒
     request.body.asJson.map(_.validate[UpdateEmail]) match {
-      case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino === nino => {
+      case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino === nino ⇒ {
         logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino.value}")
         repository
           .updateEmail(userReminder.nino.value, userReminder.firstName, userReminder.lastName, userReminder.email)
@@ -109,12 +113,12 @@ class HtsUserUpdateController @Inject() (
 
       case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino =!= nino => notAllowedThisNino
 
-      case Some(error: JsError) =>
+      case Some(error: JsError) ⇒
         val errorString = error.prettyPrint()
         logger.warn(s"Could not parse UpdateEmail JSON in request body: $errorString")
         Future.successful(BadRequest(s"Could not parse UpdateEmail JSON in request body:: $errorString"))
 
-      case None =>
+      case None ⇒
         logger.warn("No JSON body found in request")
         Future.successful(BadRequest(s"No JSON body found in request"))
     }

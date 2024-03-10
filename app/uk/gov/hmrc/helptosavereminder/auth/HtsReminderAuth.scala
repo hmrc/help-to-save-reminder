@@ -47,19 +47,19 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
 
   override def authConnector: AuthConnector = htsAuthConnector
 
-  private type HtsAction = Request[AnyContent] => Future[Result]
-  private type HtsActionWithNINO = Request[AnyContent] => NINO => Future[Result]
+  private type HtsAction = Request[AnyContent] ⇒ Future[Result]
+  private type HtsActionWithNINO = Request[AnyContent] ⇒ NINO ⇒ Future[Result]
 
   val authProviders: AuthProviders = AuthProviders(GovernmentGateway, PrivilegedApplication)
 
   def ggAuthorisedWithNino(action: HtsActionWithNINO)(implicit ec: ExecutionContext): Action[AnyContent] =
-    Action.async { implicit request =>
+    Action.async { implicit request ⇒
       authorised(AuthWithCL200)
-        .retrieve(v2Nino) {
-          case None =>
+        .retrieve(v2Nino) { mayBeNino ⇒
+          mayBeNino.fold[Future[Result]] {
             logger.warn("Could not find NINO for logged in user")
             Forbidden
-          case Some(nino) => action(request)(nino)
+          }(nino ⇒ action(request)(nino))
         }
         .recover {
           handleFailure()
@@ -67,7 +67,7 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
     }
 
   def ggOrPrivilegedAuthorised(action: HtsAction)(implicit ec: ExecutionContext): Action[AnyContent] =
-    Action.async { implicit request =>
+    Action.async { implicit request ⇒
       authorised(GGAndPrivilegedProviders) {
         action(request)
       }.recover {
@@ -78,14 +78,14 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
   def ggOrPrivilegedAuthorisedWithNINO(
     nino: Option[String]
   )(action: HtsActionWithNINO)(implicit ec: ExecutionContext): Action[AnyContent] =
-    Action.async { implicit request =>
+    Action.async { implicit request ⇒
       authorised(GGAndPrivilegedProviders)
         .retrieve(v2.Retrievals.authProviderId) {
           /* authProviderId deprecated but credentials does not support Privileged Application client*/
-          case GGCredId(_) =>
-            authorised().retrieve(v2Nino) { retrievedNINO =>
+          case GGCredId(_) ⇒
+            authorised().retrieve(v2Nino) { retrievedNINO ⇒
               (nino, retrievedNINO) match {
-                case (Some(given), Some(retrieved)) =>
+                case (Some(given), Some(retrieved)) ⇒
                   if (given === retrieved) {
                     action(request)(given)
                   } else {
@@ -93,24 +93,22 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
                     toFuture(Forbidden)
                   }
 
-                case (None, Some(retrieved)) =>
+                case (None, Some(retrieved)) ⇒
                   action(request)(retrieved)
 
-                case (_, None) =>
+                case (_, None) ⇒
                   logger.warn("Could not retrieve NINO for GG session")
                   Forbidden
               }
             }
 
-          case PAClientId(_) =>
-            nino match {
-              case None =>
-                logger.warn("NINO not given for privileged request")
-                BadRequest
-              case Some(n) => action(request)(n)
-            }
+          case PAClientId(_) ⇒
+            nino.fold[Future[Result]] {
+              logger.warn("NINO not given for privileged request")
+              BadRequest
+            }(n ⇒ action(request)(n))
 
-          case other =>
+          case other ⇒
             logger.warn(s"Recevied request from unsupported authProvider: ${other.getClass.getSimpleName}")
             toFuture(Forbidden)
 
@@ -121,15 +119,15 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
     }
 
   def handleFailure(): PartialFunction[Throwable, Result] = {
-    case _: NoActiveSession =>
+    case _: NoActiveSession ⇒
       logger.warn("user is not logged in, probably a hack?")
       Unauthorized
 
-    case e: InternalError =>
+    case e: InternalError ⇒
       logger.warn(s"Could not authenticate user due to internal error: ${e.reason}")
       InternalServerError
 
-    case ex: AuthorisationException =>
+    case ex: AuthorisationException ⇒
       logger.warn(s"could not authenticate user due to: ${ex.reason}")
       Forbidden
   }

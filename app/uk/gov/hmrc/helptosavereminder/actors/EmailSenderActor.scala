@@ -78,20 +78,21 @@ class EmailSenderActor @Inject() (
       }
 
       logger.info(s"Sending reminder for $ref")
-      for {
-        sent <- sendReceivedTemplatedEmail(template)
-      } yield
-        if (sent) {
+      sendReceivedTemplatedEmail(template).map({
+        case true => {
           logger.info(s"Sent reminder for $ref")
-          DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate) match {
+          val nextSendDate =
+            DateTimeFunctions.getNextSendDate(reminder.daysToReceive, successReminder.reminder.currentDate)
+          nextSendDate match {
             case Some(x) =>
               val updatedReminder = reminder.copy(nextSendDate = x)
               htsUserUpdateActor ! updatedReminder
             case None =>
           }
-        } else {
-          logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
         }
+        case false =>
+          logger.warn(s"Failed to send reminder for ${reminder.nino.value} $ref")
+      })
 
     }
 
@@ -118,15 +119,11 @@ class EmailSenderActor @Inject() (
 
     val url = s"${servicesConfig.baseUrl("email")}/hmrc/email"
 
-    for {
-      response <- emailConnector.sendEmail(request, url)
-    } yield
-      if (response) {
-        logger.debug(s"[EmailSenderActor] Email sent: $request")
-        true
-      } else {
-        logger.debug(s"[EmailSenderActor] Email not sent: $request")
-        false
+    emailConnector.sendEmail(request, url) map { response =>
+      response match {
+        case true => logger.debug(s"[EmailSenderActor] Email sent: $request"); true
+        case _    => logger.debug(s"[EmailSenderActor] Email not sent: $request"); false
       }
+    }
   }
 }
