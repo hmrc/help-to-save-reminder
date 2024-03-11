@@ -17,13 +17,13 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import java.util.UUID
-
-import akka.actor._
 import com.google.inject.Inject
+
 import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
+import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
 import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
@@ -31,6 +31,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
+import akka.actor._
 
 @Singleton
 class EmailSenderActor @Inject() (
@@ -88,6 +89,7 @@ class EmailSenderActor @Inject() (
               val updatedReminder = reminder.copy(nextSendDate = x)
               htsUserUpdateActor ! updatedReminder
             case None =>
+              context.parent ! Acknowledge(reminder.email)
           }
         }
         case false =>
@@ -96,6 +98,7 @@ class EmailSenderActor @Inject() (
 
     }
 
+    case Acknowledge(id) => context.parent ! Acknowledge(id)
   }
 
   def sendReceivedTemplatedEmail(template: HtsReminderTemplate)(implicit hc: HeaderCarrier): Future[Boolean] = {

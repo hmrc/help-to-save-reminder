@@ -17,13 +17,15 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.{Actor, ActorRef, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
+import uk.gov.hmrc.helptosavereminder.models.{HtsUserScheduleMsg, SendEmails}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.{MongoLockRepository, TimePeriodLockService}
@@ -33,7 +35,8 @@ import java.time.{LocalDate, ZoneId}
 import java.util.TimeZone
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
+
 @Singleton
 class ProcessingSupervisor @Inject() (
   mongoApi: MongoComponent,
@@ -50,6 +53,13 @@ class ProcessingSupervisor @Inject() (
       Props(classOf[EmailSenderActor], servicesConfig, repository, emailConnector, ec, appConfig),
       "emailSender-actor"
     )
+
+  private lazy val testOnlyActor: ActorRef =
+    if (servicesConfig.getBoolean("testActorEnabled")) {
+      context.actorOf(Props(classOf[TestOnlyActor], repository, ec), "test-only-actor")
+    } else {
+      context.actorOf(Props(classOf[EmptyActor]), "test-only-actor")
+    }
 
   lazy val isUserScheduleEnabled: Boolean = appConfig.isUserScheduleEnabled
 
@@ -138,6 +148,7 @@ class ProcessingSupervisor @Inject() (
     }
 
     case START => {
+      testOnlyActor ! CLEAR
 
       logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
 
@@ -154,7 +165,7 @@ class ProcessingSupervisor @Inject() (
               logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
 
               for (request <- take) {
-
+                testOnlyActor ! Init(request.email)
                 emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
 
               }
@@ -169,16 +180,24 @@ class ProcessingSupervisor @Inject() (
           case Some(thing) => {
 
             logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-
+            testOnlyActor ! SUCCESS
           }
           case _ => {
             logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
+            testOnlyActor ! FAILURE
           }
         }
 
       logger.info("Exiting START message processor by ProcessingSupervisor")
 
     }
+
+    case Acknowledge(email) => testOnlyActor ! Acknowledge(email)
+    case GET_STATS =>
+      val replyTo = sender
+      implicit val timeout: Timeout = Timeout(5.seconds)
+      for (stats <- testOnlyActor ? GET_STATS) replyTo ! stats
+    case SendEmails(emails) => testOnlyActor ! SendEmails(emails)
   }
 
 }

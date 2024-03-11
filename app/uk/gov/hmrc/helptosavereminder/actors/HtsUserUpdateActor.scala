@@ -17,8 +17,10 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor._
+
 import javax.inject.Singleton
 import play.api.Logging
+import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
 import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 
@@ -33,6 +35,7 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
       repository.updateNextSendDate(htsUserSchedule.nino.value, htsUserSchedule.nextSendDate).map {
         case true => {
           logger.debug(s"Updated the User nextSendDate for ${htsUserSchedule.nino}")
+          context.parent ! Acknowledge(htsUserSchedule.email)
         }
         case _ => {
           logger.warn(s"Failed to update nextSendDate for the User: ${htsUserSchedule.nino}")
