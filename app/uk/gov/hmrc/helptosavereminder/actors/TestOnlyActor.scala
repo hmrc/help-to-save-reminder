@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
 import scala.util.chaining.scalaUtilChainingOps
 
-class TestOnlyActor(repository: HtsReminderMongoRepository)(implicit ec: ExecutionContext) extends Actor {
+class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
   private val emailsInFlight = mutable.HashSet[String]()
   private val emailsComplete = mutable.HashSet[String]()
   private val duplicates = mutable.HashSet[String]()
@@ -68,6 +68,7 @@ class TestOnlyActor(repository: HtsReminderMongoRepository)(implicit ec: Executi
         dateAcknowledged.map(_.toString).orNull
       )
     case SendEmails(emails) =>
+      implicit val ec: ExecutionContext = context.dispatcher
       val replyTo = sender
       val prefixChars = (for (ch <- 'A' to 'Z') yield ch).toSet.diff("DFIQUVO".toSet).toList
       val postfixChars = (for (ch <- 'A' to 'D') yield ch).toList

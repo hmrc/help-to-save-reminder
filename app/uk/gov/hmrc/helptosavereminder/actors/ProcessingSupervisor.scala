@@ -56,7 +56,7 @@ class ProcessingSupervisor @Inject() (
 
   private lazy val testOnlyActor: ActorRef =
     if (servicesConfig.getBoolean("testActorEnabled")) {
-      context.actorOf(Props(classOf[TestOnlyActor], repository, ec), "test-only-actor")
+      context.actorOf(Props(classOf[TestOnlyActor], repository), "test-only-actor")
     } else {
       context.actorOf(Props(classOf[EmptyActor]), "test-only-actor")
     }
