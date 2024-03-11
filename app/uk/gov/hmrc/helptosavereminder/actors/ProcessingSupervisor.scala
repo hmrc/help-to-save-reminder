@@ -17,7 +17,7 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.{Actor, ActorRef, Props}
-import akka.pattern.ask
+import akka.pattern.{ask, pipe}
 import akka.util.Timeout
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
@@ -194,9 +194,8 @@ class ProcessingSupervisor @Inject() (
 
     case Acknowledge(email) => testOnlyActor ! Acknowledge(email)
     case GET_STATS =>
-      val replyTo = sender
       implicit val timeout: Timeout = Timeout(5.seconds)
-      for (stats <- testOnlyActor ? GET_STATS) replyTo ! stats
+      testOnlyActor ? GET_STATS pipeTo sender
     case SendEmails(emails) => testOnlyActor ! SendEmails(emails)
   }
 

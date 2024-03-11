@@ -18,6 +18,7 @@ package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.Actor
 import akka.http.javadsl.model.DateTime
+import akka.pattern.pipe
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, SendEmails, Stats}
@@ -69,7 +70,6 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
       )
     case SendEmails(emails) =>
       implicit val ec: ExecutionContext = context.dispatcher
-      val replyTo = sender
       val prefixChars = (for (ch <- 'A' to 'Z') yield ch).toSet.diff("DFIQUVO".toSet).toList
       val postfixChars = (for (ch <- 'A' to 'D') yield ch).toList
       val random = new Random()
@@ -103,6 +103,6 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
           } yield ()
         })
         .pipe(Future.sequence(_))
-        .onComplete(_ => replyTo ! START)
+        .pipeTo(sender)
   }
 }
