@@ -70,8 +70,8 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
       )
     case SendEmails(emails) =>
       implicit val ec: ExecutionContext = context.dispatcher
-      val prefixChars = (for (ch <- 'A' to 'Z') yield ch).toSet.diff("DFIQUVO".toSet).toList
-      val postfixChars = (for (ch <- 'A' to 'D') yield ch).toList
+      val prefixChars = ('A' to 'Z').toSet.diff("DFIQUVO".toSet).toList
+      val postfixChars = ('A' to 'D').toList
       val random = new Random()
       emails
         .map(email => {
