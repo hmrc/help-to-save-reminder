@@ -25,6 +25,7 @@ import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, SendEmails, Stats
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 
 import java.time.LocalDate
+import java.util.concurrent.ForkJoinPool
 import scala.annotation.tailrec
 import scala.collection.{immutable, mutable}
 import scala.concurrent.{ExecutionContext, Future}
@@ -69,7 +70,7 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
         dateAcknowledged.map(_.toString).orNull
       )
     case SendEmails(emails) =>
-      implicit val ec: ExecutionContext = context.dispatcher
+      implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(new ForkJoinPool())
       val prefixChars = ('A' to 'Z').toSet.diff("DFIQUVO".toSet).toList
       val postfixChars = ('A' to 'D').toList
       val random = new Random()
