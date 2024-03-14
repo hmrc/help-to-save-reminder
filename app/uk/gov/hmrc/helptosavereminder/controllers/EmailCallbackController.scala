@@ -82,18 +82,7 @@ class EmailCallbackController @Inject() (
             )
             Ok(s"Error deleting the hts schedule by callBackReference = $callBackReference")
           })
-      _ = {
-        val path = routes.EmailCallbackController.handleCallBack(callBackReference).url
-        auditor.sendEvent(
-          HtsReminderUserDeletedEvent(
-            HtsReminderUserDeleted(htsUserSchedule.nino.value, htsUserSchedule.email),
-            path
-          )
-        )
-        logger.debug(
-          s"[EmailCallbackController] Email deleted from HtsReminder Repository for user = : ${htsUserSchedule.nino}"
-        )
-      }
+      _ = logger.info(s"mail deleted from HtsReminder Repository for ${htsUserSchedule.nino.value}")
       _ = for {
         wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
       } yield
