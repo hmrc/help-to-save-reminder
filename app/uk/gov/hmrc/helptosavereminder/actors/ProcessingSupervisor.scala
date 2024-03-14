@@ -17,13 +17,15 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.{Actor, ActorRef, Props}
+import akka.pattern.{ask, pipe}
+import akka.util.Timeout
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
+import uk.gov.hmrc.helptosavereminder.models.{HtsUserScheduleMsg, SendEmails}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.{MongoLockRepository, TimePeriodLockService}
@@ -33,7 +35,8 @@ import java.time.{LocalDate, ZoneId}
 import java.util.TimeZone
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{Duration, DurationInt}
+
 @Singleton
 class ProcessingSupervisor @Inject() (
   mongoApi: MongoComponent,
@@ -50,6 +53,13 @@ class ProcessingSupervisor @Inject() (
       Props(classOf[EmailSenderActor], servicesConfig, repository, emailConnector, ec, appConfig),
       "emailSender-actor"
     )
+
+  private lazy val testOnlyActor: ActorRef =
+    if (servicesConfig.getBoolean("testActorEnabled")) {
+      context.actorOf(Props(classOf[TestOnlyActor], repository), "test-only-actor")
+    } else {
+      context.actorOf(Props(classOf[EmptyActor]), "test-only-actor")
+    }
 
   lazy val isUserScheduleEnabled: Boolean = appConfig.isUserScheduleEnabled
 
@@ -76,13 +86,13 @@ class ProcessingSupervisor @Inject() (
 
       repository.collection.find().toFuture().map {
         case requests if requests.nonEmpty => {
-          val nextScheduledDates = requests.map(_.nextSendDate).toSet
-          val daysToRecieve = requests.map(_.daysToReceive).toSet
+          val nextScheduledDates = requests.map(request => request.nextSendDate).toSet
+          val daysToRecieve = requests.map(request => request.daysToReceive).toSet
           val emailDuplicateOccurrencesSet = requests.groupBy(_.email).mapValues(_.size).groupBy(_._2).mapValues(_.size)
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.size} requests")
           logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(_.email).toSet.size} unique emails"
+            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(request => request.email).toSet.size} unique emails"
           )
 
           logger.info(
@@ -90,17 +100,19 @@ class ProcessingSupervisor @Inject() (
           )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${nextScheduledDates.mkString(", ")} [nextSendDates]")
-          for (date <- nextScheduledDates) {
-            logger.info(
-              s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(_.nextSendDate == date)} [nextSendDate : $date]"
-            )
-          }
+          nextScheduledDates.foreach(
+            date =>
+              logger.info(
+                s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
+              )
+          )
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${daysToRecieve.mkString(", ")} [daysToReceive]")
-          for (days <- daysToRecieve) {
-            val count = requests.count(_.daysToReceive == days)
-            logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found $count Set to ${days.mkString(", ")}")
-          }
+          daysToRecieve.foreach(
+            days =>
+              logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
+                .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
+          )
         }
 
         case _ => {
@@ -136,32 +148,55 @@ class ProcessingSupervisor @Inject() (
     }
 
     case START => {
+      testOnlyActor ! CLEAR
 
       logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
 
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
 
-      (lockKeeper
+      lockKeeper
         .withRenewedLock {
-          for {
-            response <- repository.findHtsUsersToProcess()
-          } yield response match {
+
+          repository.findHtsUsersToProcess().map {
             case Some(requests) if requests.nonEmpty => {
               logger.info(s"[ProcessingSupervisor][receive] took ${requests.size} requests)")
+
               val take = requests.take(scheduleTake)
               logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
+
               for (request <- take) {
+                testOnlyActor ! Init(request.email)
                 emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
+
               }
+
             }
-            case _ => logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+            case _ => {
+              logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+            }
           }
-        })
-        .map {
-          case Some(_) => logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-          case None    => logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
         }
+        .map {
+          case Some(thing) => {
+
+            logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
+            testOnlyActor ! SUCCESS
+          }
+          case _ => {
+            logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
+            testOnlyActor ! FAILURE
+          }
+        }
+
+      logger.info("Exiting START message processor by ProcessingSupervisor")
+
     }
+
+    case Acknowledge(email) => testOnlyActor ! Acknowledge(email)
+    case GET_STATS =>
+      implicit val timeout: Timeout = Timeout(5.seconds)
+      testOnlyActor ? GET_STATS pipeTo sender
+    case SendEmails(emails) => testOnlyActor ! SendEmails(emails)
   }
 
 }

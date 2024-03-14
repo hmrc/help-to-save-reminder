@@ -43,13 +43,15 @@ class HtsUserUpdateController @Inject() (
 
   def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino =>
     request.body.asJson.map(_.validate[HtsUserSchedule]) match {
-      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino =>
+      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino => {
         logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.value}")
-        for {
-          updated <- repository.updateReminderUser(htsUser)
-        } yield
-          if (updated) Ok(Json.toJson(htsUser))
-          else NotModified
+        repository.updateReminderUser(htsUser).map {
+          case true => {
+            Ok(Json.toJson(htsUser))
+          }
+          case false => NotModified
+        }
+      }
 
       case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino =!= nino => notAllowedThisNino
 
@@ -79,8 +81,10 @@ class HtsUserUpdateController @Inject() (
       case Some(JsSuccess(userReminder, _)) => {
         logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino}")
         repository.deleteHtsUser(userReminder.nino).map {
-          case Right(()) => Ok
-          case Left(_)   => NotModified
+          case Right(()) => {
+            Ok
+          }
+          case Left(_) => NotModified
         }
       }
       case Some(error: JsError) =>

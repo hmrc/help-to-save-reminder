@@ -20,9 +20,9 @@ import org.mongodb.scala.bson.ObjectId
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.mongo.play.json.formats.MongoFormats
+import uk.gov.hmrc.mongo.play.json.formats.{MongoFormats, MongoJavatimeFormats}
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{Instant, LocalDate, LocalDateTime}
 import java.time.format.DateTimeFormatter
 import scala.util.{Failure, Success, Try}
 
@@ -58,7 +58,6 @@ object HtsUserSchedule {
           case Success(date)  => JsSuccess(date)
           case Failure(error) => JsError(s"Could not parse date as yyyyMMdd: ${error.getMessage}")
         }
-      case _ => JsError(s"Could not parse date")
     }
   }
   implicit val idFormat: Format[ObjectId] = MongoFormats.objectIdFormat
@@ -84,8 +83,30 @@ object ActorUtils {
   val STOP = "STOP"
   val SUCCESS = "SUCCESS"
   val FAILURE = "FAILURE"
+  case class Acknowledge(email: String)
+  case class Init(email: String)
+  val GET_STATS = "GET_STATS"
+  val CLEAR = "CLEAR"
 }
 
+case class Stats(
+  emailsInFlight: List[String],
+  emailsComplete: List[String],
+  duplicates: List[String],
+  dateStarted: String,
+  dateFinished: String,
+  dateAcknowledged: String
+)
+
+object Stats {
+  implicit val format: Format[Stats] = Json.format[Stats]
+}
+
+case class SendEmails(emails: List[String])
+
+object SendEmails {
+  implicit val format: Format[SendEmails] = Json.format[SendEmails]
+}
 object CancelHtsUserReminder {
 
   implicit val htsUserCancelFormat: Format[CancelHtsUserReminder] = Json.format[CancelHtsUserReminder]

@@ -1,0 +1,34 @@
+# This file contains examples of requests for interacting with the test-only actor (to for example manually trigger
+# sending of e-mails or check how long did it take to send them all). You can use it with the IntelliJ REST client -
+# open in idea and pressthe green "play" buttons next to each of the requests.
+
+### Send a bunch of emails to different users
+// @no-log
+POST http://localhost:7008/help-to-save-reminder/test-only/spam-specific
+Content-Type: application/json
+
+[
+  "user1@example.com",
+  "user2@example.com",
+  "user3@example.com",
+  "user4@example.com",
+  "user5@example.com",
+  "user6@example.com",
+  "user7@example.com",
+  "user8@example.com",
+  "user9@example.com",
+  "user10@example.com"
+]
+
+### Check how our spam is going
+// @no-log
+GET http://localhost:7008/help-to-save-reminder/test-only/spam-stats
+
+### Trigger spam
+// @no-log
+GET http://localhost:7008/help-to-save-reminder/test-only/spam
+
+### Send a bunch of emails to different users
+// @no-log
+GET http://localhost:7008/help-to-save-reminder/test-only/spam-random?amount=1000
+

@@ -18,3 +18,8 @@ GET     /help-to-save-reminder/test-only/populate-reminders/:noUsers/:emailPrefi
 GET     /help-to-save-reminder/test-only/gethtsuser/:nino                                              uk.gov.hmrc.helptosavereminder.controllers.test.TestController.getHtsUser(nino: String)
 
 GET     /help-to-save-reminder/test-only/updatehtsuser/:nino/:endDate                                  uk.gov.hmrc.helptosavereminder.controllers.test.TestController.updateEndDate(nino: String, endDate: String)
+
+GET     /help-to-save-reminder/test-only/spam                                                          uk.gov.hmrc.helptosavereminder.controllers.test.TestController.spam()
+POST    /help-to-save-reminder/test-only/spam-specific                                                 uk.gov.hmrc.helptosavereminder.controllers.test.TestController.spamSpecific()
+GET     /help-to-save-reminder/test-only/spam-random                                                   uk.gov.hmrc.helptosavereminder.controllers.test.TestController.spamRandom(amount: Int)
+GET     /help-to-save-reminder/test-only/spam-stats                                                    uk.gov.hmrc.helptosavereminder.controllers.test.TestController.spamStats()
