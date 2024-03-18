@@ -48,7 +48,6 @@ class EmailSenderActor @Inject() (
   val sendEmailTemplateId = appConfig.sendEmailTemplateId
   val nameParam = appConfig.nameParam
   val monthParam = appConfig.monthParam
-  val callBackUrlParam = appConfig.callBackUrlParam
 
   override def receive: Receive = {
 
