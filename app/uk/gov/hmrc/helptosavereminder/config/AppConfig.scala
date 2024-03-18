@@ -42,4 +42,6 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
   val defaultScheduleTake: Int = 500
 
   val scheduleTake: Int = config.getOptional[Int](s"scheduleTake").getOrElse(defaultScheduleTake)
+
+  val excludedNinos: Seq[String] = config.getOptional[Seq[String]](s"excludedNinos").getOrElse(Seq())
 }
