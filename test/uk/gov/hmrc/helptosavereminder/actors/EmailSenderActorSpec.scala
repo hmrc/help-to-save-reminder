@@ -39,13 +39,9 @@ class EmailSenderActorSpec
     with IdiomaticMockito {
 
   private val mockLockRepo = mock[LockRepository]
-
   private val httpClient = mock[HttpClient]
-
   override val servicesConfig: ServicesConfig = mock[ServicesConfig]
-
   private val emailConnector = mock[EmailConnector]
-
   private lazy val mockRepository = mock[HtsReminderMongoRepository]
 
   override def beforeAll: Unit =
@@ -57,31 +53,19 @@ class EmailSenderActorSpec
         Props(new EmailSenderActor(servicesConfig, mockRepository, emailConnector) {}),
         "email-sender-actor"
       )
-
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
-
       val mockObject = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate)
-
       val requestCaptor = ArgumentCaptor.forClass(classOf[SendTemplatedEmailRequest])
-
       httpClient
         .POST[SendTemplatedEmailRequest, HttpResponse](*, requestCaptor.capture(), *)(*, *, *, *)
         .returns(Future.successful(HttpResponse(202, "")))
-
       mockRepository.updateNextSendDate(*, *).returns(Future.successful(true))
-
       mockRepository.updateCallBackRef(*, *).returns(Future.successful(true))
 
       within(5 seconds) {
-
         emailSenderActor ! mockObject
-
         emailSenderActor ! UpdateCallBackSuccess(mockObject, "callBackSampleRef")
-
       }
-
     }
-
   }
-
 }
