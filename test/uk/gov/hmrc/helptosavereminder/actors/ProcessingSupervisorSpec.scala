@@ -39,22 +39,14 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
     with IdiomaticMockito {
 
   private val mockLockRepo = mock[LockRepository]
-
   override val servicesConfig: ServicesConfig = mock[ServicesConfig]
-
   private val emailConnector = mock[EmailConnector]
-
   private val lockRepo = mock[MongoLockRepository]
-
   private val mongoApi = app.injector.instanceOf[MongoComponent]
-
   private lazy val mockRepository = mock[HtsReminderMongoRepository]
 
   override def beforeAll: Unit =
     mockLockRepo takeLock (*, *, *) returns Future.successful(true)
-
-  //override def afterAll: Unit =
-  //  shutdown()
 
   "processing supervisor" must {
     "send request to start with no requests queued" in {
@@ -84,11 +76,7 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
         emailSenderActorProbe.reply("SUCCESS")
 
         processingSupervisor ! "STOP" // simulate stop coming from calc requestor
-
       }
-
     }
-
   }
-
 }
