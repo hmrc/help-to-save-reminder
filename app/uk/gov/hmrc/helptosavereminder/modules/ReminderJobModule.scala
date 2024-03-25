@@ -19,12 +19,13 @@ package uk.gov.hmrc.helptosavereminder.modules
 import com.google.inject.AbstractModule
 import play.api.libs.concurrent.AkkaGuiceSupport
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.helptosavereminder.config.Scheduler
+import uk.gov.hmrc.helptosavereminder.config.{EmailDeleter, Scheduler}
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 
 class ReminderJobModule extends AbstractModule with AkkaGuiceSupport {
   override def configure(): Unit = {
     bind(classOf[Scheduler]).asEagerSingleton()
     bind(classOf[AuthConnector]).to(classOf[DefaultAuthConnector]).asEagerSingleton()
+    bind(classOf[EmailDeleter]).asEagerSingleton()
   }
 }

@@ -17,27 +17,19 @@
 package uk.gov.hmrc.helptosavereminder.config
 
 import javax.inject.{Inject, Singleton}
-import play.api.{Configuration}
+import play.api.Configuration
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton
 class AppConfig @Inject() (val config: Configuration, val servicesConfig: ServicesConfig) {
 
-  val authBaseUrl: String = servicesConfig.baseUrl("auth")
-
   val appName: String = config.get[String]("appName")
-
-  val auditingEnabled: Boolean = config.get[Boolean]("auditing.enabled")
-
-  val graphiteHost: String = config.get[String]("microservice.metrics.graphite.host")
 
   val sendEmailTemplateId: String = config.get[String]("microservice.services.email.templateId")
 
   val nameParam: String = config.get[String]("microservice.services.email.nameParam")
 
   val monthParam: String = config.get[String]("microservice.services.email.monthParam")
-
-  val callBackUrlParam: String = config.get[String]("microservice.services.email.callBackUrlParam")
 
   val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
 
@@ -50,4 +42,6 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
   val defaultScheduleTake: Int = 500
 
   val scheduleTake: Int = config.getOptional[Int](s"scheduleTake").getOrElse(defaultScheduleTake)
+
+  val excludedNinos: Seq[String] = config.getOptional[Seq[String]](s"excludedNinos").getOrElse(Seq())
 }
