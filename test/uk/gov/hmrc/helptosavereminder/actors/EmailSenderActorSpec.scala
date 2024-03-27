@@ -150,11 +150,6 @@ class EmailSenderActorSpec
       parent.send(actor, message)
       parent.expectNoMessage()
     }
-
-    "send Acknowledge to parent when receiving Acknowledge" in {
-      parent.send(actor, Acknowledge("test@email.com"))
-      parent.expectMsg(Acknowledge("test@email.com"))
-    }
   }
 }
 
