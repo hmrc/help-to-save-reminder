@@ -20,21 +20,23 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit._
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
+import org.mockito.Mockito.when
+import org.scalatest.concurrent.Eventually.eventually
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.HtsUserScheduleMsg
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.lock.{LockRepository, MongoLockRepository}
+import uk.gov.hmrc.mongo.lock.{LockRepository, MongoLockRepository, TimePeriodLockService}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.{LocalDate, ZoneId}
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
+class ProcessingSupervisorSpec
     extends TestKit(ActorSystem("TestProcessingSystem")) with BaseSpec with DefaultTimeout with ImplicitSender
     with IdiomaticMockito {
 
@@ -56,6 +58,8 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
         Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
           override lazy val emailSenderActor: ActorRef = emailSenderActorProbe.ref
           override lazy val repository: HtsReminderMongoRepository = mockRepository
+          override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
+          when(lockKeeper.withRenewedLock(*)(*)).thenAnswer(_.getArguments.head.asInstanceOf[Future[Unit]])
         }),
         "process-supervisor1"
       )
@@ -64,18 +68,16 @@ class ProcessingSupervisorSpec(implicit ec: ExecutionContext)
 
       val mockObject = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate)
 
-      mockRepository
-        .findHtsUsersToProcess()
-        .returns(Future.successful(Some(List(mockObject.htsUserSchedule))))
+      mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(mockObject.htsUserSchedule)))
 
-      within(5 seconds) {
+      processingSupervisor ! "START"
 
-        //emailSenderActorProbe.reply("SUCCESS")
-        processingSupervisor ! "START"
+      eventually {
+
         emailSenderActorProbe.expectMsg(mockObject)
         emailSenderActorProbe.reply("SUCCESS")
 
-        processingSupervisor ! "STOP" // simulate stop coming from calc requestor
+        processingSupervisor ! "STOP"
       }
     }
   }
