@@ -24,7 +24,7 @@ import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
-import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
+import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendEmails, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HeaderCarrier
@@ -49,11 +49,13 @@ class EmailSenderActor @Inject() (
   val nameParam = appConfig.nameParam
   val monthParam = appConfig.monthParam
 
+  val randomCallbackRef: () => String = EmailSenderActor.randomCallbackRef
+
   override def receive: Receive = {
 
     case htsUserReminderMsg: HtsUserScheduleMsg => {
 
-      val callBackRef = UUID.randomUUID().toString
+      val callBackRef = randomCallbackRef()
       logger.info(s"New callBackRef $callBackRef")
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
 
@@ -129,4 +131,8 @@ class EmailSenderActor @Inject() (
       }
     }
   }
+}
+
+object EmailSenderActor {
+  def randomCallbackRef(): String = UUID.randomUUID().toString
 }
