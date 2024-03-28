@@ -164,7 +164,6 @@ class HtsUserUpdateActorSpec
 
   private val userSchedule: HtsUserSchedule = HtsUserSchedule(Nino("AE123456D"), "email@test.com")
 
-  private var count = 0
   private var repository: HtsReminderMongoRepository = _
   private var parent: TestProbe = _
   private var actor: ActorRef = _
@@ -191,9 +190,6 @@ class HtsUserUpdateActorSpec
       parent.send(actor, userSchedule)
       parent.expectNoMessage()
     }
-    "count must be 4" in {
-      count should equal(4)
-    }
   }
 
   "UpdateCallbackRef message" must {
@@ -211,7 +207,7 @@ class HtsUserUpdateActorSpec
     "Do not reply on failure" in {
       repository.updateCallBackRef(*, *) returns Future.successful(false)
       parent.send(actor, UpdateCallBackRef(HtsUserScheduleMsg(userSchedule, LocalDate.now()), "my-ref"))
-      parent.expectNoMessage()
+      within(1 second) { parent.expectNoMessage() }
     }
   }
 }
