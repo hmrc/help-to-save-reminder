@@ -54,7 +54,7 @@ class ProcessingSupervisorSpec
     )
 
   "processing supervisor" must {
-    "should not do anything if couldn't update callback ref" in {
+    "not do anything if couldn't update callback ref" in {
       val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
       val lockRepo = mock[MongoLockRepository]
