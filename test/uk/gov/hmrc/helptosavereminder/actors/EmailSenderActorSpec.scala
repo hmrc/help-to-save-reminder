@@ -174,7 +174,6 @@ class HtsUserUpdateActorSpec
   }
 
   "HtsUserSchedule message" must {
-    count = count + 1
     "call updateNextSendDate for the NINO" in {
       repository.updateNextSendDate(*, *) returns Future.successful(true)
       actor ! userSchedule.copy(nextSendDate = LocalDate.of(2020, 1, 2))

@@ -63,7 +63,7 @@ class ProcessingSupervisorSpec
           override lazy val repository: HtsReminderMongoRepository = reminderRepository
           override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
           when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some())
+            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
           }
         }))
       val scheduleMsg = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate = LocalDate.now)
@@ -96,7 +96,7 @@ class ProcessingSupervisorSpec
           override lazy val repository: HtsReminderMongoRepository = reminderRepository
           override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
           when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some())
+            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
           }
         }))
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
@@ -140,7 +140,7 @@ class ProcessingSupervisorSpec
           override lazy val repository: HtsReminderMongoRepository = mockRepository
           override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
           when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some())
+            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
           }
         })
       )
