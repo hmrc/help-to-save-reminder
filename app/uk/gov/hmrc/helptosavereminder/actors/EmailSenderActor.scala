@@ -52,7 +52,7 @@ class EmailSenderActor @Inject() (
 
   private def format(name: String) = name.toLowerCase.capitalize
   private def check(msg: => String)(future: Future[Boolean]) =
-    future.filter(_ == true).map(_.tap(_ => logger.warn(msg)))
+    for (successful <- future) yield if (!successful) throw new RuntimeException(msg)
 
   override def receive: Receive = {
     case HtsUserScheduleMsg(reminder, currentDate) =>
