@@ -23,6 +23,7 @@ import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually.eventually
+import play.api.test.Helpers.await
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
@@ -73,7 +74,7 @@ class ProcessingSupervisorSpec
       within(1 second) {
         emailConnector.sendEmail(*, *)(*, *) wasNever called
         reminderRepository.updateNextSendDate(*, *) wasNever called
-        val stats = Await.result(actor.ask(GET_STATS), 1 second).asInstanceOf[Stats]
+        val stats = await(actor.ask(GET_STATS)).asInstanceOf[Stats]
         stats.emailsInFlight shouldBe List(scheduleMsg.htsUserSchedule.email)
         stats.dateFinished shouldNot equal(null)
         stats.dateAcknowledged shouldBe null
@@ -119,7 +120,7 @@ class ProcessingSupervisorSpec
         val nextSendDate = DateTimeFunctions.getNextSendDate(userSchedule.daysToReceive, LocalDate.now).get
         reminderRepository.updateNextSendDate("AE123456D", nextSendDate) was called
 
-        val stats = Await.result(actor.ask(GET_STATS), 1 second).asInstanceOf[Stats]
+        val stats = await(actor.ask(GET_STATS)).asInstanceOf[Stats]
         stats.emailsInFlight shouldBe List()
         stats.duplicates shouldBe List()
         stats.emailsComplete shouldBe List("email@test.com")
