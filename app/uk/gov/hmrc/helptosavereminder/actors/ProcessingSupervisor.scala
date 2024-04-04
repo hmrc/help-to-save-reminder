@@ -88,7 +88,8 @@ class ProcessingSupervisor @Inject() (
         case requests if requests.nonEmpty => {
           val nextScheduledDates = requests.map(request => request.nextSendDate).toSet
           val daysToRecieve = requests.map(request => request.daysToReceive).toSet
-          val emailDuplicateOccurrencesSet = requests.groupBy(_.email).mapValues(_.size).groupBy(_._2).mapValues(_.size)
+          val emailDuplicateOccurrencesSet =
+            requests.groupBy(_.email).view.mapValues(_.size).groupBy(_._2).view.mapValues(_.size)
 
           logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.size} requests")
           logger.info(
@@ -195,7 +196,7 @@ class ProcessingSupervisor @Inject() (
     case Acknowledge(email) => testOnlyActor ! Acknowledge(email)
     case GET_STATS =>
       implicit val timeout: Timeout = Timeout(5.seconds)
-      testOnlyActor ? GET_STATS pipeTo sender
+      testOnlyActor ? GET_STATS pipeTo sender()
     case SendEmails(emails) => testOnlyActor ! SendEmails(emails)
   }
 

@@ -22,11 +22,9 @@ import cats.syntax.eq._
 import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsError, JsSuccess}
-import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result, Results}
-import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
-import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsReminderUserDeleted, HtsReminderUserDeletedEvent, HtsUserSchedule}
+import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsUserSchedule}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -38,9 +36,8 @@ class EmailCallbackController @Inject() (
   servicesConfig: ServicesConfig,
   val cc: MessagesControllerComponents,
   repository: HtsReminderMongoRepository,
-  auditor: HTSAuditor,
   emailConnector: EmailConnector
-)(implicit ec: ExecutionContext, appConfig: AppConfig)
+)(implicit ec: ExecutionContext)
     extends BackendController(cc) with Logging {
 
   def handleCallBack(callBackReference: String): Action[AnyContent] = Action.async { implicit request =>
@@ -65,7 +62,7 @@ class EmailCallbackController @Inject() (
 
             case Some(_) =>
               logger.info(s"Reminder Callback service called for callBackReference = $callBackReference")
-              EitherT.rightT[Future, Result]()
+              EitherT.rightT[Future, Result](())
           }
       htsUserSchedule <- EitherT[Future, Result, HtsUserSchedule](
                           repository.findByCallBackUrlRef(callBackReference).map {
@@ -73,8 +70,8 @@ class EmailCallbackController @Inject() (
                             case Some(htsUserSchedule) => Right(htsUserSchedule)
                           }
                         )
-      val email = servicesConfig.baseUrl("email")
-      val url = s"$email/hmrc/bounces/${htsUserSchedule.email}"
+      email = servicesConfig.baseUrl("email")
+      url = s"$email/hmrc/bounces/${htsUserSchedule.email}"
       _ = logger.debug(s"The URL to request email deletion is $url")
       _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
             logger.warn(

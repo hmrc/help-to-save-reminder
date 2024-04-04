@@ -29,7 +29,7 @@ class EmailDeleterSpec extends BaseSpec with IdiomaticMockito {
       val appConfig = mock[AppConfig]
       appConfig.excludedNinos returns List("AE111111D", "AE222222D")
       val repository = mock[HtsReminderRepository]
-      repository.deleteHtsUser("AE111111D") returns Future.successful(Right())
+      repository.deleteHtsUser("AE111111D") returns Future.successful(Right(()))
       repository.deleteHtsUser("AE222222D") returns Future.successful(Left("Error occurred"))
 
       val _ = new EmailDeleter(appConfig, repository)

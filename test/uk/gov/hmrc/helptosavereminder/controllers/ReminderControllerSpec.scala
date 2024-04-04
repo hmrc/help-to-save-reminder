@@ -23,7 +23,6 @@ import play.api.test._
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{CancelHtsUserReminder, HtsUserSchedule, UpdateEmail}
@@ -55,8 +54,6 @@ class ReminderControllerSpec extends AuthSupport {
       .returns(Future.successful(result))
 
   override val mockAuthConnector: AuthConnector = mock[AuthConnector]
-
-  implicit val auditor: HTSAuditor = mock[HTSAuditor]
 
   val controller = new HtsUserUpdateController(mockRepository, testCC, mockAuthConnector)
 

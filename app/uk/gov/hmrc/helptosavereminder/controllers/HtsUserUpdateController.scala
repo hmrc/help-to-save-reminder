@@ -53,7 +53,7 @@ class HtsUserUpdateController @Inject() (
         }
       }
 
-      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino =!= nino => notAllowedThisNino
+      case Some(JsSuccess(htsUser, _)) => notAllowedThisNino
 
       case Some(error: JsError) =>
         val errorString = error.prettyPrint()
