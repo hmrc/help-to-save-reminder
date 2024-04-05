@@ -16,37 +16,32 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor._
-import com.google.inject.Inject
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
 import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.time.LocalDate
 import java.util.UUID
-import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 import scala.util.chaining.scalaUtilChainingOps
 
-@Singleton
-class EmailSenderActor @Inject() (
+class EmailSenderActor(
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository,
   emailConnector: EmailConnector
 )(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
-    extends Actor with Logging {
+    extends Logging {
 
-  implicit lazy val hc: HeaderCarrier = HeaderCarrier()
+  private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
 
-  val sendEmailTemplateId = appConfig.sendEmailTemplateId
-  val nameParam = appConfig.nameParam
-  val monthParam = appConfig.monthParam
+  private val sendEmailTemplateId = appConfig.sendEmailTemplateId
+  private val nameParam = appConfig.nameParam
+  private val monthParam = appConfig.monthParam
 
   val randomCallbackRef: () => String = () => EmailSenderActor.randomCallbackRef()
 
@@ -54,37 +49,33 @@ class EmailSenderActor @Inject() (
   private def check(msg: => String)(future: Future[Boolean]) =
     for (successful <- future) yield if (!successful) throw new RuntimeException(msg)
 
-  override def receive: Receive = {
-    case HtsUserScheduleMsg(reminder, currentDate) =>
-      val callBackRef = randomCallbackRef()
-      logger.info(s"New callBackRef $callBackRef")
-      (for {
-        _ <- repository.updateCallBackRef(reminder.nino.value, callBackRef) pipe
-              check(s"Failed to update CallbackRef for the User: ${reminder.nino.value}")
-        template = HtsReminderTemplate(
-          email = reminder.email,
-          name = format(reminder.firstName) + " " + format(reminder.lastName),
-          callBackUrlRef = callBackRef,
-          monthName = currentDate.getMonth.toString.toLowerCase.capitalize
-        )
-        _ = logger.info(s"Sending reminder for $callBackRef")
-        _ <- sendReceivedTemplatedEmail(template) pipe check(
-              s"Failed to send reminder for ${reminder.nino.value} $callBackRef"
-            )
-        _ = logger.info(s"Sent reminder for $callBackRef")
-        _ <- DateTimeFunctions.getNextSendDate(reminder.daysToReceive, currentDate) match {
-              case Some(nextSendDate) =>
-                repository.updateNextSendDate(reminder.nino.value, nextSendDate) pipe
-                  check(s"Failed to update nextSendDate for the User: ${reminder.nino}")
-              case None => Future.successful()
-            }
-      } yield ()) onComplete {
-        case Success(_) => context.parent ! Acknowledge(reminder.email)
-        case Failure(_) => ()
-      }
+  def sendScheduleMsg(reminder: HtsUserSchedule, currentDate: LocalDate): Future[Unit] = {
+    val callBackRef = randomCallbackRef()
+    logger.info(s"New callBackRef $callBackRef")
+    for {
+      _ <- repository.updateCallBackRef(reminder.nino.value, callBackRef) pipe
+            check(s"Failed to update CallbackRef for the User: ${reminder.nino.value}")
+      template = HtsReminderTemplate(
+        email = reminder.email,
+        name = format(reminder.firstName) + " " + format(reminder.lastName),
+        callBackUrlRef = callBackRef,
+        monthName = currentDate.getMonth.toString.toLowerCase.capitalize
+      )
+      _ = logger.info(s"Sending reminder for $callBackRef")
+      _ <- sendReceivedTemplatedEmail(template) pipe check(
+            s"Failed to send reminder for ${reminder.nino.value} $callBackRef"
+          )
+      _ = logger.info(s"Sent reminder for $callBackRef")
+      _ <- DateTimeFunctions.getNextSendDate(reminder.daysToReceive, currentDate) match {
+            case Some(nextSendDate) =>
+              repository.updateNextSendDate(reminder.nino.value, nextSendDate) pipe
+                check(s"Failed to update nextSendDate for the User: ${reminder.nino}")
+            case None => Future.successful()
+          }
+    } yield ()
   }
 
-  def sendReceivedTemplatedEmail(template: HtsReminderTemplate)(implicit hc: HeaderCarrier): Future[Boolean] = {
+  private def sendReceivedTemplatedEmail(template: HtsReminderTemplate)(implicit hc: HeaderCarrier): Future[Boolean] = {
     val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
     val request = SendTemplatedEmailRequest(
       List(template.email),

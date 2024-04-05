@@ -30,13 +30,12 @@ import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 
 import java.time.LocalDate
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
+import scala.util.chaining.scalaUtilChainingOps
 
-class EmailSenderActorSpec
-    extends TestKit(ActorSystem("TestProcessingSystem")) with BaseSpec with DefaultTimeout with ImplicitSender
-    with BeforeAndAfterEach with IdiomaticMockito {
+class EmailSenderActorSpec extends BaseSpec with BeforeAndAfterEach with IdiomaticMockito {
 
   private val userSchedule: HtsUserSchedule =
     HtsUserSchedule(
@@ -48,18 +47,25 @@ class EmailSenderActorSpec
     )
   private var emailConnector: EmailConnector = _
   private var reminderRepository: HtsReminderMongoRepository = _
-  private var actor: ActorRef = _
-  private var parent: TestProbe = _
+  private var sender: EmailSenderActor = _
 
   override def beforeEach(): Unit = {
     emailConnector = mock[EmailConnector]
     reminderRepository = mock[HtsReminderMongoRepository]
     reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
-    parent = TestProbe()
-    actor = parent.childActorOf(Props(new EmailSenderActor(servicesConfig, reminderRepository, emailConnector) {
+    sender = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector) {
       override val randomCallbackRef: () => String = () => "my-ref"
-    }))
+    }
   }
+
+  def awaitEither[T](future: Future[T]): Either[Throwable, T] =
+    Await.result(future.map(Right(_)).recover(Left(_)), 1.second)
+
+  def getLeft[L, R](either: Either[L, R]): L =
+    either match {
+      case Left(value) => value
+      case Right(_)    => throw new RuntimeException("Was right, should've been left")
+    }
 
   "Email Sender Actor" must {
     "generate different UUIDs every time" in {
@@ -72,18 +78,17 @@ class EmailSenderActorSpec
 
     "should not do anything if couldn't update callback ref" in {
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
-      parent.send(actor, HtsUserScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
-      within(1 second) {
-        emailConnector.sendEmail(*, *)(*, *) wasNever called
-        reminderRepository.updateNextSendDate(*, *) wasNever called
-        parent.expectNoMessage()
-      }
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
+      result.pipe(getLeft).getMessage shouldEqual "Failed to update CallbackRef for the User: AE123456D"
+      emailConnector.sendEmail(*, *)(*, *) wasNever called
+      reminderRepository.updateNextSendDate(*, *) wasNever called
     }
 
     "send a request to the e-mail service" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      actor ! HtsUserScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1))
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1)))
+      result shouldBe Right(())
       val url = servicesConfig.baseUrl("email") + "/hmrc/email"
       val emailServiceRequest = SendTemplatedEmailRequest(
         to = List("email@test.com"),
@@ -92,63 +97,61 @@ class EmailSenderActorSpec
         force = true,
         eventUrl = servicesConfig.baseUrl("help-to-save-reminder") + "/help-to-save-reminder/bouncedEmail/my-ref"
       )
-      eventually { emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called }
+      emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
     }
 
     "update reminder to 25th of next month if sent on 1st" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      actor ! HtsUserScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1))
-      eventually {
-        reminderRepository.updateNextSendDate("AE123456D", nextSendDate = LocalDate.of(2020, 1, 25)) was called
-      }
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1)))
+      result shouldBe Right(())
+      reminderRepository.updateNextSendDate("AE123456D", nextSendDate = LocalDate.of(2020, 1, 25)) was called
     }
 
     "update reminder to 1st of next month if sent on 25th" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      actor ! HtsUserScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 25))
-      eventually {
-        reminderRepository.updateNextSendDate("AE123456D", nextSendDate = LocalDate.of(2020, 2, 1)) was called
-      }
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 25)))
+      result shouldBe Right(())
+      reminderRepository.updateNextSendDate("AE123456D", nextSendDate = LocalDate.of(2020, 2, 1)) was called
     }
 
     "not update 'next send date' when the schedule is empty" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val emptySchedule = userSchedule.copy(daysToReceive = Seq())
-      actor ! HtsUserScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 25))
-      within(1 second) { reminderRepository.updateNextSendDate(*, *) wasNever called }
+      val result = awaitEither(sender.sendScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 25)))
+      result shouldBe Right(())
+      reminderRepository.updateNextSendDate(*, *) wasNever called
     }
 
     "not update 'next send date' if failed to send the e-mail" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(false)
-      actor ! HtsUserScheduleMsg(userSchedule, LocalDate.of(2020, 1, 25))
-      within(1 second) { reminderRepository.updateNextSendDate(*, *) wasNever called }
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 25)))
+      result.pipe(getLeft).getMessage shouldEqual "Failed to send reminder for AE123456D my-ref"
+      reminderRepository.updateNextSendDate(*, *) wasNever called
     }
 
-    "send Acknowledge to parent when successfully sending the e-mail" in {
+    "return a Right when successfully sending the e-mail" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      parent.send(actor, HtsUserScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
-      parent.expectMsg(Acknowledge("email@test.com"))
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
+      result shouldBe Right(())
     }
 
-    "send Acknowledge to parent even if didn't update the schedule" in {
+    "return a Right to parent even if didn't update the schedule" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val emptySchedule = userSchedule.copy(daysToReceive = Seq())
-      val message = HtsUserScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 1))
-      parent.send(actor, message)
-      parent.expectMsg(Acknowledge("email@test.com"))
+      val result = awaitEither(sender.sendScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 1)))
+      result shouldBe Right(())
     }
 
-    "not send Acknowledge if didn't update teh schedule" in {
+    "return a Left if didn't update the schedule" in {
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(false)
-      val message = HtsUserScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1))
-      parent.send(actor, message)
-      parent.expectNoMessage()
+      val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
+      result.pipe(getLeft).getMessage shouldEqual "Failed to update nextSendDate for the User: AE123456D"
     }
   }
 }

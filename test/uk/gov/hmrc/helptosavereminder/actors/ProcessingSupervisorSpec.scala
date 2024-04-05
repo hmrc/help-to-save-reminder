@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.pattern.ask
 import akka.testkit._
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
 import org.mockito.Mockito.when
+import org.mockito.VerifyMacro.Once
 import org.scalatest.concurrent.Eventually.eventually
 import play.api.test.Helpers.await
 import uk.gov.hmrc.domain.Nino
@@ -88,12 +89,11 @@ class ProcessingSupervisorSpec
       val reminderRepository = mock[HtsReminderMongoRepository]
       val actor =
         system.actorOf(Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
-          override lazy val emailSenderActor: ActorRef = context.actorOf(
-            Props(new EmailSenderActor(servicesConfig, repository, emailConnector)(ec, appConfig) {
+          override lazy val emailSenderActor: EmailSenderActor = {
+            new EmailSenderActor(servicesConfig, repository, emailConnector)(ec, appConfig) {
               override val randomCallbackRef: () => String = () => "my-ref"
-            }),
-            "emailSender-actor"
-          )
+            }
+          }
           override lazy val repository: HtsReminderMongoRepository = reminderRepository
           override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
           when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
@@ -129,15 +129,16 @@ class ProcessingSupervisorSpec
       }
     }
 
-    "send the correct request to the EmailSender actor" in {
+    "send e-mail through EmailSender" in {
       val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
       val lockRepo = mock[MongoLockRepository]
       val mockRepository = mock[HtsReminderMongoRepository]
-      val emailSenderActorProbe = TestProbe()
+      val emailSender = mock[EmailSenderActor]
+      emailSender.sendScheduleMsg(*, *) returns Future.successful(Right(()))
       val processingSupervisor = TestActorRef(
         Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
-          override lazy val emailSenderActor: ActorRef = emailSenderActorProbe.ref
+          override lazy val emailSenderActor: EmailSenderActor = emailSender
           override lazy val repository: HtsReminderMongoRepository = mockRepository
           override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
           when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
@@ -146,13 +147,12 @@ class ProcessingSupervisorSpec
         })
       )
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
-      val mockObject = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate)
-      mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(mockObject.htsUserSchedule)))
+      val schedule = ReminderGenerator.nextReminder
+      mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
       processingSupervisor ! START
 
       eventually {
-        emailSenderActorProbe.expectMsg(mockObject)
-        emailSenderActorProbe.reply(SUCCESS)
+        emailSender.sendScheduleMsg(schedule, currentDate) wasCalled Once
       }
     }
   }

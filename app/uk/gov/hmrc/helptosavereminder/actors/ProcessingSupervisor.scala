@@ -36,6 +36,7 @@ import java.util.TimeZone
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{Duration, DurationInt}
+import scala.util.{Failure, Success}
 
 @Singleton
 class ProcessingSupervisor @Inject() (
@@ -47,12 +48,7 @@ class ProcessingSupervisor @Inject() (
     extends Actor with Logging {
 
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
-
-  lazy val emailSenderActor: ActorRef =
-    context.actorOf(
-      Props(classOf[EmailSenderActor], servicesConfig, repository, emailConnector, ec, appConfig),
-      "emailSender-actor"
-    )
+  lazy val emailSenderActor = new EmailSenderActor(servicesConfig, repository, emailConnector)
 
   private lazy val testOnlyActor: ActorRef =
     if (servicesConfig.getBoolean("testActorEnabled")) {
@@ -167,7 +163,10 @@ class ProcessingSupervisor @Inject() (
 
               for (request <- take) {
                 testOnlyActor ! Init(request.email)
-                emailSenderActor ! HtsUserScheduleMsg(request, currentDate)
+                emailSenderActor.sendScheduleMsg(request, currentDate).onComplete {
+                  case Failure(exception) => logger.error(s"Failed to send an e-mail to ${request.email}", exception)
+                  case Success(())        => self ! Acknowledge(request.email)
+                }
 
               }
 
