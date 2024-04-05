@@ -61,7 +61,7 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
     case SUCCESS => dateFinished = Some(DateTime.now())
     case FAILURE => dateFinished = Some(DateTime.now())
     case GET_STATS =>
-      sender ! Stats(
+      sender() ! Stats(
         emailsInFlight.toList,
         emailsComplete.toList,
         duplicates.toList,
@@ -104,6 +104,6 @@ class TestOnlyActor(repository: HtsReminderMongoRepository) extends Actor {
           } yield ()
         })
         .pipe(Future.sequence(_))
-        .pipeTo(sender)
+        .pipeTo(sender())
   }
 }

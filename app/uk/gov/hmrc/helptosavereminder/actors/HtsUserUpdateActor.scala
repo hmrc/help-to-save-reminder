@@ -44,7 +44,7 @@ class HtsUserUpdateActor(repository: HtsReminderMongoRepository)(implicit ec: Ex
     }
 
     case updateReminder: UpdateCallBackRef => {
-      val origSender = sender
+      val origSender = sender()
       repository
         .updateCallBackRef(updateReminder.reminder.htsUserSchedule.nino.value, updateReminder.callBackRefUrl)
         .map {

@@ -23,7 +23,6 @@ import play.api.libs.json.Json
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.helptosavereminder.audit.HTSAuditor
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
@@ -51,10 +50,8 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
   val mockHttp: HttpClient = mock[HttpClient]
   private lazy val mockRepository = mock[HtsReminderMongoRepository]
   private lazy val mockEmailConnector = mock[EmailConnector]
-  implicit val auditor: HTSAuditor = mock[HTSAuditor]
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-  lazy val controller =
-    new EmailCallbackController(serviceConfig, mcc, mockRepository, auditor, mockEmailConnector)
+  lazy val controller = new EmailCallbackController(serviceConfig, mcc, mockRepository, mockEmailConnector)
 
   val eventItem1: EventItem = EventItem("PermanentBounce", LocalDateTime.now())
   val eventItem2: EventItem = EventItem("Opened", LocalDateTime.now())

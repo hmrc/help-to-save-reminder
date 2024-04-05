@@ -16,22 +16,21 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import java.util.UUID
+import akka.actor._
 import com.google.inject.Inject
-
-import javax.inject.Singleton
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
-import uk.gov.hmrc.helptosavereminder.models.{HtsReminderTemplate, HtsUserScheduleMsg, SendTemplatedEmailRequest, UpdateCallBackRef, UpdateCallBackSuccess}
+import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.util.UUID
+import javax.inject.Singleton
 import scala.concurrent.{ExecutionContext, Future}
-import akka.actor._
 
 @Singleton
 class EmailSenderActor @Inject() (
@@ -41,7 +40,7 @@ class EmailSenderActor @Inject() (
 )(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
     extends Actor with Logging {
 
-  implicit lazy val hc = HeaderCarrier()
+  implicit lazy val hc: HeaderCarrier = HeaderCarrier()
   lazy val htsUserUpdateActor: ActorRef =
     context.actorOf(Props(classOf[HtsUserUpdateActor], repository, ec), "htsUserUpdate-actor")
 
@@ -49,11 +48,13 @@ class EmailSenderActor @Inject() (
   val nameParam = appConfig.nameParam
   val monthParam = appConfig.monthParam
 
+  val randomCallbackRef: () => String = () => EmailSenderActor.randomCallbackRef()
+
   override def receive: Receive = {
 
     case htsUserReminderMsg: HtsUserScheduleMsg => {
 
-      val callBackRef = UUID.randomUUID().toString
+      val callBackRef = randomCallbackRef()
       logger.info(s"New callBackRef $callBackRef")
       htsUserUpdateActor ! UpdateCallBackRef(htsUserReminderMsg, callBackRef)
 
@@ -129,4 +130,8 @@ class EmailSenderActor @Inject() (
       }
     }
   }
+}
+
+object EmailSenderActor {
+  def randomCallbackRef(): String = UUID.randomUUID().toString
 }
