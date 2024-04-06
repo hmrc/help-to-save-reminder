@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor.{Actor, ActorRef, Props}
-import akka.pattern.{ask, pipe}
+import akka.actor.Actor
 import akka.util.Timeout
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
@@ -50,12 +49,9 @@ class ProcessingSupervisor @Inject() (
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
   lazy val emailSenderActor = new EmailSenderActor(servicesConfig, repository, emailConnector)
 
-  private lazy val testOnlyActor: ActorRef =
-    if (servicesConfig.getBoolean("testActorEnabled")) {
-      context.actorOf(Props(classOf[TestOnlyActor], repository), "test-only-actor")
-    } else {
-      context.actorOf(Props(classOf[EmptyActor]), "test-only-actor")
-    }
+  private lazy val testOnlyActor: StatCollector =
+    if (servicesConfig.getBoolean("testActorEnabled")) new TestOnlyActor(repository)
+    else new EmptyActor
 
   lazy val userScheduleCronExpression: String = appConfig.userScheduleCronExpression.replace('|', ' ')
 
@@ -86,7 +82,7 @@ class ProcessingSupervisor @Inject() (
       }
 
     case START => {
-      testOnlyActor ! CLEAR
+      testOnlyActor.clear()
 
       logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
 
@@ -103,7 +99,7 @@ class ProcessingSupervisor @Inject() (
               logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
 
               for (request <- take) {
-                testOnlyActor ! Init(request.email)
+                testOnlyActor.init(request.email)
                 emailSenderActor.sendScheduleMsg(request, currentDate).onComplete {
                   case Failure(exception) => logger.error(s"Failed to send an e-mail to ${request.email}", exception)
                   case Success(())        => self ! Acknowledge(request.email)
@@ -121,11 +117,11 @@ class ProcessingSupervisor @Inject() (
           case Some(thing) => {
 
             logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-            testOnlyActor ! SUCCESS
+            testOnlyActor.signalSuccess()
           }
           case _ => {
             logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
-            testOnlyActor ! FAILURE
+            testOnlyActor.signalFailure()
           }
         }
 
@@ -133,11 +129,9 @@ class ProcessingSupervisor @Inject() (
 
     }
 
-    case Acknowledge(email) => testOnlyActor ! Acknowledge(email)
-    case GET_STATS =>
-      implicit val timeout: Timeout = Timeout(5.seconds)
-      testOnlyActor ? GET_STATS pipeTo sender()
-    case SendEmails(emails) => testOnlyActor ! SendEmails(emails)
+    case Acknowledge(email) => testOnlyActor.acknowledge(email)
+    case GET_STATS          => sender() ! testOnlyActor.stats
+    case SendEmails(emails) => testOnlyActor.generateRecipients(emails)
   }
 
 }

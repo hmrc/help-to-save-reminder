@@ -16,11 +16,18 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor.Actor
+import uk.gov.hmrc.helptosavereminder.models.Stats
+
+import scala.concurrent.{ExecutionContext, Future}
 
 // Actor for swallowing all messages
-class EmptyActor extends Actor {
-  override def receive: Receive = {
-    case _ => ()
-  }
+class EmptyActor extends StatCollector {
+  def clear(): Unit = {}
+  def init(email: String): Unit = {}
+  def acknowledge(email: String): Unit = {}
+  def signalSuccess(): Unit = {}
+  def signalFailure(): Unit = {}
+  def stats: Stats = throw new Exception("Statistics disabled")
+  def generateRecipients(emails: List[String])(implicit ec: ExecutionContext): Future[Unit] =
+    Future.failed(new RuntimeException("Can't generate test e-mails"))
 }
