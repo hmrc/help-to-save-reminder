@@ -14,17 +14,20 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.helptosavereminder.actors
+package uk.gov.hmrc.helptosavereminder.services
 
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
 import org.scalatest.BeforeAndAfterEach
+import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models._
+import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
+import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
+import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.LocalDate
@@ -33,8 +36,7 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.util.chaining.scalaUtilChainingOps
 
-class emailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with IdiomaticMockito {
-
+class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with IdiomaticMockito {
   private val userSchedule: HtsUserSchedule =
     HtsUserSchedule(
       Nino("AE123456D"),
@@ -151,6 +153,71 @@ class emailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(false)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
       result.pipe(getLeft).getMessage shouldEqual "Failed to update nextSendDate for the User: AE123456D"
+    }
+  }
+
+  "sendWithStats" must {
+    "not do anything if couldn't update callback ref" in {
+      val emailConnector = mock[EmailConnector]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
+      val reminderRepository = mock[HtsReminderMongoRepository]
+      val emailSenderService = new EmailSenderService(servicesConfig, reminderRepository, emailConnector, lockRepo)
+      val schedule = ReminderGenerator.nextReminder
+      reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
+      reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
+      val stats = await(emailSenderService.sendWithStats()).get
+      emailConnector.sendEmail(*, *)(*, *) wasNever called
+      reminderRepository.updateNextSendDate(*, *) wasNever called
+      stats.emailsInFlight shouldBe List(schedule.email)
+      stats.dateFinished shouldNot equal(null)
+      stats.dateAcknowledged shouldBe null
+    }
+
+    "send a request to the e-mail service and update next send date" in {
+      val mongoApi = app.injector.instanceOf[MongoComponent]
+      val emailConnector = mock[EmailConnector]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
+      val reminderRepository = mock[HtsReminderMongoRepository]
+      val emailSenderService = new EmailSenderService(servicesConfig, reminderRepository, emailConnector, lockRepo) {
+        override val randomCallbackRef: () => String = () => "my-ref"
+      }
+      reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
+      reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
+      val stats = await(emailSenderService.sendWithStats()).get
+      val url = servicesConfig.baseUrl("email") + "/hmrc/email"
+      val monthName = LocalDate.now.getMonth.toString.toLowerCase.capitalize
+
+      val emailServiceRequest = SendTemplatedEmailRequest(
+        to = List("email@test.com"),
+        templateId = "hts_reminder_email",
+        parameters = Map("name" -> "Luke Bishop", "month" -> monthName),
+        force = true,
+        eventUrl = servicesConfig.baseUrl("help-to-save-reminder") + "/help-to-save-reminder/bouncedEmail/my-ref"
+      )
+      emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
+      val nextSendDate = DateTimeFunctions.getNextSendDate(userSchedule.daysToReceive, LocalDate.now).get
+      reminderRepository.updateNextSendDate("AE123456D", nextSendDate) was called
+
+      stats.emailsInFlight shouldBe List()
+      stats.duplicates shouldBe List()
+      stats.emailsComplete shouldBe List("email@test.com")
+      stats.dateFinished shouldNot equal(null)
+      stats.dateAcknowledged shouldNot equal(null)
+    }
+
+    "send e-mail through EmailSender" in {
+      val emailConnector = mock[EmailConnector]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
+      val mockRepository = mock[HtsReminderMongoRepository]
+      val emailSenderService = new EmailSenderService(servicesConfig, mockRepository, emailConnector, lockRepo) {
+        override def sendScheduleMsg(reminder: HtsUserSchedule, currentDate: LocalDate): Future[Unit] =
+          Future.successful(())
+      }
+      val schedule = ReminderGenerator.nextReminder
+      mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
+      await(emailSenderService.sendWithStats()).get
     }
   }
 }
