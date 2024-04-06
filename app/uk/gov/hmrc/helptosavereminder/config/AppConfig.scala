@@ -31,8 +31,6 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
 
   val monthParam: String = config.get[String]("microservice.services.email.monthParam")
 
-  val isUserScheduleEnabled: Boolean = config.getOptional[Boolean](s"isUserScheduleEnabled").getOrElse(false)
-
   val userScheduleCronExpression: String = config.getOptional[String](s"userScheduleCronExpression").getOrElse("")
 
   val defaultRepoLockPeriod: Int = 55

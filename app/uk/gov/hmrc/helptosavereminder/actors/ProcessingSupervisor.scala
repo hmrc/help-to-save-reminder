@@ -57,8 +57,6 @@ class ProcessingSupervisor @Inject() (
       context.actorOf(Props(classOf[EmptyActor]), "test-only-actor")
     }
 
-  lazy val isUserScheduleEnabled: Boolean = appConfig.isUserScheduleEnabled
-
   lazy val userScheduleCronExpression: String = appConfig.userScheduleCronExpression.replace('|', ' ')
 
   val defaultRepoLockPeriod: Int = appConfig.defaultRepoLockPeriod
@@ -74,7 +72,7 @@ class ProcessingSupervisor @Inject() (
   override def receive: Receive = {
 
     case BOOTSTRAP =>
-      if (isUserScheduleEnabled && CronExpression.isValidExpression(userScheduleCronExpression)) {
+      if (CronExpression.isValidExpression(userScheduleCronExpression)) {
         val scheduler = QuartzSchedulerExtension(context.system)
         scheduler
           .createSchedule(
