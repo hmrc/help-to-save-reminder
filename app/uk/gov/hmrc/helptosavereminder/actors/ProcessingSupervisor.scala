@@ -25,7 +25,7 @@ import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.helptosavereminder.models.{HtsUserScheduleMsg, SendEmails}
+import uk.gov.hmrc.helptosavereminder.models.SendEmails
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.{MongoLockRepository, TimePeriodLockService}
@@ -73,76 +73,19 @@ class ProcessingSupervisor @Inject() (
 
   override def receive: Receive = {
 
-    case BOOTSTRAP => {
-
-      logger.info("[ProcessingSupervisor] BOOTSTRAP UserSchedule Quartz Scheduler processing started")
-
-      val scheduler = QuartzSchedulerExtension(context.system)
-      val isExpressionValid = CronExpression.isValidExpression(userScheduleCronExpression)
-
-      repository.collection.find().toFuture().map {
-        case requests if requests.nonEmpty => {
-          val nextScheduledDates = requests.map(request => request.nextSendDate).toSet
-          val daysToRecieve = requests.map(request => request.daysToReceive).toSet
-          val emailDuplicateOccurrencesSet =
-            requests.groupBy(_.email).view.mapValues(_.size).groupBy(_._2).view.mapValues(_.size)
-
-          logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.size} requests")
-          logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.map(request => request.email).toSet.size} unique emails"
+    case BOOTSTRAP =>
+      if (isUserScheduleEnabled && CronExpression.isValidExpression(userScheduleCronExpression)) {
+        val scheduler = QuartzSchedulerExtension(context.system)
+        scheduler
+          .createSchedule(
+            "UserScheduleJob",
+            Some("For sending reminder emails to the users"),
+            userScheduleCronExpression,
+            timezone = TimeZone.getTimeZone("Europe/London")
           )
-
-          logger.info(
-            s"[ProcessingSupervisor][BOOTSTRAP] found ${emailDuplicateOccurrencesSet.mkString(", ")} emailsOccurrences[Duplicates ,Occurrences]"
-          )
-
-          logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${nextScheduledDates.mkString(", ")} [nextSendDates]")
-          nextScheduledDates.foreach(
-            date =>
-              logger.info(
-                s"[ProcessingSupervisor][BOOTSTRAP] found ${requests.count(request => request.nextSendDate == date)} [nextSendDate : $date]"
-              )
-          )
-
-          logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${daysToRecieve.mkString(", ")} [daysToReceive]")
-          daysToRecieve.foreach(
-            days =>
-              logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found ${requests
-                .count(usr => usr.daysToReceive == days)} Set to ${days.mkString(", ")}")
-          )
-        }
-
-        case _ => {
-          logger.info(s"[ProcessingSupervisor][BOOTSTRAP] found no requests found")
-        }
+        scheduler.schedule("UserScheduleJob", self, START)
+        logger.info(s"[ProcessingSupervisor] Scheduler started")
       }
-
-      (isUserScheduleEnabled, isExpressionValid) match {
-        case (true, true) =>
-          logger.info(
-            s"[ProcessingSupervisor] BOOTSTRAP is scheduled with userScheduleCronExpression = $userScheduleCronExpression"
-          )
-          scheduler
-            .createSchedule(
-              "UserScheduleJob",
-              Some("For sending reminder emails to the users"),
-              userScheduleCronExpression,
-              timezone = TimeZone.getTimeZone("Europe/London")
-            )
-          scheduler.schedule("UserScheduleJob", self, START)
-
-        case (_, false) =>
-          logger.warn(
-            s"UserScheduleJob cannot be Scheduled due to invalid cronExpression supplied in configuration : $userScheduleCronExpression"
-          )
-
-        case _ =>
-          logger.warn(
-            s"UserScheduleJob cannot be Scheduled. Please check configuration parameters: " +
-              s"userScheduleCronExpression = $userScheduleCronExpression and isUserScheduleEnabled = $isUserScheduleEnabled"
-          )
-      }
-    }
 
     case START => {
       testOnlyActor ! CLEAR
