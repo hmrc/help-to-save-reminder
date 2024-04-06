@@ -38,8 +38,8 @@ class EmailConnector @Inject() (http: HttpClient) extends Logging {
     http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec) map { response =>
       response.status match {
         case ACCEPTED =>
-          logger.debug(s"[EmailSenderActor] Email sent: ${response.body}"); true
-        case _ => logger.error(s"[EmailSenderActor] Email not sent: ${response.status}"); false
+          logger.debug(s"[emailSenderService] Email sent: ${response.body}"); true
+        case _ => logger.error(s"[emailSenderService] Email not sent: ${response.status}"); false
       }
     }
 
@@ -49,7 +49,7 @@ class EmailConnector @Inject() (http: HttpClient) extends Logging {
         case x if x === OK || x === ACCEPTED =>
           logger.debug(s"Email is successfully unblocked: ${response.body}"); true
         case _ =>
-          logger.warn(s"[EmailSenderActor] Email not unblocked: ${response.status}"); false
+          logger.warn(s"[emailSenderService] Email not unblocked: ${response.status}"); false
       }
     }
 }

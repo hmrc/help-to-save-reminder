@@ -18,7 +18,7 @@ package uk.gov.hmrc.helptosavereminder.config
 
 import akka.actor.ActorSystem
 import play.api.Logging
-import uk.gov.hmrc.helptosavereminder.actors.EmailSenderActor
+import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
@@ -26,10 +26,12 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class Scheduler @Inject() (
   actorSystem: ActorSystem,
-  emailSenderActor: EmailSenderActor,
+  emailSenderService: EmailSenderService,
   appconfig: AppConfig
 )(implicit val ec: ExecutionContext)
     extends Logging {
   lazy val cronExpression: String = appconfig.userScheduleCronExpression.replace('|', ' ')
-  actorSystem.actorOf(uk.gov.hmrc.helptosavereminder.actors.Scheduler.props(cronExpression, emailSenderActor.sendBatch))
+  actorSystem.actorOf(
+    uk.gov.hmrc.helptosavereminder.actors.Scheduler.props(cronExpression, emailSenderService.sendBatch)
+  )
 }

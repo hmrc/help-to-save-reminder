@@ -18,9 +18,9 @@ package uk.gov.hmrc.helptosavereminder.controllers.test
 
 import play.api.libs.json.Json
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.helptosavereminder.actors.{EmailSenderActor, TestOnlyActor}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.helptosavereminder.services.test.TestService
+import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
+import uk.gov.hmrc.helptosavereminder.services.test.{TestService}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
@@ -34,9 +34,8 @@ class TestController @Inject() (
   testService: TestService,
   repository: HtsReminderMongoRepository,
   cc: ControllerComponents,
-  emailSenderActor: EmailSenderActor,
-  servicesConfig: ServicesConfig,
-  testOnlyActor: TestOnlyActor
+  emailSenderService: EmailSenderService,
+  servicesConfig: ServicesConfig
 )(implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 
@@ -66,7 +65,7 @@ class TestController @Inject() (
 
   def spam(): Action[AnyContent] = Action.async {
     for {
-      maybeStats <- emailSenderActor.sendWithStats()
+      maybeStats <- emailSenderService.sendWithStats()
     } yield maybeStats match {
       case Some(stats) => Ok(Json.toJson(stats))
       case None        => BadRequest("Mongo is locked")
@@ -75,8 +74,8 @@ class TestController @Inject() (
 
   def spamSpecific(): Action[List[String]] = Action.async(parse.json[List[String]]) { request =>
     for {
-      _          <- testOnlyActor.generateRecipients(request.body)
-      maybeStats <- emailSenderActor.sendWithStats()
+      _          <- testService.generateRecipients(request.body)
+      maybeStats <- emailSenderService.sendWithStats()
     } yield maybeStats match {
       case Some(stats) => Ok(Json.toJson(stats))
       case None        => BadRequest("Mongo is locked")
@@ -86,8 +85,8 @@ class TestController @Inject() (
   def spamRandom(amount: Int): Action[AnyContent] = Action.async {
     val emails = (1 to amount).map(x => s"$x@test.com").toList
     for {
-      _          <- testOnlyActor.generateRecipients(emails)
-      maybeStats <- emailSenderActor.sendWithStats()
+      _          <- testService.generateRecipients(emails)
+      maybeStats <- emailSenderService.sendWithStats()
     } yield maybeStats match {
       case Some(stats) => Ok(Json.toJson(stats))
       case None        => BadRequest("Mongo is locked")

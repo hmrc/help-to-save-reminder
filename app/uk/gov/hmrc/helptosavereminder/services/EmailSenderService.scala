@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.helptosavereminder.actors
+package uk.gov.hmrc.helptosavereminder.services
 
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
@@ -34,7 +34,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.chaining.scalaUtilChainingOps
 
 @Singleton
-class EmailSenderActor @Inject() (
+class EmailSenderService @Inject() (
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository,
   emailConnector: EmailConnector,
@@ -48,7 +48,7 @@ class EmailSenderActor @Inject() (
   private val nameParam = appConfig.nameParam
   private val monthParam = appConfig.monthParam
 
-  val randomCallbackRef: () => String = () => EmailSenderActor.randomCallbackRef()
+  val randomCallbackRef: () => String = () => EmailSenderService.randomCallbackRef()
 
   private def format(name: String) = name.toLowerCase.capitalize
   private def check(msg: => String)(future: Future[Boolean]) =
@@ -144,6 +144,6 @@ class EmailSenderActor @Inject() (
   }
 }
 
-object EmailSenderActor {
+object EmailSenderService {
   def randomCallbackRef(): String = UUID.randomUUID().toString
 }

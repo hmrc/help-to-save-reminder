@@ -27,11 +27,12 @@ import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, SendTemplatedEmailRequest}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
-import java.time.{LocalDate, ZoneId}
+import java.time.LocalDate
 import scala.concurrent.Future
 import scala.language.postfixOps
 
@@ -53,11 +54,11 @@ class ProcessingSupervisorSpec
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
-      val emailSenderActor = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector, lockRepo)
+      val emailSenderService = new EmailSenderService(servicesConfig, reminderRepository, emailConnector, lockRepo)
       val schedule = ReminderGenerator.nextReminder
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
-      val stats = await(emailSenderActor.sendWithStats()).get
+      val stats = await(emailSenderService.sendWithStats()).get
       emailConnector.sendEmail(*, *)(*, *) wasNever called
       reminderRepository.updateNextSendDate(*, *) wasNever called
       stats.emailsInFlight shouldBe List(schedule.email)
@@ -70,14 +71,14 @@ class ProcessingSupervisorSpec
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
-      val emailSenderActor = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector, lockRepo) {
+      val emailSenderService = new EmailSenderService(servicesConfig, reminderRepository, emailConnector, lockRepo) {
         override val randomCallbackRef: () => String = () => "my-ref"
       }
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      val stats = await(emailSenderActor.sendWithStats()).get
+      val stats = await(emailSenderService.sendWithStats()).get
       val url = servicesConfig.baseUrl("email") + "/hmrc/email"
       val monthName = LocalDate.now.getMonth.toString.toLowerCase.capitalize
 
@@ -103,13 +104,13 @@ class ProcessingSupervisorSpec
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val mockRepository = mock[HtsReminderMongoRepository]
-      val emailSenderActor = new EmailSenderActor(servicesConfig, mockRepository, emailConnector, lockRepo) {
+      val emailSenderService = new EmailSenderService(servicesConfig, mockRepository, emailConnector, lockRepo) {
         override def sendScheduleMsg(reminder: HtsUserSchedule, currentDate: LocalDate): Future[Unit] =
           Future.successful(())
       }
       val schedule = ReminderGenerator.nextReminder
       mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
-      await(emailSenderActor.sendWithStats()).get
+      await(emailSenderService.sendWithStats()).get
     }
   }
 }
