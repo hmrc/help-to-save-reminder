@@ -16,29 +16,23 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor.{ActorSystem, Props}
-import akka.pattern.ask
+import akka.actor.ActorSystem
 import akka.testkit._
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
-import org.mockito.Mockito.when
-import org.mockito.VerifyMacro.Once
-import org.scalatest.concurrent.Eventually.eventually
 import play.api.test.Helpers.await
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
-import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, HtsUserScheduleMsg, SendTemplatedEmailRequest, Stats}
+import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, SendTemplatedEmailRequest}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.{LocalDate, ZoneId}
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 class ProcessingSupervisorSpec
@@ -56,26 +50,19 @@ class ProcessingSupervisorSpec
 
   "processing supervisor" must {
     "not do anything if couldn't update callback ref" in {
-      val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
-      val actor =
-        system.actorOf(Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
-          override lazy val repository: HtsReminderMongoRepository = reminderRepository
-        }))
-      val scheduleMsg = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate = LocalDate.now)
-      reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(scheduleMsg.htsUserSchedule)))
+      val emailSenderActor = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector, lockRepo)
+      val schedule = ReminderGenerator.nextReminder
+      reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
-      actor ! START
-      eventually {
-        emailConnector.sendEmail(*, *)(*, *) wasNever called
-        reminderRepository.updateNextSendDate(*, *) wasNever called
-        val stats = await(actor.ask(GET_STATS)).asInstanceOf[Stats]
-        stats.emailsInFlight shouldBe List(scheduleMsg.htsUserSchedule.email)
-        stats.dateFinished shouldNot equal(null)
-        stats.dateAcknowledged shouldBe null
-      }
+      val stats = await(emailSenderActor.sendWithStats()).get
+      emailConnector.sendEmail(*, *)(*, *) wasNever called
+      reminderRepository.updateNextSendDate(*, *) wasNever called
+      stats.emailsInFlight shouldBe List(schedule.email)
+      stats.dateFinished shouldNot equal(null)
+      stats.dateAcknowledged shouldBe null
     }
 
     "send a request to the e-mail service and update next send date" in {
@@ -83,20 +70,14 @@ class ProcessingSupervisorSpec
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
-      val actor =
-        system.actorOf(Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
-          override lazy val emailSenderActor: EmailSenderActor = {
-            new EmailSenderActor(servicesConfig, repository, emailConnector)(ec, appConfig) {
-              override val randomCallbackRef: () => String = () => "my-ref"
-            }
-          }
-          override lazy val repository: HtsReminderMongoRepository = reminderRepository
-        }))
+      val emailSenderActor = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector, lockRepo) {
+        override val randomCallbackRef: () => String = () => "my-ref"
+      }
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
       emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
-      actor ! START
+      val stats = await(emailSenderActor.sendWithStats()).get
       val url = servicesConfig.baseUrl("email") + "/hmrc/email"
       val monthName = LocalDate.now.getMonth.toString.toLowerCase.capitalize
 
@@ -107,41 +88,28 @@ class ProcessingSupervisorSpec
         force = true,
         eventUrl = servicesConfig.baseUrl("help-to-save-reminder") + "/help-to-save-reminder/bouncedEmail/my-ref"
       )
-      eventually {
-        emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
-        val nextSendDate = DateTimeFunctions.getNextSendDate(userSchedule.daysToReceive, LocalDate.now).get
-        reminderRepository.updateNextSendDate("AE123456D", nextSendDate) was called
+      emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
+      val nextSendDate = DateTimeFunctions.getNextSendDate(userSchedule.daysToReceive, LocalDate.now).get
+      reminderRepository.updateNextSendDate("AE123456D", nextSendDate) was called
 
-        val stats = await(actor.ask(GET_STATS)).asInstanceOf[Stats]
-        stats.emailsInFlight shouldBe List()
-        stats.duplicates shouldBe List()
-        stats.emailsComplete shouldBe List("email@test.com")
-        stats.dateFinished shouldNot equal(null)
-        stats.dateAcknowledged shouldNot equal(null)
-      }
+      stats.emailsInFlight shouldBe List()
+      stats.duplicates shouldBe List()
+      stats.emailsComplete shouldBe List("email@test.com")
+      stats.dateFinished shouldNot equal(null)
+      stats.dateAcknowledged shouldNot equal(null)
     }
 
     "send e-mail through EmailSender" in {
-      val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val mockRepository = mock[HtsReminderMongoRepository]
-      val emailSender = mock[EmailSenderActor]
-      emailSender.sendScheduleMsg(*, *) returns Future.successful(Right(()))
-      val processingSupervisor = TestActorRef(
-        Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
-          override lazy val emailSenderActor: EmailSenderActor = emailSender
-          override lazy val repository: HtsReminderMongoRepository = mockRepository
-        })
-      )
-      val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
+      val emailSenderActor = new EmailSenderActor(servicesConfig, mockRepository, emailConnector, lockRepo) {
+        override def sendScheduleMsg(reminder: HtsUserSchedule, currentDate: LocalDate): Future[Unit] =
+          Future.successful(())
+      }
       val schedule = ReminderGenerator.nextReminder
       mockRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
-      processingSupervisor ! START
-
-      eventually {
-        emailSender.sendScheduleMsg(schedule, currentDate) wasCalled Once
-      }
+      await(emailSenderActor.sendWithStats()).get
     }
   }
 }

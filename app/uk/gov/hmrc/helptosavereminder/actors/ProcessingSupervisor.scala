@@ -46,15 +46,13 @@ class ProcessingSupervisor @Inject() (
     extends Actor with Logging {
 
   lazy val repository = new HtsReminderMongoRepository(mongoApi)
-  lazy val emailSenderActor = new EmailSenderActor(servicesConfig, repository, emailConnector)
+  lazy val emailSenderActor = new EmailSenderActor(servicesConfig, repository, emailConnector, lockrepo)
 
   private lazy val testOnlyActor: StatCollector =
     if (servicesConfig.getBoolean("testActorEnabled")) new TestOnlyActor(repository)
     else new EmptyActor
 
   lazy val userScheduleCronExpression: String = appConfig.userScheduleCronExpression.replace('|', ' ')
-
-  val defaultRepoLockPeriod: Int = appConfig.defaultRepoLockPeriod
 
   lazy val repoLockPeriod: Int = appConfig.repoLockPeriod
 

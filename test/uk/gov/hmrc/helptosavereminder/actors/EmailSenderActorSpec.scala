@@ -28,6 +28,7 @@ import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.ActorUtils.Acknowledge
 import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.LocalDate
 import scala.concurrent.duration._
@@ -53,7 +54,8 @@ class EmailSenderActorSpec extends BaseSpec with BeforeAndAfterEach with Idiomat
     emailConnector = mock[EmailConnector]
     reminderRepository = mock[HtsReminderMongoRepository]
     reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
-    sender = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector) {
+    val lockrepo = mock[MongoLockRepository]
+    sender = new EmailSenderActor(servicesConfig, reminderRepository, emailConnector, lockrepo) {
       override val randomCallbackRef: () => String = () => "my-ref"
     }
   }

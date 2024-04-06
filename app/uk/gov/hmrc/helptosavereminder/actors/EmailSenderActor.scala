@@ -23,17 +23,22 @@ import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
-import java.time.LocalDate
+import java.time.{LocalDate, LocalDateTime, ZoneId}
 import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.chaining.scalaUtilChainingOps
 
-class EmailSenderActor(
+@Singleton
+class EmailSenderActor @Inject() (
   servicesConfig: ServicesConfig,
   repository: HtsReminderMongoRepository,
-  emailConnector: EmailConnector
+  emailConnector: EmailConnector,
+  lockrepo: MongoLockRepository
 )(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
     extends Logging {
 
@@ -85,6 +90,57 @@ class EmailSenderActor(
       callBackUrl
     )
     emailConnector.sendEmail(request, s"${servicesConfig.baseUrl("email")}/hmrc/email")
+  }
+
+  def sendBatch(): Future[Option[List[Either[String, String]]]] = {
+    val repoLockPeriod: Int = appConfig.repoLockPeriod
+    val scheduleTake: Int = appConfig.scheduleTake
+    val lockService = LockService(lockrepo, lockId = "emailProcessing", ttl = repoLockPeriod.seconds)
+    logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
+    val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
+    lockService withLock {
+      repository.findHtsUsersToProcess().flatMap {
+        case None | Some(Nil) =>
+          logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+          Future.successful(List())
+        case Some(requests) =>
+          val take = requests.take(scheduleTake)
+          logger
+            .info(s"[ProcessingSupervisor][receive] ${requests.size} found but only taking ${take.size} requests)")
+          take
+            .map { request =>
+              sendScheduleMsg(request, currentDate)
+                .map(_ => Right(request.email))
+                .recover { exception =>
+                  logger.error(s"Failed to send an e-mail to ${request.email}", exception)
+                  Left(request.email)
+                }
+            }
+            .pipe(Future.sequence(_))
+      }
+    } tap (_ map {
+      case Some(_) => logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
+      case _       => logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
+    })
+  }
+
+  def sendWithStats(): Future[Option[Stats]] = {
+    val started = LocalDateTime.now
+    for {
+      results <- sendBatch()
+    } yield {
+      val finished = LocalDateTime.now
+      results.map { emails =>
+        Stats(
+          emailsInFlight = emails.flatMap(_.swap.toOption),
+          emailsComplete = emails.flatMap(_.toOption),
+          duplicates = List(),
+          dateStarted = started.toString,
+          dateFinished = finished.toString,
+          dateAcknowledged = if (emails.forall(_.isRight)) finished.toString else null
+        )
+      }
+    }
   }
 }
 

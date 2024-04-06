@@ -16,13 +16,9 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers.test
 
-import akka.pattern.ask
-import akka.util.Timeout
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
-import uk.gov.hmrc.helptosavereminder.config.Scheduler
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils.{GET_STATS, START}
-import uk.gov.hmrc.helptosavereminder.models.{SendEmails, Stats}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import uk.gov.hmrc.helptosavereminder.actors.{EmailSenderActor, TestOnlyActor}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.services.test.TestService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -31,7 +27,6 @@ import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import javax.inject.{Inject, Singleton}
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
@@ -39,8 +34,9 @@ class TestController @Inject() (
   testService: TestService,
   repository: HtsReminderMongoRepository,
   cc: ControllerComponents,
-  scheduler: Scheduler,
-  servicesConfig: ServicesConfig
+  emailSenderActor: EmailSenderActor,
+  servicesConfig: ServicesConfig,
+  testOnlyActor: TestOnlyActor
 )(implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 
@@ -68,44 +64,33 @@ class TestController @Inject() (
     }
   }
 
-  private def ifTestActorEnabled(block: => Result): Result =
-    if (servicesConfig.getBoolean("testActorEnabled")) {
-      block
-    } else {
-      NotAcceptable("Test actor not enabled")
-    }
-
-  def spam(): Action[AnyContent] = Action {
-    ifTestActorEnabled {
-      scheduler.reminderSupervisor ! START
-      Ok("START message sent to the supervisor actor. Emails are being sent now!")
+  def spam(): Action[AnyContent] = Action.async {
+    for {
+      maybeStats <- emailSenderActor.sendWithStats()
+    } yield maybeStats match {
+      case Some(stats) => Ok(Json.toJson(stats))
+      case None        => BadRequest("Mongo is locked")
     }
   }
 
-  def spamSpecific(): Action[List[String]] = Action(parse.json[List[String]]) { request =>
-    ifTestActorEnabled {
-      scheduler.reminderSupervisor ! SendEmails(request.body)
-      Ok("START message sent to the supervisor actor. Emails are being sent now!")
+  def spamSpecific(): Action[List[String]] = Action.async(parse.json[List[String]]) { request =>
+    for {
+      _          <- testOnlyActor.generateRecipients(request.body)
+      maybeStats <- emailSenderActor.sendWithStats()
+    } yield maybeStats match {
+      case Some(stats) => Ok(Json.toJson(stats))
+      case None        => BadRequest("Mongo is locked")
     }
   }
 
-  def spamRandom(amount: Int): Action[AnyContent] = Action {
-    ifTestActorEnabled {
-      val emails = (1 to amount).map(x => s"$x@test.com").toList
-      scheduler.reminderSupervisor ! SendEmails(emails)
-      Ok("Emails are generated and being sent out.")
+  def spamRandom(amount: Int): Action[AnyContent] = Action.async {
+    val emails = (1 to amount).map(x => s"$x@test.com").toList
+    for {
+      _          <- testOnlyActor.generateRecipients(emails)
+      maybeStats <- emailSenderActor.sendWithStats()
+    } yield maybeStats match {
+      case Some(stats) => Ok(Json.toJson(stats))
+      case None        => BadRequest("Mongo is locked")
     }
   }
-
-  def spamStats(): Action[AnyContent] = Action.async {
-    if (servicesConfig.getBoolean("testActorEnabled")) {
-      implicit val timeout: Timeout = Timeout(5.seconds)
-      for {
-        result <- scheduler.reminderSupervisor ? GET_STATS
-      } yield Ok(Json.toJson(result.asInstanceOf[Stats]))
-    } else {
-      Future.successful(NotAcceptable("Test actor not enabled"))
-    }
-  }
-
 }
