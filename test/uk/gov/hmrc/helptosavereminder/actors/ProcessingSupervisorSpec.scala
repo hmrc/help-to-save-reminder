@@ -34,7 +34,7 @@ import uk.gov.hmrc.helptosavereminder.models.{HtsUserSchedule, HtsUserScheduleMs
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.lock.{MongoLockRepository, TimePeriodLockService}
+import uk.gov.hmrc.mongo.lock.{LockService, MongoLockRepository}
 
 import java.time.{LocalDate, ZoneId}
 import scala.concurrent.Future
@@ -58,21 +58,17 @@ class ProcessingSupervisorSpec
     "not do anything if couldn't update callback ref" in {
       val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
-      val lockRepo = mock[MongoLockRepository]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
       val actor =
         system.actorOf(Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
           override lazy val repository: HtsReminderMongoRepository = reminderRepository
-          override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
-          when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
-          }
         }))
       val scheduleMsg = HtsUserScheduleMsg(ReminderGenerator.nextReminder, currentDate = LocalDate.now)
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(scheduleMsg.htsUserSchedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
       actor ! START
-      within(1 second) {
+      eventually {
         emailConnector.sendEmail(*, *)(*, *) wasNever called
         reminderRepository.updateNextSendDate(*, *) wasNever called
         val stats = await(actor.ask(GET_STATS)).asInstanceOf[Stats]
@@ -85,7 +81,7 @@ class ProcessingSupervisorSpec
     "send a request to the e-mail service and update next send date" in {
       val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
-      val lockRepo = mock[MongoLockRepository]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
       val actor =
         system.actorOf(Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
@@ -95,10 +91,6 @@ class ProcessingSupervisorSpec
             }
           }
           override lazy val repository: HtsReminderMongoRepository = reminderRepository
-          override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
-          when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
-          }
         }))
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
@@ -132,7 +124,7 @@ class ProcessingSupervisorSpec
     "send e-mail through EmailSender" in {
       val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
-      val lockRepo = mock[MongoLockRepository]
+      val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val mockRepository = mock[HtsReminderMongoRepository]
       val emailSender = mock[EmailSenderActor]
       emailSender.sendScheduleMsg(*, *) returns Future.successful(Right(()))
@@ -140,10 +132,6 @@ class ProcessingSupervisorSpec
         Props(new ProcessingSupervisor(mongoApi, servicesConfig, emailConnector, lockRepo) {
           override lazy val emailSenderActor: EmailSenderActor = emailSender
           override lazy val repository: HtsReminderMongoRepository = mockRepository
-          override val lockKeeper: TimePeriodLockService = mock[TimePeriodLockService]
-          when(lockKeeper.withRenewedLock(*)(*)).thenAnswer { invocation =>
-            invocation.getArguments.head.asInstanceOf[Future[Unit]].map(_ => Some(()))
-          }
         })
       )
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
