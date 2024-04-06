@@ -17,7 +17,6 @@
 package uk.gov.hmrc.helptosavereminder.actors
 
 import akka.actor.Actor
-import akka.util.Timeout
 import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
 import play.api.Logging
@@ -34,7 +33,7 @@ import java.time.{LocalDate, ZoneId}
 import java.util.TimeZone
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{Duration, DurationInt}
+import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success}
 
 @Singleton
@@ -83,50 +82,34 @@ class ProcessingSupervisor @Inject() (
 
     case START => {
       testOnlyActor.clear()
-
       logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
-
       val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
-
       lockKeeper
         .withRenewedLock {
-
           repository.findHtsUsersToProcess().map {
-            case Some(requests) if requests.nonEmpty => {
-              logger.info(s"[ProcessingSupervisor][receive] took ${requests.size} requests)")
-
+            case None | Some(Nil) => logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+            case Some(requests) =>
               val take = requests.take(scheduleTake)
-              logger.info(s"[ProcessingSupervisor][receive] but only taking ${take.size} requests)")
-
+              logger
+                .info(s"[ProcessingSupervisor][receive] ${requests.size} found but only taking ${take.size} requests)")
               for (request <- take) {
                 testOnlyActor.init(request.email)
                 emailSenderActor.sendScheduleMsg(request, currentDate).onComplete {
                   case Failure(exception) => logger.error(s"Failed to send an e-mail to ${request.email}", exception)
                   case Success(())        => self ! Acknowledge(request.email)
                 }
-
               }
-
-            }
-            case _ => {
-              logger.info(s"[ProcessingSupervisor][receive] no requests pending")
-            }
           }
         }
         .map {
-          case Some(thing) => {
-
+          case Some(thing) =>
             logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
             testOnlyActor.signalSuccess()
-          }
-          case _ => {
+          case _ =>
             logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
             testOnlyActor.signalFailure()
-          }
         }
-
       logger.info("Exiting START message processor by ProcessingSupervisor")
-
     }
 
     case Acknowledge(email) => testOnlyActor.acknowledge(email)
