@@ -92,7 +92,7 @@ class EmailSenderService @Inject() (
       force = true,
       callBackUrl
     )
-    emailConnector.sendEmail(request, s"${servicesConfig.baseUrl("email")}/hmrc/email")
+    emailConnector.sendEmail(request)
   }
 
   def sendBatch(): Future[Option[List[Either[String, String]]]] = {

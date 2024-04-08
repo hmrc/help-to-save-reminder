@@ -65,8 +65,6 @@ class EmailCallbackController @Inject() (
                             case Some(htsUserSchedule) => Right(htsUserSchedule)
                           }
                         )
-      email = servicesConfig.baseUrl("email")
-      url = s"$email/hmrc/bounces/${htsUserSchedule.email}"
       _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
             logger.warn(
               s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
@@ -75,7 +73,7 @@ class EmailCallbackController @Inject() (
           })
       _ = logger.info(s"mail deleted from HtsReminder Repository for ${htsUserSchedule.nino.value}")
       _ = for {
-        wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
+        wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(htsUserSchedule.email))
       } yield
         if (wasUnblocked) {
           logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")

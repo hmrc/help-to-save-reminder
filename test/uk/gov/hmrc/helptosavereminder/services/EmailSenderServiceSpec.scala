@@ -27,13 +27,11 @@ import uk.gov.hmrc.helptosavereminder.models._
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions
-import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.lock.MongoLockRepository
 
 import java.time.LocalDate
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
-import scala.language.postfixOps
 import scala.util.chaining.scalaUtilChainingOps
 
 class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with IdiomaticMockito {
@@ -81,16 +79,15 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
       result.pipe(getLeft).getMessage shouldEqual "Failed to update CallbackRef for the User: AE123456D"
-      emailConnector.sendEmail(*, *)(*, *) wasNever called
+      emailConnector.sendEmail(*)(*, *) wasNever called
       reminderRepository.updateNextSendDate(*, *) wasNever called
     }
 
     "send a request to the e-mail service" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1)))
       result shouldBe Right(())
-      val url = servicesConfig.baseUrl("email") + "/hmrc/email"
       val emailServiceRequest = SendTemplatedEmailRequest(
         to = List("email@test.com"),
         templateId = "hts_reminder_email",
@@ -98,11 +95,11 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
         force = true,
         eventUrl = servicesConfig.baseUrl("help-to-save-reminder") + "/help-to-save-reminder/bouncedEmail/my-ref"
       )
-      emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
+      emailConnector.sendEmail(emailServiceRequest)(*, *) was called
     }
 
     "update reminder to 25th of next month if sent on 1st" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 1)))
       result shouldBe Right(())
@@ -110,7 +107,7 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
     }
 
     "update reminder to 1st of next month if sent on 25th" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, currentDate = LocalDate.of(2020, 1, 25)))
       result shouldBe Right(())
@@ -118,7 +115,7 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
     }
 
     "not update 'next send date' when the schedule is empty" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val emptySchedule = userSchedule.copy(daysToReceive = Seq())
       val result = awaitEither(sender.sendScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 25)))
@@ -127,21 +124,21 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
     }
 
     "not update 'next send date' if failed to send the e-mail" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(false)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(false)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 25)))
       result.pipe(getLeft).getMessage shouldEqual "Failed to send reminder for AE123456D my-ref"
       reminderRepository.updateNextSendDate(*, *) wasNever called
     }
 
     "return a Right when successfully sending the e-mail" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
       result shouldBe Right(())
     }
 
     "return a Right to parent even if didn't update the schedule" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val emptySchedule = userSchedule.copy(daysToReceive = Seq())
       val result = awaitEither(sender.sendScheduleMsg(emptySchedule, LocalDate.of(2020, 1, 1)))
@@ -149,7 +146,7 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
     }
 
     "return a Left if didn't update the schedule" in {
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(false)
       val result = awaitEither(sender.sendScheduleMsg(userSchedule, LocalDate.of(2020, 1, 1)))
       result.pipe(getLeft).getMessage shouldEqual "Failed to update nextSendDate for the User: AE123456D"
@@ -166,7 +163,7 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(schedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(false)
       val stats = await(emailSenderService.sendWithStats()).get
-      emailConnector.sendEmail(*, *)(*, *) wasNever called
+      emailConnector.sendEmail(*)(*, *) wasNever called
       reminderRepository.updateNextSendDate(*, *) wasNever called
       stats.emailsInFlight shouldBe List(schedule.email)
       stats.dateFinished shouldNot equal(null)
@@ -174,7 +171,6 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
     }
 
     "send a request to the e-mail service and update next send date" in {
-      val mongoApi = app.injector.instanceOf[MongoComponent]
       val emailConnector = mock[EmailConnector]
       val lockRepo = app.injector.instanceOf[MongoLockRepository]
       val reminderRepository = mock[HtsReminderMongoRepository]
@@ -183,10 +179,9 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
       }
       reminderRepository.findHtsUsersToProcess() returns Future.successful(Some(List(userSchedule)))
       reminderRepository.updateCallBackRef(*, *) returns Future.successful(true)
-      emailConnector.sendEmail(*, *)(*, *) returns Future.successful(true)
+      emailConnector.sendEmail(*)(*, *) returns Future.successful(true)
       reminderRepository.updateNextSendDate(*, *) returns Future.successful(true)
       val stats = await(emailSenderService.sendWithStats()).get
-      val url = servicesConfig.baseUrl("email") + "/hmrc/email"
       val monthName = LocalDate.now.getMonth.toString.toLowerCase.capitalize
 
       val emailServiceRequest = SendTemplatedEmailRequest(
@@ -196,7 +191,7 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Idiom
         force = true,
         eventUrl = servicesConfig.baseUrl("help-to-save-reminder") + "/help-to-save-reminder/bouncedEmail/my-ref"
       )
-      emailConnector.sendEmail(emailServiceRequest, url)(*, *) was called
+      emailConnector.sendEmail(emailServiceRequest)(*, *) was called
       val nextSendDate = DateTimeFunctions.getNextSendDate(userSchedule.daysToReceive, LocalDate.now).get
       reminderRepository.updateNextSendDate("AE123456D", nextSendDate) was called
 
