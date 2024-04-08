@@ -78,7 +78,7 @@ class EmailSenderService @Inject() (
             case Some(nextSendDate) =>
               repository.updateNextSendDate(reminder.nino.value, nextSendDate) pipe
                 check(s"Failed to update nextSendDate for the User: ${reminder.nino}")
-            case None => Future.successful()
+            case None => Future.successful(())
           }
     } yield ()
   }

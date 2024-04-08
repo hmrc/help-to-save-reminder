@@ -32,6 +32,6 @@ class Scheduler @Inject() (
     extends Logging {
   lazy val cronExpression: String = appconfig.userScheduleCronExpression.replace('|', ' ')
   actorSystem.actorOf(
-    uk.gov.hmrc.helptosavereminder.actors.Scheduler.props(cronExpression, emailSenderService.sendBatch)
+    uk.gov.hmrc.helptosavereminder.actors.Scheduler.props(cronExpression, () => emailSenderService.sendBatch())
   )
 }

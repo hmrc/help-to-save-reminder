@@ -18,7 +18,6 @@ package uk.gov.hmrc.helptosavereminder.connectors
 
 import org.mockito.IdiomaticMockito
 import org.mockito.ArgumentMatchersSugar.*
-import org.scalatest.BeforeAndAfterEach
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
 import uk.gov.hmrc.http.{HttpClient, HttpResponse}
