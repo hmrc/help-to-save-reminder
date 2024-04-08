@@ -106,16 +106,14 @@ class EmailSenderService @Inject() (
         case Some(requests) =>
           val take = requests.take(scheduleTake)
           logger.info(s"[EmailSenderService] ${requests.size} found but only taking ${take.size} requests)")
-          take
-            .map { request =>
-              sendScheduleMsg(request, currentDate)
-                .map(_ => Right(request.email))
-                .recover { exception =>
-                  logger.error(s"[EmailSenderService] Failed to send an e-mail to ${request.email}", exception)
-                  Left(request.email)
-                }
-            }
-            .pipe(Future.sequence(_))
+          take map { request =>
+            sendScheduleMsg(request, currentDate)
+              .map(_ => Right(request.email))
+              .recover { exception =>
+                logger.error(s"[EmailSenderService] Failed to send an e-mail to ${request.email}", exception)
+                Left(request.email)
+              }
+          } pipe (Future.sequence(_))
       }
     } tap (_ map {
       case Some(_) => logger.info(s"[EmailSenderService] OBTAINED mongo lock")
