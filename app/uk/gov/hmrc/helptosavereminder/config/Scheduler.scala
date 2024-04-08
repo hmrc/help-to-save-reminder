@@ -16,40 +16,22 @@
 
 package uk.gov.hmrc.helptosavereminder.config
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
+import play.api.Logging
+import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
 
 import javax.inject.{Inject, Singleton}
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import uk.gov.hmrc.http.HttpClient
-import play.api.{Configuration, Environment, Logging}
-import uk.gov.hmrc.helptosavereminder.actors.ProcessingSupervisor
-import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
-import uk.gov.hmrc.helptosavereminder.models.ActorUtils._
-import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.lock.MongoLockRepository
-
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class Scheduler @Inject() (
-  httpClient: HttpClient,
   actorSystem: ActorSystem,
-  env: Environment,
-  mongoApi: MongoComponent,
-  config: Configuration,
-  servicesConfig: ServicesConfig,
-  emailConnector: EmailConnector,
-  lockrepo: MongoLockRepository
-)(implicit val ec: ExecutionContext, appconfig: AppConfig)
+  emailSenderService: EmailSenderService,
+  appconfig: AppConfig
+)(implicit val ec: ExecutionContext)
     extends Logging {
-
-  lazy val reminderSupervisor = actorSystem.actorOf(
-    Props(classOf[ProcessingSupervisor], mongoApi, servicesConfig, emailConnector, lockrepo, ec, appconfig),
-    "reminder-supervisor"
+  lazy val cronExpression: String = appconfig.userScheduleCronExpression.replace('|', ' ')
+  actorSystem.actorOf(
+    uk.gov.hmrc.helptosavereminder.actors.Scheduler.props(cronExpression, () => emailSenderService.sendBatch())
   )
-
-  logger.debug("About to send a BootStrap message to the Supervisor")
-
-  reminderSupervisor ! BOOTSTRAP
-
 }

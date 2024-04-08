@@ -16,40 +16,35 @@
 
 package uk.gov.hmrc.helptosavereminder.connectors
 
-import cats.instances.int._
-import cats.syntax.eq._
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.Status.{ACCEPTED, OK}
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest.format
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class EmailConnector @Inject() (http: HttpClient) extends Logging {
+class EmailConnector @Inject() (http: HttpClient, servicesConfig: ServicesConfig) extends Logging {
+  val sendEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/email"
+  val unBlockEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/"
 
-  def sendEmail(
-    request: SendTemplatedEmailRequest,
-    url: String
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.POST(url, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec) map { response =>
-      response.status match {
-        case ACCEPTED =>
-          logger.debug(s"[EmailSenderActor] Email sent: ${response.body}"); true
-        case _ => logger.error(s"[EmailSenderActor] Email not sent: ${response.status}"); false
-      }
+  def sendEmail(request: SendTemplatedEmailRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
+    for {
+      response <- http.POST(sendEmailUrl, request, Seq("Content-Type" -> "application/json"))(format, readRaw, hc, ec)
+    } yield response.status match {
+      case ACCEPTED => true
+      case _        => logger.error(s"[EmailConnector] Email not sent: ${response.status}"); false
     }
 
-  def unBlockEmail(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.DELETE(url, Seq(("Content-Type", "application/json")))(readRaw, hc, ec) map { response =>
-      response.status match {
-        case x if x === OK || x === ACCEPTED =>
-          logger.debug(s"Email is successfully unblocked: ${response.body}"); true
-        case _ =>
-          logger.warn(s"[EmailSenderActor] Email not unblocked: ${response.status}"); false
-      }
+  def unBlockEmail(email: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
+    for {
+      response <- http.DELETE(s"$unBlockEmailUrl$email", Seq("Content-Type" -> "application/json"))(readRaw, hc, ec)
+    } yield response.status match {
+      case OK | ACCEPTED => true
+      case _             => logger.error(s"[EmailConnector] Email not unblocked: ${response.status}"); false
     }
 }
