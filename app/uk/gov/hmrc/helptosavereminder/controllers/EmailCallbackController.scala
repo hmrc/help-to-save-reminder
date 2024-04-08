@@ -45,7 +45,6 @@ class EmailCallbackController @Inject() (
       _ <- request.body.asJson.map(_.validate[EventsMap]) match {
             case Some(error: JsError) =>
               val errorString = error.prettyPrint()
-              logger.debug(s"Unable to parse Events List for CallBackRequest = $errorString")
               logger.warn(s"Unable to parse Events List for callBackReference = $callBackReference")
               EitherT.leftT[Future, Unit](BadRequest(s"Unable to parse Events List for CallBackRequest = $errorString"))
 
@@ -54,10 +53,6 @@ class EmailCallbackController @Inject() (
               EitherT.leftT[Future, Unit](BadRequest(s"No JSON body found in request"))
 
             case Some(JsSuccess(eventsMap, _)) if !eventsMap.events.exists(_.event === "PermanentBounce") =>
-              logger.debug(
-                s"CallBackRequest received for $callBackReference without PermanentBounce Event and " +
-                  s"eventsList received from Email Service = ${eventsMap.events}"
-              )
               EitherT.leftT[Future, Unit](Ok)
 
             case Some(_) =>
@@ -72,7 +67,6 @@ class EmailCallbackController @Inject() (
                         )
       email = servicesConfig.baseUrl("email")
       url = s"$email/hmrc/bounces/${htsUserSchedule.email}"
-      _ = logger.debug(s"The URL to request email deletion is $url")
       _ <- EitherT(repository.deleteHtsUserByCallBack(htsUserSchedule.nino.value, callBackReference)).leftMap(error => {
             logger.warn(
               s"Could not delete from HtsReminder Repository for NINO = ${htsUserSchedule.nino.value}, $error"
@@ -84,10 +78,8 @@ class EmailCallbackController @Inject() (
         wasUnblocked <- EitherT.liftF(emailConnector.unBlockEmail(url))
       } yield
         if (wasUnblocked) {
-          logger.debug(s"Email successfully unblocked for request : $url")
           logger.info(s"Email successfully unblocked for ${htsUserSchedule.nino.value}")
         } else {
-          logger.debug(s"A request to unblock for Email is returned with error for $url")
           logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
         }
     } yield Ok).fold(identity(_), identity(_))
