@@ -48,6 +48,9 @@ class EmailSenderService @Inject() (
   private val nameParam = appConfig.nameParam
   private val monthParam = appConfig.monthParam
 
+  private val repoLockPeriod: Int = appConfig.repoLockPeriod
+  private lazy val lockService = LockService(lockrepo, lockId = "emailProcessing", ttl = repoLockPeriod.seconds)
+
   val randomCallbackRef: () => String = () => EmailSenderService.randomCallbackRef()
 
   private def format(name: String) = name.toLowerCase.capitalize
@@ -93,9 +96,7 @@ class EmailSenderService @Inject() (
   }
 
   def sendBatch(): Future[Option[List[Either[String, String]]]] = {
-    val repoLockPeriod: Int = appConfig.repoLockPeriod
     val scheduleTake: Int = appConfig.scheduleTake
-    val lockService = LockService(lockrepo, lockId = "emailProcessing", ttl = repoLockPeriod.seconds)
     logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
     val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
     lockService withLock {
