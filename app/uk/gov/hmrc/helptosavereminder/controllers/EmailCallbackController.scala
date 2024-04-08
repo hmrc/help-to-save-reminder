@@ -82,6 +82,6 @@ class EmailCallbackController @Inject() (
         } else {
           logger.warn(s"Request to unblock email failed for ${htsUserSchedule.nino.value}")
         }
-    } yield Ok).fold(identity(_), identity(_))
+    } yield Ok).merge
   }
 }
