@@ -33,19 +33,18 @@ class EmailConnector @Inject() (http: HttpClient, servicesConfig: ServicesConfig
   val unBlockEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/"
 
   def sendEmail(request: SendTemplatedEmailRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.POST(sendEmailUrl, request, Seq(("Content-Type", "application/json")))(format, readRaw, hc, ec) map {
-      response =>
-        response.status match {
-          case ACCEPTED => true
-          case _        => logger.error(s"[EmailConnector] Email not sent: ${response.status}"); false
-        }
+    for {
+      response <- http.POST(sendEmailUrl, request, Seq("Content-Type" -> "application/json"))(format, readRaw, hc, ec)
+    } yield response.status match {
+      case ACCEPTED => true
+      case _        => logger.error(s"[EmailConnector] Email not sent: ${response.status}"); false
     }
 
   def unBlockEmail(email: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
-    http.DELETE(s"$unBlockEmailUrl$email", Seq(("Content-Type", "application/json")))(readRaw, hc, ec) map { response =>
-      response.status match {
-        case OK | ACCEPTED => true
-        case _             => logger.error(s"[EmailConnector] Email not unblocked: ${response.status}"); false
-      }
+    for {
+      response <- http.DELETE(s"$unBlockEmailUrl$email", Seq("Content-Type" -> "application/json"))(readRaw, hc, ec)
+    } yield response.status match {
+      case OK | ACCEPTED => true
+      case _             => logger.error(s"[EmailConnector] Email not unblocked: ${response.status}"); false
     }
 }
