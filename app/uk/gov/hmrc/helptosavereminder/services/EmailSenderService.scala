@@ -97,31 +97,29 @@ class EmailSenderService @Inject() (
 
   def sendBatch(): Future[Option[List[Either[String, String]]]] = {
     val scheduleTake: Int = appConfig.scheduleTake
-    logger.info(s"START message received by ProcessingSupervisor and forceLockReleaseAfter = $repoLockPeriod")
     val currentDate = LocalDate.now(ZoneId.of("Europe/London"))
     lockService withLock {
       repository.findHtsUsersToProcess().flatMap {
         case None | Some(Nil) =>
-          logger.info(s"[ProcessingSupervisor][receive] no requests pending")
+          logger.info(s"[EmailSenderService] no requests pending")
           Future.successful(List())
         case Some(requests) =>
           val take = requests.take(scheduleTake)
-          logger
-            .info(s"[ProcessingSupervisor][receive] ${requests.size} found but only taking ${take.size} requests)")
+          logger.info(s"[EmailSenderService] ${requests.size} found but only taking ${take.size} requests)")
           take
             .map { request =>
               sendScheduleMsg(request, currentDate)
                 .map(_ => Right(request.email))
                 .recover { exception =>
-                  logger.error(s"Failed to send an e-mail to ${request.email}", exception)
+                  logger.error(s"[EmailSenderService] Failed to send an e-mail to ${request.email}", exception)
                   Left(request.email)
                 }
             }
             .pipe(Future.sequence(_))
       }
     } tap (_ map {
-      case Some(_) => logger.info(s"[ProcessingSupervisor][receive] OBTAINED mongo lock")
-      case _       => logger.info(s"[ProcessingSupervisor][receive] failed to OBTAIN mongo lock.")
+      case Some(_) => logger.info(s"[EmailSenderService] OBTAINED mongo lock")
+      case _       => logger.info(s"[EmailSenderService] failed to OBTAIN mongo lock.")
     })
   }
 
