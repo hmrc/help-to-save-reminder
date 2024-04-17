@@ -7,11 +7,9 @@ lazy val microservice = {
     majorVersion := 0,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test()
   )
-  .settings(scalaVersion := "2.13.11")
+  .settings(scalaVersion := "2.13.12")
   .settings(PlayKeys.playDefaultPort := 7008)
   .settings(CodeCoverageSettings.settings *)
   .settings(scalafmtOnCompile := true)
   .settings(scalacOptions += "-Wconf:src=routes/.*:s")
 }
-
-libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
