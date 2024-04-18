@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import org.mockito.ArgumentMatchersSugar.*
 import org.mockito.IdiomaticMockito
 import play.api.libs.json.Json

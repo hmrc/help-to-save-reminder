@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.helptosavereminder.actors
 
-import akka.actor.{Actor, Props}
-import com.typesafe.akka.extension.quartz.QuartzSchedulerExtension
+import org.apache.pekko.actor.{Actor, Props}
+import org.apache.pekko.extension.quartz.QuartzSchedulerExtension
 import org.quartz.CronExpression
 
 import java.util.TimeZone

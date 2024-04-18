@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.config
 
-import akka.actor.ActorSystem
+import org.apache.pekko.actor.ActorSystem
 import play.api.Logging
 import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
 
