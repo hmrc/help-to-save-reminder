@@ -162,7 +162,7 @@ class HelpToSaveAuthSpec extends AuthSupport {
 
       "handling requests from other AuthProviders" must {
         "return a Forbidden" in {
-          for (cred <- List(VerifyPid(""), OneTimeLogin)) {
+          for (cred <- List(OneTimeLogin)) {
             mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(cred))
             val result = callAuth(None)(FakeRequest())
             result.futureValue.header.status shouldBe Status.FORBIDDEN

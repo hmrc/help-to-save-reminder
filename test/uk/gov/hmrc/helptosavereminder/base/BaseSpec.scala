@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.helptosavereminder.base
 
-import com.kenshoo.play.metrics.PlayModule
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
@@ -41,11 +40,9 @@ trait BaseSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite wi
       "org.apache.logging" -> "ERROR",
       "com.codahale"       -> "ERROR"
     )
-  private val bindModules: Seq[GuiceableModule] = Seq(new PlayModule)
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
     .configure(additionalConfiguration)
-    .bindings(bindModules: _*)
     .in(Mode.Test)
     .build()
 
