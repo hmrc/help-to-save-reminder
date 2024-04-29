@@ -33,7 +33,7 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
 
   val userScheduleCronExpression: String = config.getOptional[String](s"userScheduleCronExpression").getOrElse("")
 
-  val defaultRepoLockPeriod: Int = 55
+  val defaultRepoLockPeriod: Int = 120
 
   val repoLockPeriod: Int = config.getOptional[Int](s"mongodb.repoLockPeriod").getOrElse(defaultRepoLockPeriod)
 
