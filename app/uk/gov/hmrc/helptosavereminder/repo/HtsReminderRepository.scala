@@ -45,7 +45,6 @@ trait HtsReminderRepository {
   def deleteHtsUserByCallBack(nino: String, callBackUrlRef: String): Future[Either[String, Unit]]
   def updateEmail(nino: String, firstName: String, lastName: String, email: String): Future[Int]
   def updateEndDate(nino: String, nextSendDate: LocalDate): Future[Boolean]
-  def getDuplicateNinos: Future[Vector[(String, Int)]]
 }
 
 @Singleton
@@ -297,14 +296,4 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
   override def findByCallBackUrlRef(callBackUrlRef: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("callBackUrlRef", callBackUrlRef)).toFuture().map(_.headOption)
 
-  override def getDuplicateNinos: Future[Vector[(String, Int)]] =
-    collection
-      .find()
-      .toFuture()
-      .map(
-        _.groupBy(_.nino)
-          .map { case nino -> instances => nino.toString() -> instances.length }
-          .filter(_._2 > 1)
-          .toVector
-      )
 }
