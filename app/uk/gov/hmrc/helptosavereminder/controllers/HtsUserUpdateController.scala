@@ -121,6 +121,9 @@ class HtsUserUpdateController @Inject() (
       case None =>
         logger.warn("No JSON body found in request")
         Future.successful(BadRequest(s"No JSON body found in request"))
+
+      case _ => throw new Exception("Failed to update email")
+
     }
   }
 
