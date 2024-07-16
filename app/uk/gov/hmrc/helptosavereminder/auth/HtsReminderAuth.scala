@@ -28,6 +28,7 @@ import uk.gov.hmrc.auth.core.retrieve.{GGCredId, PAClientId, v2}
 import uk.gov.hmrc.helptosave.util.{NINO, toFuture}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import scala.annotation.nowarn
 import scala.concurrent.{ExecutionContext, Future}
 
 object HtsReminderAuth {
@@ -75,6 +76,7 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
       }
     }
 
+  @nowarn
   def ggOrPrivilegedAuthorisedWithNINO(
     nino: Option[String]
   )(action: HtsActionWithNINO)(implicit ec: ExecutionContext): Action[AnyContent] =
