@@ -16,16 +16,14 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
+import org.scalatest.time.{Millis, Seconds, Span}
 import play.api.http.Status
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
 import uk.gov.hmrc.auth.core.AuthorisationException.fromString
-import uk.gov.hmrc.auth.core.authorise.EmptyPredicate
-import uk.gov.hmrc.auth.core.retrieve._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{authProviderId => v2AuthProviderId, nino => v2Nino}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth
 import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
-import org.scalatest.time.{Millis, Seconds, Span}
 
 import scala.concurrent.Future
 
@@ -78,95 +76,6 @@ class HelpToSaveAuthSpec extends AuthSupport {
           mockAuthWith(error)
           val result = callAuth(FakeRequest())
           result.futureValue.header.status shouldBe expectedStatus
-        }
-      }
-    }
-
-    "handling ggOrPrivilegedAuthorised" must {
-      def callAuthNoRetrievals = htsAuth.ggOrPrivilegedAuthorised { _ =>
-        Future.successful(Ok("authSuccess"))
-      }
-
-      "return after successful auth" in {
-        mockAuth(GGAndPrivilegedProviders, EmptyRetrieval)(Right(()))
-
-        val result = callAuthNoRetrievals(FakeRequest())
-        result.futureValue.header.status shouldBe Status.OK
-      }
-    }
-
-    "handling ggOrPrivilegedAuthorisedWithNINO" when {
-      def callAuth(nino: Option[String]) = htsAuth.ggOrPrivilegedAuthorisedWithNINO(nino) { _ => _ =>
-        Future.successful(Ok("authSuccess"))
-      }
-
-      "handling GG requests" when {
-        val ggCredentials = GGCredId("")
-
-        "retrieve a NINO and return successfully if the given NINO and retrieved NINO match" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
-          mockAuth(EmptyPredicate, v2Nino)(Right(Some("nino")))
-
-          val result = callAuth(Some("nino"))(FakeRequest())
-          result.futureValue.header.status shouldBe Status.OK
-        }
-
-        "retrieve a NINO and return successfully if a NINO is not given and a NINO is successfully retrieved" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
-          mockAuth(EmptyPredicate, v2Nino)(Right(Some("nino")))
-
-          val result = callAuth(None)(FakeRequest())
-          result.futureValue.header.status shouldBe Status.OK
-        }
-
-        "retrieve a NINO and return a Forbidden if the given NINO and the retrieved NINO do not match" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
-          mockAuth(EmptyPredicate, v2Nino)(Right(Some("other-nino")))
-
-          val result = callAuth(Some("nino"))(FakeRequest())
-          result.futureValue.header.status shouldBe Status.FORBIDDEN
-        }
-
-        "return a Forbidden if a NINO could not be found and a NINO was given" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
-          mockAuth(EmptyPredicate, v2Nino)(Right(None))
-
-          val result = callAuth(Some("nino"))(FakeRequest())
-          result.futureValue.header.status shouldBe Status.FORBIDDEN
-        }
-
-        "return a Forbidden if a NINO could not be found and a NINO was not given" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(ggCredentials))
-          mockAuth(EmptyPredicate, v2Nino)(Right(None))
-
-          val result = callAuth(None)(FakeRequest())
-          result.futureValue.header.status shouldBe Status.FORBIDDEN
-        }
-      }
-
-      "handling PrivilegedApplication requests" must {
-        val privilegedCredentials = PAClientId("")
-
-        "return a BadRequest if no NINO is given" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(privilegedCredentials))
-          val result = callAuth(None)(FakeRequest())
-          result.futureValue.header.status shouldBe Status.BAD_REQUEST
-        }
-
-        "return successfully if a NINO is given" in {
-          mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(privilegedCredentials))
-          val result = callAuth(Some("nino"))(FakeRequest())
-          result.futureValue.header.status shouldBe Status.OK
-        }
-      }
-
-      "handling requests from other AuthProviders" must {
-        "return a Forbidden" in {
-          for (cred <- List(OneTimeLogin)) {
-            mockAuth(GGAndPrivilegedProviders, v2AuthProviderId)(Right(cred))
-            val result = callAuth(None)(FakeRequest())
-            result.futureValue.header.status shouldBe Status.FORBIDDEN
-          }
         }
       }
     }
