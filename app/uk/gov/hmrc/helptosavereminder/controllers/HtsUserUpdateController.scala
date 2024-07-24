@@ -100,7 +100,7 @@ class HtsUserUpdateController @Inject() (
 
   def updateEmail(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino =>
     request.body.asJson.map(_.validate[UpdateEmail]) match {
-      case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino === nino => {
+      case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino === nino =>
         logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino.value}")
         repository
           .updateEmail(userReminder.nino.value, userReminder.firstName, userReminder.lastName, userReminder.email)
@@ -109,9 +109,8 @@ class HtsUserUpdateController @Inject() (
             case NOT_MODIFIED => NotModified
             case _            => NotFound
           }
-      }
 
-      case Some(JsSuccess(userReminder, _)) if userReminder.nino.nino =!= nino => notAllowedThisNino
+      case Some(JsSuccess(userReminder, _)) => notAllowedThisNino
 
       case Some(error: JsError) =>
         val errorString = error.prettyPrint()
