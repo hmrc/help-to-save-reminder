@@ -17,31 +17,27 @@
 package uk.gov.hmrc.helptosavereminder.connectors
 
 import org.mockito.IdiomaticMockito
-import org.mockito.ArgumentMatchersSugar.*
+import play.api.http.Status.{ACCEPTED, BAD_REQUEST, MULTIPLE_CHOICES, OK}
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
-import uk.gov.hmrc.http.{HttpClient, HttpResponse}
+import uk.gov.hmrc.helptosavereminder.utils.WireMockMethods
+import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.mongo.test.MongoSupport
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-
-import scala.concurrent.Future
 
 class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockito {
 
-  val mockHttp: HttpClient = mock[HttpClient]
-
-  lazy val emailConnector = new EmailConnector(mockHttp, app.injector.instanceOf[ServicesConfig])
+  val headers: Map[String, String] = Map("Content-Type" -> "application/json")
+  lazy val emailConnector: EmailConnector = app.injector.instanceOf[EmailConnector]
 
   "The EmailConnector" should {
+
     "return true if it can successfully send the email and get 202 response" in {
       val sendTemplatedEmailRequest =
         SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
-      mockHttp
-        .POST[SendTemplatedEmailRequest, HttpResponse]("http://localhost:7002/hmrc/email", *, *)(*, *, *, *)
-        .returns(Future.successful(HttpResponse(202, "")))
-      val result = emailConnector.sendEmail(sendTemplatedEmailRequest)
+      when(POST, "/hmrc/email", headers = headers).thenReturn(ACCEPTED)
 
+      val result = emailConnector.sendEmail(sendTemplatedEmailRequest)
       result.futureValue shouldBe true
     }
 
@@ -49,35 +45,28 @@ class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockit
       val sendTemplatedEmailRequest =
         SendTemplatedEmailRequest(List("emaildid@address.com"), "templateId", Map.empty, force = false, "eventUrl")
 
-      mockHttp
-        .POST[SendTemplatedEmailRequest, HttpResponse]("http://localhost:7002/hmrc/email", *, *)(*, *, *, *)
-        .returns(Future.successful(HttpResponse(300, "")))
-      val result = emailConnector.sendEmail(sendTemplatedEmailRequest)
+      when(POST, "/hmrc/email", headers = headers).thenReturn(MULTIPLE_CHOICES)
 
+      val result = emailConnector.sendEmail(sendTemplatedEmailRequest)
       result.futureValue shouldBe false
     }
 
     "successfully unblock an email if submit is successful" in {
       val email = "email@test.com"
 
-      mockHttp
-        .DELETE[HttpResponse](s"http://localhost:7002/hmrc/bounces/$email", *)(*, *, *)
-        .returns(Future.successful(HttpResponse(200, "")))
-      val result = emailConnector.unBlockEmail(email)
+      when(DELETE, s"/hmrc/bounces/$email", headers = headers).thenReturn(OK)
 
+      val result = emailConnector.unBlockEmail(email)
       result.futureValue shouldBe true
     }
 
     "successfully return with failed future if submit is not-successful" in {
       val email = "email@test.com"
 
-      mockHttp
-        .DELETE[HttpResponse](s"http://localhost:7002/hmrc/bounces/$email", *)(*, *, *)
-        .returns(Future.successful(HttpResponse(400, "")))
-      val result = emailConnector.unBlockEmail(email)
+      when(DELETE, s"/hmrc/bounces/$email", headers = headers).thenReturn(BAD_REQUEST)
 
+      val result = emailConnector.unBlockEmail(email)
       result.futureValue shouldBe false
     }
   }
-
 }

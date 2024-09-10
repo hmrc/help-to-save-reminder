@@ -28,7 +28,7 @@ import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.test.ReminderGenerator
 import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.http.{HttpClient, HttpResponse}
+import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.MongoSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -47,7 +47,6 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
 
   private val serviceConfig = new ServicesConfig(configuration)
 
-  val mockHttp: HttpClient = mock[HttpClient]
   private lazy val mockRepository = mock[HtsReminderMongoRepository]
   private lazy val mockEmailConnector = mock[EmailConnector]
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
@@ -67,7 +66,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
       "respond with a 200 when all is good" in {
         val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))
         val callBackUrlRef = UUID.randomUUID().toString
-        val htsReminderUser = (ReminderGenerator.nextReminder)
+        val htsReminderUser = ReminderGenerator.nextReminder
           .copy(nino = Nino("AE345678D"), callBackUrlRef = callBackUrlRef)
         val result1: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(htsReminderUser)
 
@@ -141,9 +140,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
     mockRepository
       .deleteHtsUserByCallBack(*, *)
       .returns(Future.successful(Left("Error deleting")))
-    mockHttp
-      .DELETE[HttpResponse](*, *)(*, *, *)
-      .returns(Future.failed(new Exception("Exception failure")))
+
     val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
     result.futureValue.header.status shouldBe 200
   }

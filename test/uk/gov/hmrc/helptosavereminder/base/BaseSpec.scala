@@ -21,24 +21,31 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.ControllerComponents
 import play.api.{Application, Configuration, Mode}
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
+import uk.gov.hmrc.helptosavereminder.utils.WireMockMethods
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.ExecutionContext
 
-trait BaseSpec extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with BeforeAndAfterAll with ScalaFutures {
+trait BaseSpec
+    extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with BeforeAndAfterAll with ScalaFutures
+    with WireMockSupport with WireMockMethods {
 
   def additionalConfiguration: Map[String, String] =
     Map(
-      "logger.application" -> "ERROR",
-      "logger.play"        -> "ERROR",
-      "logger.root"        -> "ERROR",
-      "org.apache.logging" -> "ERROR",
-      "com.codahale"       -> "ERROR"
+      "logger.application"               -> "ERROR",
+      "logger.play"                      -> "ERROR",
+      "logger.root"                      -> "ERROR",
+      "org.apache.logging"               -> "ERROR",
+      "com.codahale"                     -> "ERROR",
+      "metrics.jvm"                      -> "false",
+      "microservice.services.email.host" -> s"$wireMockHost",
+      "microservice.services.email.port" -> s"$wireMockPort"
     )
 
   implicit override lazy val app: Application = new GuiceApplicationBuilder()
