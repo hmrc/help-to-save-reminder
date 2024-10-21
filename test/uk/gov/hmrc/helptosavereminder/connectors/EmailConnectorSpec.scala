@@ -20,8 +20,6 @@ import org.mockito.IdiomaticMockito
 import play.api.http.Status.{ACCEPTED, BAD_REQUEST, MULTIPLE_CHOICES, OK}
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
-import uk.gov.hmrc.helptosavereminder.utils.WireMockMethods
-import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.mongo.test.MongoSupport
 
 class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockito {
