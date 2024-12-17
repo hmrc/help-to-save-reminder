@@ -22,6 +22,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model._
 import play.api.Logging
 import play.api.http.Status._
+import uk.gov.hmrc.helptosavereminder.config.AppConfig
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import uk.gov.hmrc.mongo.MongoComponent
@@ -29,6 +30,7 @@ import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, ZoneId}
+import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -48,8 +50,9 @@ trait HtsReminderRepository {
 }
 
 @Singleton
-class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val ec: ExecutionContext)
-    extends PlayMongoRepository[HtsUserSchedule](
+class HtsReminderMongoRepository @Inject() (mongo: MongoComponent, appConfig: AppConfig)(
+  implicit val ec: ExecutionContext
+) extends PlayMongoRepository[HtsUserSchedule](
       mongoComponent = mongo,
       collectionName = "help-to-save-reminder",
       domainFormat = HtsUserSchedule.htsUserFormat,
@@ -59,14 +62,17 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           IndexOptions()
             .name("nino")
             .background(true)
+            .expireAfter(appConfig.ttlHelpToSaveReminder, TimeUnit.HOURS)
         ),
         IndexModel(
           ascending("callBackUrlRef"),
           IndexOptions()
             .name("callBackUrlRef")
             .background(true)
+            .expireAfter(appConfig.ttlHelpToSaveReminder, TimeUnit.HOURS)
         )
-      )
+      ),
+      replaceIndexes = true
     ) with HtsReminderRepository with Logging {
 
   override def findHtsUsersToProcess(): Future[Option[List[HtsUserSchedule]]] = {

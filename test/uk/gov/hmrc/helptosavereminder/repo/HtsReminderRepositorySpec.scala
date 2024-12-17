@@ -34,7 +34,7 @@ class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAn
 
   implicit val mongo: MongoComponent = mongoComponent
 
-  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo, appConfig)
   override def afterAll(): Unit = {
     dropDatabase()
     super.beforeAll()

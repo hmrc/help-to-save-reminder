@@ -40,7 +40,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
 
   implicit val mongo: MongoComponent = mongoComponent
 
-  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
+  val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo, appConfig)
 
   implicit val sys: ActorSystem = ActorSystem("MyTest")
 

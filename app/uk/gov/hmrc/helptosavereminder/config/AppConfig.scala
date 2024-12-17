@@ -42,4 +42,6 @@ class AppConfig @Inject() (val config: Configuration, val servicesConfig: Servic
   val scheduleTake: Int = config.getOptional[Int](s"scheduleTake").getOrElse(defaultScheduleTake)
 
   val excludedNinos: Seq[String] = config.getOptional[Seq[String]](s"excludedNinos").getOrElse(Seq())
+
+  lazy val ttlHelpToSaveReminder: Long = servicesConfig.getInt("mongodb.help-to-save-reminder-cache-ttl.expiry-time")
 }
