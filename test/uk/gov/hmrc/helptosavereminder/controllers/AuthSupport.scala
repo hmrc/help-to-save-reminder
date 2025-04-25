@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.IdiomaticMockito
-import org.mockito.stubbing.ScalaOngoingStubbing
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
+import org.mockito.Mockito.when
+import org.mockito.stubbing.OngoingStubbing
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
 import uk.gov.hmrc.auth.core.retrieve._
@@ -29,8 +30,7 @@ import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-trait AuthSupport extends BaseSpec with IdiomaticMockito {
-
+trait AuthSupport extends BaseSpec with MockitoSugar {
   val nino = "AE123456C"
 
   val mockedNinoRetrieval: Option[NINO] = Some(nino)
@@ -39,23 +39,25 @@ trait AuthSupport extends BaseSpec with IdiomaticMockito {
 
   def mockAuth[A](predicate: Predicate, retrieval: Retrieval[A])(
     result: Either[Exception, A]
-  ): ScalaOngoingStubbing[Future[A]] =
-    mockAuthConnector
-      .authorise(predicate, retrieval)(*, *)
-      .returns(result match {
-        case Left(e)  => Future.failed[A](e)
-        case Right(r) => Future.successful(r)
-      })
+  ): OngoingStubbing[Future[A]] =
+    when(
+      mockAuthConnector
+        .authorise(eqTo(predicate), eqTo(retrieval))(any(), any())
+    ).thenReturn(result match {
+      case Left(e)  => Future.failed[A](e)
+      case Right(r) => Future.successful(r)
+    })
 
   def mockAuth[A](
     retrieval: Retrieval[A]
-  )(result: Either[Exception, A]): Any =
-    mockAuthConnector
-      .authorise(*, retrieval)(*, *)
-      .returns(result match {
-        case Left(e)  => Future.failed[A](e)
-        case Right(r) => Future.successful(r)
-      })
+  )(result: Either[Exception, A]): OngoingStubbing[Future[A]] =
+    when(
+      mockAuthConnector
+        .authorise(any(), retrieval)(any(), any())
+    ).thenReturn(result match {
+      case Left(e)  => Future.failed[A](e)
+      case Right(r) => Future.successful(r)
+    })
 
   def testWithGGAndPrivilegedAccess(f: (() => Unit) => Unit): Unit = {
     withClue("For GG access: ") {

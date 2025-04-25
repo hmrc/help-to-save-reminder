@@ -17,8 +17,9 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import org.apache.pekko.actor.ActorSystem
-import org.mockito.ArgumentMatchersSugar.*
-import org.mockito.IdiomaticMockito
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito.when
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.mvc.MessagesControllerComponents
 import play.api.test.FakeRequest
@@ -36,8 +37,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 import scala.concurrent.Future
 
-class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with IdiomaticMockito {
-
+class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with MockitoSugar {
   implicit val mongo: MongoComponent = mongoComponent
 
   val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)
@@ -71,11 +71,12 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
 
         result1.futureValue shouldBe true
 
-        mockRepository.findByCallBackUrlRef(*).returns(Future.successful(Some(htsReminderUser)))
-        mockEmailConnector
-          .unBlockEmail(*)(*, *)
-          .returns(Future.successful(true))
-        mockRepository.deleteHtsUserByCallBack(*, *).returns(Future.successful(Right(())))
+        when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
+        when(
+          mockEmailConnector
+            .unBlockEmail(any())(any(), any())
+        ).thenReturn(Future.successful(true))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
 
         result.futureValue.header.status shouldBe 200
@@ -84,17 +85,18 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
       "respond with a 200 when its unable to block email" in {
         val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))
         val callBackUrlRef = UUID.randomUUID().toString
-        val htsReminderUser = (ReminderGenerator.nextReminder)
+        val htsReminderUser = ReminderGenerator.nextReminder
           .copy(nino = Nino("AE345678D"), callBackUrlRef = callBackUrlRef)
         val result1: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(htsReminderUser)
 
         result1.futureValue shouldBe true
 
-        mockRepository.findByCallBackUrlRef(*).returns(Future.successful(Some(htsReminderUser)))
-        mockEmailConnector
-          .unBlockEmail(*)(*, *)
-          .returns(Future.successful(false))
-        mockRepository.deleteHtsUserByCallBack(*, *).returns(Future.successful(Right(())))
+        when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
+        when(
+          mockEmailConnector
+            .unBlockEmail(any())(any(), any())
+        ).thenReturn(Future.successful(false))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
 
         result.futureValue.header.status shouldBe 200
@@ -105,17 +107,18 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
       "respond with a 200 assuming all is good" in {
         val fakeRequest = FakeRequest("POST", "/").withJsonBody(Json.toJson(eventsMapWithPermanentBounce))
         val callBackReferences = UUID.randomUUID().toString
-        val htsReminderUser = (ReminderGenerator.nextReminder)
+        val htsReminderUser = ReminderGenerator.nextReminder
           .copy(nino = Nino("AE345678D"), callBackUrlRef = callBackReferences)
         val result1: Future[Boolean] = htsReminderMongoRepository.updateReminderUser(htsReminderUser)
 
         result1.futureValue shouldBe true
 
-        mockRepository.findByCallBackUrlRef(*).returns(Future.successful(Some(htsReminderUser)))
-        mockEmailConnector
-          .unBlockEmail(*)(*, *)
-          .returns(Future.failed(new Exception("Exception failure")))
-        mockRepository.deleteHtsUserByCallBack(*, *).returns(Future.successful(Right(())))
+        when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
+        when(
+          mockEmailConnector
+            .unBlockEmail(any())(any(), any())
+        ).thenReturn(Future.failed(new Exception("Exception failure")))
+        when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
 
         result.futureValue.header.status shouldBe 200
@@ -135,10 +138,11 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Idioma
 
     result1.futureValue shouldBe true
 
-    mockRepository.findByCallBackUrlRef(*).returns(Future.successful(Some(htsReminderUser)))
-    mockRepository
-      .deleteHtsUserByCallBack(*, *)
-      .returns(Future.successful(Left("Error deleting")))
+    when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
+    when(
+      mockRepository
+        .deleteHtsUserByCallBack(any(), any())
+    ).thenReturn(Future.successful(Left("Error deleting")))
 
     val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
     result.futureValue.header.status shouldBe 200

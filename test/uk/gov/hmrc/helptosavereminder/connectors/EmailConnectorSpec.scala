@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.helptosavereminder.connectors
 
-import org.mockito.IdiomaticMockito
 import play.api.http.Status.{ACCEPTED, BAD_REQUEST, MULTIPLE_CHOICES, OK}
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
+import uk.gov.hmrc.helptosavereminder.utils.WireMockMethods
 import uk.gov.hmrc.mongo.test.MongoSupport
 
-class EmailConnectorSpec extends BaseSpec with MongoSupport with IdiomaticMockito {
+class EmailConnectorSpec extends BaseSpec with MongoSupport with WireMockMethods {
 
   val headers: Map[String, String] = Map("Content-Type" -> "application/json")
   lazy val emailConnector: EmailConnector = app.injector.instanceOf[EmailConnector]
