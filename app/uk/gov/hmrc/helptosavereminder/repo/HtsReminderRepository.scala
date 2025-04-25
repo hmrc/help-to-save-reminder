@@ -17,11 +17,13 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import com.google.inject.ImplementedBy
+import org.mongodb.scala.SingleObservableFuture
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.mongodb.scala.model.Filters.{and, equal, lte, regex}
+import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, UpdateOptions, Updates}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model._
 import play.api.Logging
-import play.api.http.Status._
+import play.api.http.Status.{NOT_FOUND, NOT_MODIFIED, OK}
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import uk.gov.hmrc.mongo.MongoComponent

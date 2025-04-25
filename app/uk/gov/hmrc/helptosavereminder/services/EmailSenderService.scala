@@ -39,7 +39,7 @@ class EmailSenderService @Inject() (
   repository: HtsReminderMongoRepository,
   emailConnector: EmailConnector,
   lockrepo: MongoLockRepository
-)(implicit ec: ExecutionContext, implicit val appConfig: AppConfig)
+)(implicit ec: ExecutionContext, val appConfig: AppConfig)
     extends Logging {
 
   private implicit lazy val hc: HeaderCarrier = HeaderCarrier()
