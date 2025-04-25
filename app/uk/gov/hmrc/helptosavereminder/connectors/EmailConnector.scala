@@ -19,11 +19,12 @@ package uk.gov.hmrc.helptosavereminder.connectors
 import play.api.Logging
 import play.api.http.Status.{ACCEPTED, OK}
 import play.api.libs.json.Json
+import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest
 import uk.gov.hmrc.helptosavereminder.models.SendTemplatedEmailRequest.format
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import javax.inject.{Inject, Singleton}
@@ -31,8 +32,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class EmailConnector @Inject() (http: HttpClientV2, servicesConfig: ServicesConfig) extends Logging {
-  val sendEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/email"
-  val unBlockEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/"
+  private val sendEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/email"
+  private val unBlockEmailUrl = s"${servicesConfig.baseUrl("email")}/hmrc/bounces/"
 
   def sendEmail(request: SendTemplatedEmailRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     for {

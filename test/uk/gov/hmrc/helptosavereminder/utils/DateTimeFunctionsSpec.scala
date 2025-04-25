@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZoneId}
 
 class DateTimeFunctionsSpec extends BaseSpec {
 
-  val monthsList = List(
+  val monthsList: List[String] = List(
     "JANUARY",
     "FEBRUARY",
     "MARCH",
@@ -38,7 +38,7 @@ class DateTimeFunctionsSpec extends BaseSpec {
     "DECEMBER"
   )
 
-  val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
+  val localDateParam: LocalDate = LocalDate.now(ZoneId.of("Europe/London"))
 
   "DateTimeFunctions object " should {
 
