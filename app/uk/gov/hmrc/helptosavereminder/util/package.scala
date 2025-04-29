@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.helptosave
+package uk.gov.hmrc.helptosavereminder
 
 import cats.data.EitherT
 

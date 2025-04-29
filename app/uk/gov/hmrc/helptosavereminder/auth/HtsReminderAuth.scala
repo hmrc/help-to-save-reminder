@@ -22,7 +22,8 @@ import uk.gov.hmrc.auth.core.AuthProvider.{GovernmentGateway, PrivilegedApplicat
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
-import uk.gov.hmrc.helptosave.util.{NINO, toFuture}
+import uk.gov.hmrc.helptosavereminder.util.NINO
+import uk.gov.hmrc.helptosavereminder.util.toFuture
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}

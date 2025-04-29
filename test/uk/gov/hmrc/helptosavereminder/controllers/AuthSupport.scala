@@ -22,10 +22,10 @@ import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
-import uk.gov.hmrc.auth.core.retrieve._
-import uk.gov.hmrc.helptosave.util._
-import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth._
+import uk.gov.hmrc.auth.core.retrieve.*
+import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth.*
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
+import uk.gov.hmrc.helptosavereminder.util.{NINO, maskNino, toFuture}
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -79,10 +79,10 @@ trait AuthSupport extends BaseSpec with MockitoSugar {
       maskNino("SK614711A") shouldBe "<NINO>"
       maskNino("") shouldBe ""
 
-      toFuture("FutureString").onComplete({
+      toFuture("FutureString").onComplete {
         case Success(value)     => value shouldBe "FutureString"
         case Failure(exception) => new Exception(s"Call to maskNino failed because of $exception")
-      })
+      }
     }
   }
 }

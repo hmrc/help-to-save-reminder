@@ -46,9 +46,8 @@ class HtsUserUpdateController @Inject() (
       case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino => {
         logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.value}")
         repository.updateReminderUser(htsUser).map {
-          case true => {
-            Ok(Json.toJson(htsUser))
-          }
+          case true =>
+            Ok(Json.toJson[HtsUserSchedule](htsUser))
           case false => NotModified
         }
       }
