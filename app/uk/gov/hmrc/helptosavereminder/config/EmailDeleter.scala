@@ -23,15 +23,14 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class EmailDeleter @Inject() (appConfig: AppConfig, repository: HtsReminderRepository)(
-  implicit ec: ExecutionContext
+class EmailDeleter @Inject() (appConfig: AppConfig, repository: HtsReminderRepository)(implicit
+  ec: ExecutionContext
 ) extends Logging {
-  for (nino <- appConfig.excludedNinos) {
+  for (nino <- appConfig.excludedNinos)
     for {
       outcome <- repository.deleteHtsUser(nino)
     } outcome match {
       case Left(error) => logger.error(error, new Exception(error))
       case Right(())   => logger.info(s"Successfully cleared reminders for a user with nino: $nino")
     }
-  }
 }

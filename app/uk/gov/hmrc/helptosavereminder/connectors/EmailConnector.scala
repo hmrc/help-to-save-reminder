@@ -38,10 +38,10 @@ class EmailConnector @Inject() (http: HttpClientV2, servicesConfig: ServicesConf
   def sendEmail(request: SendTemplatedEmailRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     for {
       response <- http
-                   .post(url"$sendEmailUrl")
-                   .withBody(Json.toJson(request))
-                   .setHeader("Content-Type" -> "application/json")
-                   .execute[Either[UpstreamErrorResponse, HttpResponse]]
+                    .post(url"$sendEmailUrl")
+                    .withBody(Json.toJson(request))
+                    .setHeader("Content-Type" -> "application/json")
+                    .execute[Either[UpstreamErrorResponse, HttpResponse]]
     } yield response match {
       case Right(response) if response.status == ACCEPTED => true
       case Right(response) =>
@@ -53,9 +53,9 @@ class EmailConnector @Inject() (http: HttpClientV2, servicesConfig: ServicesConf
   def unBlockEmail(email: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] =
     for {
       response <- http
-                   .delete(url"$unBlockEmailUrl$email")
-                   .setHeader("Content-Type" -> "application/json")
-                   .execute[Either[UpstreamErrorResponse, HttpResponse]]
+                    .delete(url"$unBlockEmailUrl$email")
+                    .setHeader("Content-Type" -> "application/json")
+                    .execute[Either[UpstreamErrorResponse, HttpResponse]]
     } yield response match {
       case Right(response) if response.status == OK || response.status == ACCEPTED => true
       case Right(response) =>

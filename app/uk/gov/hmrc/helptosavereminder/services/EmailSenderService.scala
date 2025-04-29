@@ -62,29 +62,30 @@ class EmailSenderService @Inject() (
     logger.info(s"New callBackRef $callBackRef")
     for {
       _ <- repository.updateCallBackRef(reminder.nino.value, callBackRef) pipe
-            check(s"Failed to update CallbackRef for the User: ${reminder.nino.value}")
+             check(s"Failed to update CallbackRef for the User: ${reminder.nino.value}")
       template = HtsReminderTemplate(
-        email = reminder.email,
-        name = format(reminder.firstName) + " " + format(reminder.lastName),
-        callBackUrlRef = callBackRef,
-        monthName = currentDate.getMonth.toString.toLowerCase.capitalize
-      )
+                   email = reminder.email,
+                   name = format(reminder.firstName) + " " + format(reminder.lastName),
+                   callBackUrlRef = callBackRef,
+                   monthName = currentDate.getMonth.toString.toLowerCase.capitalize
+                 )
       _ = logger.info(s"Sending reminder for $callBackRef")
       _ <- sendReceivedTemplatedEmail(template) pipe check(
-            s"Failed to send reminder for ${reminder.nino.value} $callBackRef"
-          )
+             s"Failed to send reminder for ${reminder.nino.value} $callBackRef"
+           )
       _ = logger.info(s"Sent reminder for $callBackRef")
       _ <- DateTimeFunctions.getNextSendDate(reminder.daysToReceive, currentDate) match {
-            case Some(nextSendDate) =>
-              repository.updateNextSendDate(reminder.nino.value, nextSendDate) pipe
-                check(s"Failed to update nextSendDate for the User: ${reminder.nino}")
-            case None => Future.successful(())
-          }
+             case Some(nextSendDate) =>
+               repository.updateNextSendDate(reminder.nino.value, nextSendDate) pipe
+                 check(s"Failed to update nextSendDate for the User: ${reminder.nino}")
+             case None => Future.successful(())
+           }
     } yield ()
   }
 
   private def sendReceivedTemplatedEmail(template: HtsReminderTemplate)(implicit hc: HeaderCarrier): Future[Boolean] = {
-    val callBackUrl = s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
+    val callBackUrl =
+      s"${servicesConfig.baseUrl("help-to-save-reminder")}/help-to-save-reminder/bouncedEmail/" + template.callBackUrlRef
     val request = SendTemplatedEmailRequest(
       List(template.email),
       sendEmailTemplateId,

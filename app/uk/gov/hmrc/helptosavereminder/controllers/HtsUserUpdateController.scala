@@ -43,14 +43,13 @@ class HtsUserUpdateController @Inject() (
 
   def update(): Action[AnyContent] = ggAuthorisedWithNino { implicit request => implicit nino =>
     request.body.asJson.map(_.validate[HtsUserSchedule]) match {
-      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino => {
+      case Some(JsSuccess(htsUser, _)) if htsUser.nino.nino === nino =>
         logger.debug(s"The HtsUser received from frontend to update is : ${htsUser.nino.value}")
         repository.updateReminderUser(htsUser).map {
           case true =>
             Ok(Json.toJson[HtsUserSchedule](htsUser))
           case false => NotModified
         }
-      }
 
       case Some(JsSuccess(htsUser, _)) => notAllowedThisNino
 
@@ -77,15 +76,13 @@ class HtsUserUpdateController @Inject() (
 
   def deleteHtsUser(): Action[AnyContent] = Action.async { implicit request =>
     request.body.asJson.map(_.validate[CancelHtsUserReminder]) match {
-      case Some(JsSuccess(userReminder, _)) => {
+      case Some(JsSuccess(userReminder, _)) =>
         logger.debug(s"The HtsUser received from frontend to delete is : ${userReminder.nino}")
         repository.deleteHtsUser(userReminder.nino).map {
-          case Right(()) => {
+          case Right(()) =>
             Ok
-          }
           case Left(_) => NotModified
         }
-      }
       case Some(error: JsError) =>
         val errorString = error.prettyPrint()
         logger.warn(s"Could not parse CancelHtsUserReminder JSON in request body: $errorString")

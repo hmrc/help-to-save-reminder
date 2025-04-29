@@ -80,16 +80,14 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     }
 
     testResult match {
-      case Success(usersList) => {
-        usersList.map(x => {
+      case Success(usersList) =>
+        usersList.map { x =>
           logger.info(s"Number of scheduled users fetched = ${x.length}")
           Some(x)
-        })
-      }
-      case Failure(f) => {
+        }
+      case Failure(f) =>
         logger.error(s"findHtsUsersToProcess : Exception occurred while fetching users $f ::  ${f.fillInStackTrace()}")
         Future.successful(None)
-      }
     }
   }
 
@@ -110,10 +108,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -134,10 +131,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -165,10 +161,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           }
         }
       }
-      .recover {
-        case e =>
-          logger.warn("Failed to update HtsUser Email", e)
-          NOT_FOUND
+      .recover { case e =>
+        logger.warn("Failed to update HtsUser Email", e)
+        NOT_FOUND
       }
   }
 
@@ -186,10 +181,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -254,10 +248,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
             false
           }
         }
-        .recover {
-          case e =>
-            logger.warn("Failed to update HtsUser", e)
-            false
+        .recover { case e =>
+          logger.warn("Failed to update HtsUser", e)
+          false
         }
     }
 
@@ -272,9 +265,8 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           Left(s"Could not find htsUser to delete")
         }
       }
-      .recover {
-        case e =>
-          Left(s"Could not delete htsUser: ${e.getMessage}")
+      .recover { case e =>
+        Left(s"Could not delete htsUser: ${e.getMessage}")
       }
   }
 
@@ -288,9 +280,8 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           Left(s"Could not find htsUser to delete by callBackUrlRef")
         }
       }
-      .recover {
-        case e =>
-          Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
+      .recover { case e =>
+        Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
   override def findByNino(nino: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("nino", nino)).toFuture().map(_.headOption)

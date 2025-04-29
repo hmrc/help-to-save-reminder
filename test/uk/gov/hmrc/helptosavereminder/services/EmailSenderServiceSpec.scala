@@ -71,9 +71,8 @@ class EmailSenderServiceSpec extends BaseSpec with BeforeAndAfterEach with Mocki
     "generate different UUIDs every time" in {
       val uuids = (0 until 10).map(_ => EmailSenderService.randomCallbackRef()).distinct.toList
       uuids.length shouldBe 10
-      for (uuid <- uuids) {
+      for (uuid <- uuids)
         uuid should fullyMatch regex "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"
-      }
     }
 
     "should not do anything if couldn't update callback ref" in {

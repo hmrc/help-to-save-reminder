@@ -44,8 +44,8 @@ class Scheduler(cronExpression: String, callback: () => Unit) extends Actor {
     )
   scheduler.schedule("UserScheduleJob", self, Scheduler.RUN)
 
-  def receive: Receive = {
-    case Scheduler.RUN => callback()
+  def receive: Receive = { case Scheduler.RUN =>
+    callback()
   }
 
   override def postStop(): Unit =
