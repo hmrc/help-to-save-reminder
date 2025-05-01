@@ -38,10 +38,6 @@ case class HtsUserSchedule(
   endDate: Option[LocalDate] = None
 )
 
-case class UpdateCallBackRef(reminder: HtsUserScheduleMsg, callBackRefUrl: String)
-
-case class UpdateCallBackSuccess(reminder: HtsUserScheduleMsg, callBackRefUrl: String)
-
 case class CancelHtsUserReminder(nino: String)
 
 case class UpdateEmail(nino: Nino, firstName: String, lastName: String, email: String)
@@ -78,18 +74,6 @@ object HtsUserSchedule {
 
 }
 
-object ActorUtils {
-  val BOOTSTRAP = "BOOTSTRAP"
-  val START = "START"
-  val STOP = "STOP"
-  val SUCCESS = "SUCCESS"
-  val FAILURE = "FAILURE"
-  case class Acknowledge(email: String)
-  case class Init(email: String)
-  val GET_STATS = "GET_STATS"
-  val CLEAR = "CLEAR"
-}
-
 case class Stats(
   emailsInFlight: List[String],
   emailsComplete: List[String],
@@ -103,20 +87,14 @@ object Stats {
   implicit val format: Format[Stats] = Json.format[Stats]
 }
 
-case class SendEmails(emails: List[String])
-
-object SendEmails {
-  implicit val format: Format[SendEmails] = Json.format[SendEmails]
-}
 object CancelHtsUserReminder {
 
   implicit val htsUserCancelFormat: Format[CancelHtsUserReminder] = Json.format[CancelHtsUserReminder]
 
   implicit val writes: Writes[CancelHtsUserReminder] = Writes[CancelHtsUserReminder](s => JsString(s.toString))
 
-  implicit val reads: Reads[CancelHtsUserReminder] = (
+  implicit val reads: Reads[CancelHtsUserReminder] =
     (JsPath \ "nino").read[String].orElse((JsPath \ "nino").read[String]).map(CancelHtsUserReminder.apply(_))
-  )
 }
 
 object UpdateEmail {
@@ -160,5 +138,3 @@ object EventItem {
   )(EventItem.apply(_, _))
 
 }
-
-case class HtsUserScheduleMsg(htsUserSchedule: HtsUserSchedule, currentDate: LocalDate)

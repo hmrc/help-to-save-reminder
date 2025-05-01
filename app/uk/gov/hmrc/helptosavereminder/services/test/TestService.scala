@@ -41,7 +41,7 @@ class TestService @Inject() (htsReminderRepository: HtsReminderRepository) {
     val postfixChars = ('A' to 'D').toList
     val random = new Random()
     emails
-      .map(email => {
+      .map { email =>
         @tailrec
         def generateNino(): String = {
           val prefix =
@@ -54,21 +54,21 @@ class TestService @Inject() (htsReminderRepository: HtsReminderRepository) {
         val nino = generateNino()
         for {
           _ <- htsReminderRepository.updateReminderUser(
-                HtsUserSchedule(
-                  nino = Nino(nino),
-                  email = email,
-                  firstName = "First name",
-                  lastName = "Last name",
-                  optInStatus = true,
-                  daysToReceive = immutable.Seq(1),
-                  nextSendDate = LocalDate.now(),
-                  callBackUrlRef = nino,
-                  endDate = None
-                )
-              )
+                 HtsUserSchedule(
+                   nino = Nino(nino),
+                   email = email,
+                   firstName = "First name",
+                   lastName = "Last name",
+                   optInStatus = true,
+                   daysToReceive = immutable.Seq(1),
+                   nextSendDate = LocalDate.now(),
+                   callBackUrlRef = nino,
+                   endDate = None
+                 )
+               )
           _ <- htsReminderRepository.updateNextSendDate(nino, LocalDate.now().minusDays(1))
         } yield ()
-      })
+      }
       .pipe(Future.sequence(_))
       .map(_ => ())
   }

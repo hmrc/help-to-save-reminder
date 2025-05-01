@@ -10,12 +10,12 @@ object CodeCoverageSettings {
     "config.*",
     "metrics.*",
     "testOnlyDoNotUseInAppConf.*",
-    "views.html.*",
     "prod.*",
     "uk.gov.hmrc.helptosavereminder.controllers.test.*",
     "uk.gov.hmrc.helptosavereminder.actors.*",
-    "uk.gov.hmrc.helptosavereminder.models.test.*",
-    "uk.gov.hmrc.helptosavereminder.services.test.*"
+    "uk.gov.hmrc.helptosavereminder.models.*",
+    "uk.gov.hmrc.helptosavereminder.services.test.*",
+    "uk.gov.hmrc.helptosavereminder.modules.*"
   )
 
   val settings: Seq[Setting[?]] = Seq(

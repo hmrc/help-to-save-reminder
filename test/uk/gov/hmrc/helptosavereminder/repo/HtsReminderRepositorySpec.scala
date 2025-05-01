@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.helptosavereminder.repo
 
-import org.mockito.IdiomaticMockito
 import org.scalatest.BeforeAndAfterAll
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
@@ -30,8 +29,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll with IdiomaticMockito {
-
+class HtsReminderRepositorySpec extends BaseSpec with MongoSupport with BeforeAndAfterAll {
   implicit val mongo: MongoComponent = mongoComponent
 
   val htsReminderMongoRepository = new HtsReminderMongoRepository(mongo)

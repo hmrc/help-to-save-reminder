@@ -128,7 +128,7 @@ Running and Testing
 Running
 -------
 
-Run `sbt run` on the terminal to start the service standalone. The service runs on port 7004 by default.
+Run `sbt run -Dapplication.router=testOnlyDoNotUseInAppConf.Routes` on the terminal to start the service standalone. The service runs on port 7004 by default.
 Run `sm2 --start HTS_ALL` to start up all dependant services
 
 Unit tests

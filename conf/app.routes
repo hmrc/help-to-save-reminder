@@ -4,8 +4,8 @@ POST       /bouncedEmail/:callbackreference         uk.gov.hmrc.helptosaveremind
 
 GET        /gethtsuser/:nino                        uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.getHtsUser(nino : String)
 
-POST       /update-htsuser-entity                   uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.update
+POST       /update-htsuser-entity                   uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.update()
 
-POST       /delete-htsuser-entity                   uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.deleteHtsUser
+POST       /delete-htsuser-entity                   uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.deleteHtsUser()
 
-POST       /update-htsuser-email                    uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.updateEmail
+POST       /update-htsuser-email                    uk.gov.hmrc.helptosavereminder.controllers.HtsUserUpdateController.updateEmail()

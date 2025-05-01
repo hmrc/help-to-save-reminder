@@ -23,7 +23,7 @@ import java.time.{LocalDate, ZoneId}
 
 class DateTimeFunctionsSpec extends BaseSpec {
 
-  val monthsList = List(
+  val monthsList: List[String] = List(
     "JANUARY",
     "FEBRUARY",
     "MARCH",
@@ -38,7 +38,7 @@ class DateTimeFunctionsSpec extends BaseSpec {
     "DECEMBER"
   )
 
-  val localDateParam = LocalDate.now(ZoneId.of("Europe/London"))
+  val localDateParam: LocalDate = LocalDate.now(ZoneId.of("Europe/London"))
 
   "DateTimeFunctions object " should {
 
@@ -46,13 +46,13 @@ class DateTimeFunctionsSpec extends BaseSpec {
 
     "return correct nextSendDate for any day in the current month of the year" in {
 
-      //We are now at the first day of the present month
+      // We are now at the first day of the present month
       val inputAt1stDayOfPresentMonth = localDateParam.withDayOfMonth(1)
       val inputMonthsIndex = monthsList.indexOf(inputAt1stDayOfPresentMonth.getMonth.toString)
 
       val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt1stDayOfPresentMonth)
 
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
+      monthsList(inputMonthsIndex % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
       dateResult.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       val dateResult1 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt1stDayOfPresentMonth)
@@ -60,14 +60,14 @@ class DateTimeFunctionsSpec extends BaseSpec {
       dateResult1.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult2 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt1stDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult2.getOrElse(LocalDate.now()).getMonth.toString
+      monthsList(inputMonthsIndex % 12) shouldBe dateResult2.getOrElse(LocalDate.now()).getMonth.toString
       dateResult2.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
-      //Now we are at the 10th day of the present month and repeat the previous three tests.
+      // Now we are at the 10th day of the present month and repeat the previous three tests.
       val inputAt10thtDayOfPresentMonth = localDateParam.withDayOfMonth(10)
       val dateResult3 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt10thtDayOfPresentMonth)
 
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult3.getOrElse(LocalDate.now()).getMonth.toString
+      monthsList(inputMonthsIndex % 12) shouldBe dateResult3.getOrElse(LocalDate.now()).getMonth.toString
       dateResult3.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
       val dateResult4 = DateTimeFunctions.getNextSendDate(Seq(1), inputAt10thtDayOfPresentMonth)
@@ -75,10 +75,10 @@ class DateTimeFunctionsSpec extends BaseSpec {
       dateResult4.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 1
 
       val dateResult5 = DateTimeFunctions.getNextSendDate(Seq(25), inputAt10thtDayOfPresentMonth)
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult5.getOrElse(LocalDate.now()).getMonth.toString
+      monthsList(inputMonthsIndex % 12) shouldBe dateResult5.getOrElse(LocalDate.now()).getMonth.toString
       dateResult5.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
-      //Now we are at the 25th day of the present month and repeat the previous three tests.
+      // Now we are at the 25th day of the present month and repeat the previous three tests.
       val inputAt25thtDayOfPresentMonth = localDateParam.withDayOfMonth(25)
       val dateResult6 = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAt25thtDayOfPresentMonth)
 
@@ -101,7 +101,7 @@ class DateTimeFunctionsSpec extends BaseSpec {
       val inputMonthsIndex = monthsList.indexOf(inputAtFeb14th.getMonth.toString)
       val dateResult = DateTimeFunctions.getNextSendDate(Seq(1, 25), inputAtFeb14th)
 
-      monthsList((inputMonthsIndex) % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
+      monthsList(inputMonthsIndex % 12) shouldBe dateResult.getOrElse(LocalDate.now()).getMonth.toString
       dateResult.getOrElse(LocalDate.now()).getDayOfMonth shouldBe 25
 
     }

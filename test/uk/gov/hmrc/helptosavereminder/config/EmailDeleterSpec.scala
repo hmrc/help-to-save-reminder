@@ -16,26 +16,26 @@
 
 package uk.gov.hmrc.helptosavereminder.config
 
-import org.mockito.IdiomaticMockito
-import org.mockito.VerifyMacro.Once
+import org.mockito.Mockito.{times, verify, when}
+import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderRepository
 
 import scala.concurrent.Future
 
-class EmailDeleterSpec extends BaseSpec with IdiomaticMockito {
+class EmailDeleterSpec extends BaseSpec with MockitoSugar {
   "EmailDeleter" should {
     "delete reminders by nino at startup" in {
       val appConfig = mock[AppConfig]
-      appConfig.excludedNinos returns List("AE111111D", "AE222222D")
+      when(appConfig.excludedNinos).thenReturn(List("AE111111D", "AE222222D"))
       val repository = mock[HtsReminderRepository]
-      repository.deleteHtsUser("AE111111D") returns Future.successful(Right(()))
-      repository.deleteHtsUser("AE222222D") returns Future.successful(Left("Error occurred"))
+      when(repository.deleteHtsUser("AE111111D")).thenReturn(Future.successful(Right(())))
+      when(repository.deleteHtsUser("AE222222D")).thenReturn(Future.successful(Left("Error occurred")))
 
       val _ = new EmailDeleter(appConfig, repository)
 
-      repository.deleteHtsUser("AE111111D") wasCalled Once
-      repository.deleteHtsUser("AE222222D") wasCalled Once
+      verify(repository, times(1)).deleteHtsUser("AE111111D")
+      verify(repository, times(1)).deleteHtsUser("AE222222D")
     }
   }
 }

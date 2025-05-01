@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.helptosavereminder.controllers
 
+import org.mockito.Mockito.when
 import play.api.http.Status._
 import play.api.libs.json.{JsSuccess, Json}
 import play.api.mvc.Result
@@ -34,24 +35,28 @@ class ReminderControllerSpec extends AuthSupport {
   private val mockRepository = mock[HtsReminderRepository]
 
   private def mockUpdateRepository(htsUser: HtsUserSchedule)(result: Boolean) =
-    mockRepository
-      .updateReminderUser(htsUser)
-      .returns(Future.successful(result))
+    when(
+      mockRepository
+        .updateReminderUser(htsUser)
+    ).thenReturn(Future.successful(result))
 
   private def mockCancelRepository(nino: String)(result: Either[String, Unit]) =
-    mockRepository
-      .deleteHtsUser(nino)
-      .returns(Future.successful(result))
+    when(
+      mockRepository
+        .deleteHtsUser(nino)
+    ).thenReturn(Future.successful(result))
 
   private def mockGetRepository(nino: String)(result: Option[HtsUserSchedule]) =
-    mockRepository
-      .findByNino(nino)
-      .returns(Future.successful(result))
+    when(
+      mockRepository
+        .findByNino(nino)
+    ).thenReturn(Future.successful(result))
 
   private def mockUpdateEmailRepository(nino: String, firstName: String, lastName: String, email: String)(result: Int) =
-    mockRepository
-      .updateEmail(nino, firstName, lastName, email)
-      .returns(Future.successful(result))
+    when(
+      mockRepository
+        .updateEmail(nino, firstName, lastName, email)
+    ).thenReturn(Future.successful(result))
 
   override val mockAuthConnector: AuthConnector = mock[AuthConnector]
 
@@ -59,13 +64,13 @@ class ReminderControllerSpec extends AuthSupport {
 
   "The ReminderController " should {
     "be able to return a success if Hts user is correct" in {
-      val htsReminderUser = (ReminderGenerator.nextReminder).copy(nino = Nino("AE123456C"))
+      val htsReminderUser = ReminderGenerator.nextReminder.copy(nino = Nino("AE123456C"))
       val fakeRequest = FakeRequest("POST", "/")
 
       val controller = new HtsUserUpdateController(mockRepository, testCC, mockAuthConnector)
 
       mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
-      mockUpdateRepository(htsReminderUser)(true)
+      mockUpdateRepository(htsReminderUser)(result = true)
 
       val result = controller.update()(fakeRequest.withJsonBody(Json.toJson(htsReminderUser)))
       result.futureValue.header.status shouldBe OK
@@ -90,7 +95,7 @@ class ReminderControllerSpec extends AuthSupport {
       val controller = new HtsUserUpdateController(mockRepository, testCC, mockAuthConnector)
 
       mockAuth(AuthWithCL200, v2Nino)(Right(mockedNinoRetrieval))
-      mockUpdateRepository(htsReminderUser)(false)
+      mockUpdateRepository(htsReminderUser)(result = false)
 
       val result = controller.update()(fakeRequest.withJsonBody(Json.toJson(htsReminderUser)))
       result.futureValue.header.status shouldBe 304

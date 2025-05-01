@@ -25,7 +25,6 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.mvc.ControllerComponents
 import play.api.{Application, Configuration, Mode}
 import uk.gov.hmrc.helptosavereminder.config.AppConfig
-import uk.gov.hmrc.helptosavereminder.utils.WireMockMethods
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.test.WireMockSupport
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
@@ -34,7 +33,7 @@ import scala.concurrent.ExecutionContext
 
 trait BaseSpec
     extends AnyWordSpecLike with Matchers with GuiceOneAppPerSuite with BeforeAndAfterAll with ScalaFutures
-    with WireMockSupport with WireMockMethods {
+    with WireMockSupport {
 
   def additionalConfiguration: Map[String, String] =
     Map(

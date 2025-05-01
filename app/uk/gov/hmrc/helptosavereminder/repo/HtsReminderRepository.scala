@@ -17,11 +17,13 @@
 package uk.gov.hmrc.helptosavereminder.repo
 
 import com.google.inject.ImplementedBy
+import org.mongodb.scala.SingleObservableFuture
+import org.mongodb.scala.gridfs.ObservableFuture
 import org.mongodb.scala.model.Filters.{and, equal, lte, regex}
+import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions, UpdateOptions, Updates}
 import org.mongodb.scala.model.Indexes.ascending
-import org.mongodb.scala.model._
 import play.api.Logging
-import play.api.http.Status._
+import play.api.http.Status.{NOT_FOUND, NOT_MODIFIED, OK}
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 import uk.gov.hmrc.mongo.MongoComponent
@@ -78,16 +80,14 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
     }
 
     testResult match {
-      case Success(usersList) => {
-        usersList.map(x => {
+      case Success(usersList) =>
+        usersList.map { x =>
           logger.info(s"Number of scheduled users fetched = ${x.length}")
           Some(x)
-        })
-      }
-      case Failure(f) => {
+        }
+      case Failure(f) =>
         logger.error(s"findHtsUsersToProcess : Exception occurred while fetching users $f ::  ${f.fillInStackTrace()}")
         Future.successful(None)
-      }
     }
   }
 
@@ -108,10 +108,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -132,10 +131,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -163,10 +161,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           }
         }
       }
-      .recover {
-        case e =>
-          logger.warn("Failed to update HtsUser Email", e)
-          NOT_FOUND
+      .recover { case e =>
+        logger.warn("Failed to update HtsUser Email", e)
+        NOT_FOUND
       }
   }
 
@@ -184,10 +181,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           false
         }
       }
-      .recover {
-        case e =>
-          logger.error("Failed to update HtsUser", e)
-          false
+      .recover { case e =>
+        logger.error("Failed to update HtsUser", e)
+        false
       }
   }
 
@@ -252,10 +248,9 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
             false
           }
         }
-        .recover {
-          case e =>
-            logger.warn("Failed to update HtsUser", e)
-            false
+        .recover { case e =>
+          logger.warn("Failed to update HtsUser", e)
+          false
         }
     }
 
@@ -270,9 +265,8 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           Left(s"Could not find htsUser to delete")
         }
       }
-      .recover {
-        case e =>
-          Left(s"Could not delete htsUser: ${e.getMessage}")
+      .recover { case e =>
+        Left(s"Could not delete htsUser: ${e.getMessage}")
       }
   }
 
@@ -286,9 +280,8 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
           Left(s"Could not find htsUser to delete by callBackUrlRef")
         }
       }
-      .recover {
-        case e =>
-          Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
+      .recover { case e =>
+        Left(s"Could not delete htsUser by callBackUrlRef : ${e.getMessage}")
       }
   override def findByNino(nino: String): Future[Option[HtsUserSchedule]] =
     collection.find(Filters.eq("nino", nino)).toFuture().map(_.headOption)

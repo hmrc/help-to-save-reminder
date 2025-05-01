@@ -34,13 +34,13 @@ object ReminderGenerator {
   private def email = s"$firstName.$lastName+${UUID.randomUUID()}@digital.hmrc.gov.uk"
   private def firstName: String = "Mohan"
   private def lastName: String = "Dolla"
-  private def daysToReceive = Seq(1, 25) //scalastyle:ignore magic.number
+  private def daysToReceive = Seq(1, 25) // scalastyle:ignore magic.number
   private def nextSendDate: LocalDate =
-    getNextSendDate(Seq(1, 25), LocalDate.now(ZoneId.of("Europe/London"))) //scalastyle:ignore magic.number
+    getNextSendDate(Seq(1, 25), LocalDate.now(ZoneId.of("Europe/London"))) // scalastyle:ignore magic.number
       .getOrElse(LocalDate.now(ZoneId.of("Europe/London")))
   private def callBackUrlRef: String = LocalDateTime.now().toString + nino.value
   private def endDate: Option[LocalDate] =
-    Some(LocalDate.now(ZoneId.of("Europe/London")).plusMonths(6)) //scalastyle:ignore magic.number
+    Some(LocalDate.now(ZoneId.of("Europe/London")).plusMonths(6)) // scalastyle:ignore magic.number
 
   def nextReminder(emailPrefix: String, daysToReceive: Seq[Int]): HtsUserSchedule =
     HtsUserSchedule(
