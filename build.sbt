@@ -10,7 +10,7 @@ lazy val microservice = {
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test(),
     scalacOptions += "-Wconf:msg=Flag.*repeatedly:s"
   )
-  .settings(scalaVersion := "3.3.5")
+  .settings(scalaVersion := "3.3.6")
   .settings(PlayKeys.playDefaultPort := 7008)
   .settings(CodeCoverageSettings.settings *)
   .settings(scalafmtOnCompile := true)
