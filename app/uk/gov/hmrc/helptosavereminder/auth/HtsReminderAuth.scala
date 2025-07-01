@@ -17,22 +17,19 @@
 package uk.gov.hmrc.helptosavereminder.auth
 
 import play.api.Logging
-import play.api.mvc._
-import uk.gov.hmrc.auth.core.AuthProvider.{GovernmentGateway, PrivilegedApplication}
-import uk.gov.hmrc.auth.core._
+import play.api.mvc.*
+import uk.gov.hmrc.auth.core.*
+import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{nino => v2Nino}
-import uk.gov.hmrc.helptosavereminder.util.NINO
-import uk.gov.hmrc.helptosavereminder.util.toFuture
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.nino as v2Nino
+import uk.gov.hmrc.helptosavereminder.util.{NINO, toFuture}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ExecutionContext, Future}
 
 object HtsReminderAuth {
 
-  val GGProvider: AuthProviders = AuthProviders(GovernmentGateway)
-
-  val GGAndPrivilegedProviders: Predicate = AuthProviders(GovernmentGateway, PrivilegedApplication)
+  private val GGProvider: AuthProviders = AuthProviders(GovernmentGateway)
 
   val AuthWithCL200: Predicate = GGProvider and ConfidenceLevel.L200
 
@@ -41,7 +38,7 @@ object HtsReminderAuth {
 class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: ControllerComponents)
     extends BackendController(controllerComponents) with AuthorisedFunctions with Logging {
 
-  import HtsReminderAuth._
+  import HtsReminderAuth.*
 
   override def authConnector: AuthConnector = htsAuthConnector
 
@@ -61,7 +58,7 @@ class HtsReminderAuth(htsAuthConnector: AuthConnector, controllerComponents: Con
         }
     }
 
-  def handleFailure(): PartialFunction[Throwable, Result] = {
+  private def handleFailure(): PartialFunction[Throwable, Result] = {
     case _: NoActiveSession =>
       logger.warn("user is not logged in, probably a hack?")
       Unauthorized
