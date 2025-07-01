@@ -22,7 +22,6 @@ import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.helptosavereminder.services.EmailSenderService
 import uk.gov.hmrc.helptosavereminder.services.test.TestService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -34,8 +33,7 @@ class TestController @Inject() (
   testService: TestService,
   repository: HtsReminderMongoRepository,
   cc: ControllerComponents,
-  emailSenderService: EmailSenderService,
-  servicesConfig: ServicesConfig
+  emailSenderService: EmailSenderService
 )(implicit val ec: ExecutionContext)
     extends BackendController(cc) {
 

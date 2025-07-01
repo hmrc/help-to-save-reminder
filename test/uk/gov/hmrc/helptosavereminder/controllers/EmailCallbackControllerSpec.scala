@@ -31,7 +31,6 @@ import uk.gov.hmrc.helptosavereminder.models.{EventItem, EventsMap}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.test.MongoSupport
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import java.time.LocalDateTime
 import java.util.UUID
@@ -44,12 +43,10 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Mockit
 
   implicit val sys: ActorSystem = ActorSystem("MyTest")
 
-  private val serviceConfig = new ServicesConfig(configuration)
-
   private lazy val mockRepository = mock[HtsReminderMongoRepository]
   private lazy val mockEmailConnector = mock[EmailConnector]
   lazy val mcc: MessagesControllerComponents = app.injector.instanceOf[MessagesControllerComponents]
-  lazy val controller = new EmailCallbackController(serviceConfig, mcc, mockRepository, mockEmailConnector)
+  lazy val controller = new EmailCallbackController(mcc, mockRepository, mockEmailConnector)
 
   val eventItem1: EventItem = EventItem("PermanentBounce", LocalDateTime.now())
   val eventItem2: EventItem = EventItem("Opened", LocalDateTime.now())

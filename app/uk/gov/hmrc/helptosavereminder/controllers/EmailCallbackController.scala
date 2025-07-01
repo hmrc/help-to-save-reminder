@@ -17,8 +17,8 @@
 package uk.gov.hmrc.helptosavereminder.controllers
 
 import cats.data.EitherT
-import cats.instances.string._
-import cats.syntax.eq._
+import cats.instances.string.*
+import cats.syntax.eq.*
 import com.google.inject.Inject
 import play.api.Logging
 import play.api.libs.json.{JsError, JsSuccess}
@@ -26,14 +26,12 @@ import play.api.mvc.{Action, AnyContent, MessagesControllerComponents, Result}
 import uk.gov.hmrc.helptosavereminder.connectors.EmailConnector
 import uk.gov.hmrc.helptosavereminder.models.{EventsMap, HtsUserSchedule}
 import uk.gov.hmrc.helptosavereminder.repo.HtsReminderMongoRepository
-import uk.gov.hmrc.helptosavereminder.util.JsErrorOps._
+import uk.gov.hmrc.helptosavereminder.util.JsErrorOps.*
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class EmailCallbackController @Inject() (
-  servicesConfig: ServicesConfig,
   val cc: MessagesControllerComponents,
   repository: HtsReminderMongoRepository,
   emailConnector: EmailConnector

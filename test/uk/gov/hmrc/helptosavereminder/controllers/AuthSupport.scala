@@ -21,9 +21,8 @@ import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.auth.core.AuthConnector
-import uk.gov.hmrc.auth.core.authorise.{EmptyPredicate, Predicate}
+import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.*
-import uk.gov.hmrc.helptosavereminder.auth.HtsReminderAuth.*
 import uk.gov.hmrc.helptosavereminder.base.BaseSpec
 import uk.gov.hmrc.helptosavereminder.util.{NINO, maskNino, toFuture}
 
@@ -58,21 +57,6 @@ trait AuthSupport extends BaseSpec with MockitoSugar {
       case Left(e)  => Future.failed[A](e)
       case Right(r) => Future.successful(r)
     })
-
-  def testWithGGAndPrivilegedAccess(f: (() => Unit) => Unit): Unit = {
-    withClue("For GG access: ") {
-      f { () =>
-        mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(GGCredId("id")))
-        mockAuth(EmptyPredicate, v2.Retrievals.nino)(Right(Some(nino)))
-      }
-    }
-
-    withClue("For privileged access: ") {
-      f { () =>
-        mockAuth(GGAndPrivilegedProviders, v2.Retrievals.authProviderId)(Right(PAClientId("id")))
-      }
-    }
-  }
 
   "Calls to maskNino on util package" should {
     "return appropriate strings" in {
