@@ -51,7 +51,7 @@ class HtsUserUpdateController @Inject() (
           case false => NotModified
         }
 
-      case Some(JsSuccess(htsUser, _)) => notAllowedThisNino
+      case Some(JsSuccess(_, _)) => notAllowedThisNino
 
       case Some(error: JsError) =>
         val errorString = error.prettyPrint()
@@ -106,7 +106,7 @@ class HtsUserUpdateController @Inject() (
             case _            => NotFound
           }
 
-      case Some(JsSuccess(userReminder, _)) => notAllowedThisNino
+      case Some(JsSuccess(_, _)) => notAllowedThisNino
 
       case Some(error: JsError) =>
         val errorString = error.prettyPrint()

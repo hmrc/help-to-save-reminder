@@ -232,7 +232,7 @@ class HtsReminderMongoRepository @Inject() (mongo: MongoComponent)(implicit val 
 
       val selector = Filters.equal("nino", htsReminder.nino.value)
 
-      val modifier = Updates.combine(finalModifiedJson.map(update => update): _*)
+      val modifier = Updates.combine(finalModifiedJson.map(update => update)*)
 
       val options = UpdateOptions().upsert(true)
 

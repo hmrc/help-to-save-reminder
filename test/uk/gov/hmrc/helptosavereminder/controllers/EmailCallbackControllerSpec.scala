@@ -71,7 +71,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Mockit
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
         when(
           mockEmailConnector
-            .unBlockEmail(any())(any(), any())
+            .unBlockEmail(any())(using any(), any())
         ).thenReturn(Future.successful(true))
         when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
@@ -91,7 +91,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Mockit
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
         when(
           mockEmailConnector
-            .unBlockEmail(any())(any(), any())
+            .unBlockEmail(any())(using any(), any())
         ).thenReturn(Future.successful(false))
         when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackUrlRef).apply(fakeRequest)
@@ -113,7 +113,7 @@ class EmailCallbackControllerSpec extends BaseSpec with MongoSupport with Mockit
         when(mockRepository.findByCallBackUrlRef(any())).thenReturn(Future.successful(Some(htsReminderUser)))
         when(
           mockEmailConnector
-            .unBlockEmail(any())(any(), any())
+            .unBlockEmail(any())(using any(), any())
         ).thenReturn(Future.failed(new Exception("Exception failure")))
         when(mockRepository.deleteHtsUserByCallBack(any(), any())).thenReturn(Future.successful(Right(())))
         val result = controller.handleCallBack(callBackReferences).apply(fakeRequest)
