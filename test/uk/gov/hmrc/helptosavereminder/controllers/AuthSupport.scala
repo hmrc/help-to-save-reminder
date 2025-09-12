@@ -41,7 +41,7 @@ trait AuthSupport extends BaseSpec with MockitoSugar {
   ): OngoingStubbing[Future[A]] =
     when(
       mockAuthConnector
-        .authorise(eqTo(predicate), eqTo(retrieval))(any(), any())
+        .authorise(eqTo(predicate), eqTo(retrieval))(using any(), any())
     ).thenReturn(result match {
       case Left(e)  => Future.failed[A](e)
       case Right(r) => Future.successful(r)
@@ -52,7 +52,7 @@ trait AuthSupport extends BaseSpec with MockitoSugar {
   )(result: Either[Exception, A]): OngoingStubbing[Future[A]] =
     when(
       mockAuthConnector
-        .authorise(any(), retrieval)(any(), any())
+        .authorise(any(), retrieval)(using any(), any())
     ).thenReturn(result match {
       case Left(e)  => Future.failed[A](e)
       case Right(r) => Future.successful(r)
