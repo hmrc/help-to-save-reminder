@@ -19,7 +19,7 @@ package uk.gov.hmrc.helptosavereminder.models.test
 import java.time.{LocalDate, LocalDateTime, ZoneId}
 import java.util.UUID
 
-import uk.gov.hmrc.domain.{Generator, Nino}
+import uk.gov.hmrc.domain.{Nino, NinoGenerator}
 import uk.gov.hmrc.helptosavereminder.models.HtsUserSchedule
 import uk.gov.hmrc.helptosavereminder.util.DateTimeFunctions.getNextSendDate
 
@@ -27,7 +27,7 @@ import scala.util.Random
 
 object ReminderGenerator {
   private lazy val rand = new Random()
-  private lazy val generator = new Generator(rand)
+  private lazy val generator = new NinoGenerator(rand)
 
   private def nino: Nino = generator.nextNino
   private def email(prefix: String) = s"$prefix+${UUID.randomUUID()}@digital.hmrc.gov.uk"
