@@ -11,7 +11,11 @@ object AppDependencies {
     "uk.gov.hmrc"            %% s"bootstrap-backend-$playVersion" % hmrcBootstrapVersion,
     "uk.gov.hmrc"            %% s"domain-test-$playVersion"       % "13.0.0" ,
     "org.typelevel"          %% "cats-core"                       % "2.13.0",
+    (
     "io.github.samueleresca" %% "pekko-quartz-scheduler"          % "1.2.2-pekko-1.0.x"
+    )
+      .exclude("com.mchange", "c3p0")
+      .exclude("com.mchange", "mchange-commons-java")
   )
 
   def test(scope: String = "test"): Seq[ModuleID] = Seq(
